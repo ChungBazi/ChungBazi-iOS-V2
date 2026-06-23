@@ -17,7 +17,7 @@ let project = Project.project(
             ]),
             sources: .sources,
             resources: .default,
-            entitlements: .file(path: "Resources/ChungBazi.entitlements"),
+            entitlements: .file(path: "SupportingFiles/ChungBazi.entitlements"),
             dependencies: [
                 .presentation(),
                 .data(),

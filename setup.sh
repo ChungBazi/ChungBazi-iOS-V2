@@ -40,22 +40,27 @@ fi
 
 # 2. xcconfig 파일 생성 (없으면 템플릿에서 복사)
 CONFIG_DIR="Projects/ChungBazi/Configurations"
+mkdir -p "$CONFIG_DIR"
 for ENV in Debug Release; do
   if [ ! -f "$CONFIG_DIR/$ENV.xcconfig" ]; then
     echo "[xcconfig] $ENV.xcconfig not found. Creating from template..."
+    if [ ! -f "$CONFIG_DIR/$ENV.xcconfig.template" ]; then
+      echo "[xcconfig] ERROR: $CONFIG_DIR/$ENV.xcconfig.template not found."
+      exit 1
+    fi
     cp "$CONFIG_DIR/$ENV.xcconfig.template" "$CONFIG_DIR/$ENV.xcconfig"
     echo "[xcconfig] $CONFIG_DIR/$ENV.xcconfig created. 값을 채운 후 빌드를 진행하세요."
   fi
 done
 
-# 2. .mise.toml에 정의된 Tuist 버전 설치
+# 3. .mise.toml에 정의된 Tuist 버전 설치
 echo "[tuist] Installing pinned version from .mise.toml..."
 mise install
 
 TUIST_VERSION=$(mise exec -- tuist version)
 echo "[tuist] Active version: $TUIST_VERSION"
 
-# 3. SPM 패키지 설치
+# 4. SPM 패키지 설치
 echo "[tuist] Running 'tuist install'..."
 mise exec -- tuist install
 
