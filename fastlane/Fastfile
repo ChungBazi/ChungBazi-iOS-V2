@@ -20,4 +20,14 @@ platform :ios do
   lane :match_appstore do
     match(type: "appstore", api_key: api_key)
   end
+
+  desc "Sync development certificates (readonly, 팀원용)"
+  lane :match_development_readonly do
+    match(type: "development", readonly: true)
+  end
+
+  desc "Sync App Store certificates (readonly, 팀원용)"
+  lane :match_appstore_readonly do
+    match(type: "appstore", readonly: true)
+  end
 end
