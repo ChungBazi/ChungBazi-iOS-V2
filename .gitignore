@@ -86,6 +86,10 @@ AuthKey_*.p8
 .env.*
 secrets.xcconfig
 
+# xcconfig (환경변수 포함)
+Projects/ChungBazi/Configurations/Debug.xcconfig
+Projects/ChungBazi/Configurations/Release.xcconfig
+
 # ============================
 # Tuist Cache
 # ============================
