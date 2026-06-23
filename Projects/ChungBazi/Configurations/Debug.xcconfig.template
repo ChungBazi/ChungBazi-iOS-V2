@@ -1,0 +1,3 @@
+DEVELOPMENT_TEAM = UKY6HK6U6Y
+CODE_SIGN_STYLE = Manual
+PROVISIONING_PROFILE_SPECIFIER = match Development com.yeonho.chungbazi
