@@ -9,10 +9,7 @@ let project = Project.project(
             product: .app,
             bundleId: Project.bundleID,
             infoPlist: .extendingDefault(with: [
-                "CFBundleDisplayName": .string("청바지"),
-                "CFBundleShortVersionString": .string("1.0.0"),
-                "CFBundleVersion": .string("1"),
-                "UILaunchStoryboardName": .string("LaunchScreen"),
+                "UILaunchScreen": .dictionary([:]),
                 "UISupportedInterfaceOrientations": .array([.string("UIInterfaceOrientationPortrait")]),
                 "UIApplicationSceneManifest": .dictionary([
                     "UIApplicationSupportsMultipleScenes": .boolean(false),
