@@ -7,7 +7,6 @@
 Derived/
 Tuist/.build/
 .tuist-bin/
-ProjectDescriptionHelpers/
 
 # ============================
 # Xcode
