@@ -1,0 +1,23 @@
+default_platform(:ios)
+
+platform :ios do
+  private_lane :api_key do
+    app_store_connect_api_key(
+      key_id: ENV.fetch("APP_STORE_CONNECT_API_KEY_ID"),
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_API_ISSUER_ID"),
+      key_filepath: ENV.fetch("APP_STORE_CONNECT_API_KEY_FILEPATH"),
+      duration: 1200,
+      in_house: false
+    )
+  end
+
+  desc "Sync development certificates and profiles"
+  lane :match_development do
+    match(type: "development", api_key: api_key)
+  end
+
+  desc "Sync App Store certificates and profiles"
+  lane :match_appstore do
+    match(type: "appstore", api_key: api_key)
+  end
+end

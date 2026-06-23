@@ -1,0 +1,6 @@
+git_url("git@github.com:ChungBazi/ChungBazi-Certificates.git")
+storage_mode("git")
+
+app_identifier("com.yeonho.chungbazi")
+username("lhjivy1024@naver.com")
+team_id("UKY6HK6U6Y")
