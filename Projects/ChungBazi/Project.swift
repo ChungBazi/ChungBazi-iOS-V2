@@ -27,8 +27,20 @@ let project = Project.project(
             ],
             settings: .settings(
                 configurations: [
-                    .debug(name: "Debug", xcconfig: .relativeToRoot("Projects/ChungBazi/Configurations/Debug.xcconfig")),
-                    .release(name: "Release", xcconfig: .relativeToRoot("Projects/ChungBazi/Configurations/Release.xcconfig")),
+                    .debug(
+                        name: "Debug",
+                        settings: [
+                            "CODE_SIGN_IDENTITY": "Apple Development",
+                        ],
+                        xcconfig: .relativeToRoot("Projects/ChungBazi/Configurations/Debug.xcconfig")
+                    ),
+                    .release(
+                        name: "Release",
+                        settings: [
+                            "CODE_SIGN_IDENTITY": "Apple Distribution",
+                        ],
+                        xcconfig: .relativeToRoot("Projects/ChungBazi/Configurations/Release.xcconfig")
+                    ),
                 ]
             )
         ),
