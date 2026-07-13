@@ -4,7 +4,7 @@ import ProjectDescription
 
 extension Project {
     public static let bundleID = "com.yeonho.chungbazi"
-    public static let iOSVersion = "16.0"
+    public static let iOSVersion = "17.0"
     public static let product: Product = .staticFramework
 }
 

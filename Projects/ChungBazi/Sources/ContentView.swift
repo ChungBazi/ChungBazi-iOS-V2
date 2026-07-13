@@ -1,3 +1,5 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
 import SwiftUI
 
 struct ContentView: View {
