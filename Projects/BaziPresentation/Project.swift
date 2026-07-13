@@ -8,7 +8,6 @@ let project = Project.project(
             name: BaziModule.BaziPresentation.name,
             product: Project.product,
             sources: .sources,
-            resources: .default,
             dependencies: [
                 .domain(),
                 .design(),
