@@ -1,3 +1,5 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
 import CoreText
 import Foundation
 
