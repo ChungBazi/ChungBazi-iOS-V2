@@ -1,4 +1,7 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
 import BaziDesign
+import BaziPresentation
 import SwiftUI
 
 @main
@@ -9,7 +12,7 @@ struct ChungBaziApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppCoordinatorContainer()
         }
     }
 }
