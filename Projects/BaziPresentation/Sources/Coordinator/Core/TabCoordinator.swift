@@ -13,5 +13,5 @@ public final class TabCoordinator {
     public func pop() {
         guard !path.isEmpty else { return }; path.removeLast()
     }
-    public func popToRoot() { path = NavigationPath() }
+    public func popToRoot() { path.removeLast(path.count) }
 }

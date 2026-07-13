@@ -10,12 +10,7 @@ struct AuthCoordinatorView: View {
         @Bindable var coordinator = coordinator
         switch root {
         case .login:
-            NavigationStack(path: $coordinator.authPath) {
-                Text("Login") // TODO
-                    .navigationDestination(for: OnboardingRoute.self) {
-                        buildOnboardingView(for: $0)
-                    }
-            }
+            Text("Login") // TODO
         case .nicknameSetup:
             Text("Nickname") // TODO
         case .onboarding:
