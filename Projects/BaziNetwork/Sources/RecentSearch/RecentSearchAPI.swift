@@ -11,7 +11,7 @@ public enum RecentSearchAPI {
 }
 
 extension RecentSearchAPI: APITargetType {
-    public var baseURL: URL { URL(string: APIDomain.recentSearchURL)! }
+    public var baseURL: URL { APIDomain.recentSearchURL }
     
     public var path: String {
         switch self {

@@ -9,7 +9,7 @@ public enum RegionAPI {
 }
 
 extension RegionAPI: APITargetType {
-    public var baseURL: URL { URL(string: APIDomain.regionURL)! }
+    public var baseURL: URL { APIDomain.regionURL }
     
     public var path: String {
         switch self {

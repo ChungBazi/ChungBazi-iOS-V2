@@ -11,7 +11,7 @@ public enum AuthAPI {
 }
 
 extension AuthAPI: APITargetType {
-    public var baseURL: URL { URL(string: APIDomain.authURL)! }
+    public var baseURL: URL { APIDomain.authURL }
     
     public var path: String {
         switch self {

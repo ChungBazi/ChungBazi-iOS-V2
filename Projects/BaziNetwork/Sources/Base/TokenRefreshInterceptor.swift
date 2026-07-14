@@ -86,7 +86,7 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
             throw NetworkError.unauthorized
         }
 
-        let url = URL(string: "\(APIDomain.authURL)/reissue")!
+        let url = APIDomain.authURL.appendingPathComponent("reissue")
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")

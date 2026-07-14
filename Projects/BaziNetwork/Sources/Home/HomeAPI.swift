@@ -10,7 +10,7 @@ public enum HomeAPI {
 }
 
 extension HomeAPI: APITargetType {
-    public var baseURL: URL { URL(string: APIDomain.homeURL)! }
+    public var baseURL: URL { APIDomain.homeURL }
     
     public var path: String {
         switch self {
