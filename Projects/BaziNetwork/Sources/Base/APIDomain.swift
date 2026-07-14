@@ -3,9 +3,9 @@
 import Foundation
 
 public struct APIDomain {
-    private static var _baseURL: String?
+    private static var _baseURL: URL?
 
-    public static var baseURL: String {
+    public static var baseURL: URL {
         guard let url = _baseURL else {
             fatalError("APIDomain.configure(baseURL:) must be called in App.init() before any network requests.")
         }
@@ -13,13 +13,16 @@ public struct APIDomain {
     }
 
     public static func configure(baseURL: String) {
-        _baseURL = baseURL
+        guard let url = URL(string: baseURL) else {
+            fatalError("BASE_URL이 유효한 URL 형식이 아닙니다: \(baseURL)")
+        }
+        _baseURL = url
     }
 
-    public static var authURL: String        { "\(baseURL)/v1/auth" }
-    public static var userURL: String        { "\(baseURL)/v1/user" }
-    public static var regionURL: String      { "\(baseURL)/v1/regions" }
-    public static var recentSearchURL: String { "\(baseURL)/v1/recent-searches" }
-    public static var policySearchURL: String { "\(baseURL)/v1/policies" }
-    public static var homeURL: String        { "\(baseURL)/v1/home" }
+    public static var authURL: URL        { baseURL.appendingPathComponent("v1/auth") }
+    public static var userURL: URL        { baseURL.appendingPathComponent("v1/user") }
+    public static var regionURL: URL      { baseURL.appendingPathComponent("v1/regions") }
+    public static var recentSearchURL: URL { baseURL.appendingPathComponent("v1/recent-searches") }
+    public static var policySearchURL: URL { baseURL.appendingPathComponent("v1/policies") }
+    public static var homeURL: URL        { baseURL.appendingPathComponent("v1/home") }
 }

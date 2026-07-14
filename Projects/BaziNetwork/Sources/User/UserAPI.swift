@@ -12,7 +12,7 @@ public enum UserAPI {
 }
 
 extension UserAPI: APITargetType {
-    public var baseURL: URL { URL(string: APIDomain.userURL)! }
+    public var baseURL: URL { APIDomain.userURL }
     public var path: String {
         switch self {
         case .onboarding:                    return "/onboarding"
