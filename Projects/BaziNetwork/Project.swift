@@ -10,6 +10,7 @@ let project = Project.project(
             sources: .sources,
             dependencies: [
                 .core(),
+                .external(.Moya),
             ]
         ),
         .tests(
