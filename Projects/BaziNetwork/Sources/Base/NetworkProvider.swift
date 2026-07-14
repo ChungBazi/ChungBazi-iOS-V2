@@ -28,9 +28,18 @@ public final class NetworkProvider {
                 switch result {
                 case .success(let response):
                     do {
-                        let decoded = try response.map(CommonResponse<T>.self)
+                        // T?로 디코딩해 isSuccess 판별을 result 파싱보다 먼저 수행
+                        // → 실패 응답에서 result가 null/누락이어도 serverError로 정확히 매핑됨
+                        let decoded = try response.map(CommonResponse<T?>.self)
                         if decoded.isSuccess {
-                            continuation.resume(returning: decoded.result)
+                            guard let result = decoded.result else {
+                                continuation.resume(throwing: NetworkError.decodingError(
+                                    NSError(domain: "NetworkProvider", code: -1,
+                                            userInfo: [NSLocalizedDescriptionKey: "result가 nil입니다."])
+                                ))
+                                return
+                            }
+                            continuation.resume(returning: result)
                         } else {
                             continuation.resume(throwing: NetworkError.serverError(
                                 code: decoded.code,
