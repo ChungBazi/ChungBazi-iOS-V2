@@ -1,6 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import Foundation
+import Moya
 
 public enum NetworkError: Error {
     case serverError(code: String, message: String)
@@ -24,6 +25,22 @@ extension NetworkError: LocalizedError {
 
 extension NetworkError {
     static func from(_ error: Error) -> NetworkError {
+        // 1) 이미 NetworkError라면 그대로 반환 (예: TokenRefreshInterceptor가 던진 .unauthorized)
+        if let networkError = error as? NetworkError {
+            return networkError
+        }
+        
+        // 2) MoyaError는 underlying을 재귀적으로 풀어서 원본 에러를 보존
+        if let moyaError = error as? MoyaError {
+            switch moyaError {
+            case .underlying(let underlyingError, _):
+                return from(underlyingError)
+            default:
+                return .unknown(moyaError)
+            }
+        }
+        
+        // 3) 그 외는 NSError 기반으로 URLError 코드를 매핑
         let nsError = error as NSError
         switch nsError.code {
         case NSURLErrorNotConnectedToInternet:
