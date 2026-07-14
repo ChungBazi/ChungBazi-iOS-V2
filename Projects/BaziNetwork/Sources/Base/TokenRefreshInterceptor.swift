@@ -2,6 +2,7 @@
 
 import Alamofire
 import Foundation
+import BaziCore
 
 // @unchecked Sendable: NSLock으로 직접 thread-safety를 보장하므로 컴파일러 검사 해제
 public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Sendable {
