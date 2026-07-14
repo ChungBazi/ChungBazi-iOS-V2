@@ -9,6 +9,7 @@ let project = Project.project(
             product: .app,
             bundleId: Project.bundleID,
             infoPlist: .extendingDefault(with: [
+                "BASE_URL": .string("$(BASE_URL)"),
                 "UILaunchScreen": .dictionary([:]),
                 "UISupportedInterfaceOrientations": .array([.string("UIInterfaceOrientationPortrait")]),
                 "UIApplicationSceneManifest": .dictionary([
@@ -51,5 +52,8 @@ let project = Project.project(
             buildAction: .buildAction(targets: [.target(BaziModule.ChungBazi.name)]),
             runAction: .runAction(executable: .target(BaziModule.ChungBazi.name))
         ),
+    ],
+    additionalFiles: [
+        .glob(pattern: "Configurations/**"),
     ]
 )
