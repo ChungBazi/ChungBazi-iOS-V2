@@ -13,7 +13,7 @@ public struct OnboardingRequestDTO: Encodable {
     public let incomeLevel: String
     public let interestCategories: [String]
     
-    init(name: String, birth: String, sidoCode: String, sigunguCode: String, educationCode: String, employmentCode: String, incomeLevel: String, interestCategories: [String]) {
+    public init(name: String, birth: String, sidoCode: String, sigunguCode: String, educationCode: String, employmentCode: String, incomeLevel: String, interestCategories: [String]) {
         self.name = name
         self.birth = birth
         self.sidoCode = sidoCode
