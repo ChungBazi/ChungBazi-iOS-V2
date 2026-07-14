@@ -3,6 +3,7 @@
 import Alamofire
 import Foundation
 import Moya
+import BaziCore
 
 public final class NetworkProvider {
     private let provider: MoyaProvider<MultiTarget>
