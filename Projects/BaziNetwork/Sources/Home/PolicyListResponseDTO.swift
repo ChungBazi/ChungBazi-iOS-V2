@@ -8,13 +8,6 @@ public struct PolicyListResponseDTO: Decodable {
     public let policies: [PolicyItemDTO]
     public let nextCursor: String
     public let hasNext: Bool
-    
-    init(totalCount: Int, policies: [PolicyItemDTO], nextCursor: String, hasNext: Bool) {
-        self.totalCount = totalCount
-        self.policies = policies
-        self.nextCursor = nextCursor
-        self.hasNext = hasNext
-    }
 }
 
 public struct PolicyItemDTO: Decodable {
@@ -25,14 +18,4 @@ public struct PolicyItemDTO: Decodable {
     public let title: String
     public let viewCount: Int
     public let liked: Bool
-    
-    init(policyId: Int, category: String, categoryName: String, dDay: String, title: String, viewCount: Int, liked: Bool) {
-        self.policyId = policyId
-        self.category = category
-        self.categoryName = categoryName
-        self.dDay = dDay
-        self.title = title
-        self.viewCount = viewCount
-        self.liked = liked
-    }
 }
