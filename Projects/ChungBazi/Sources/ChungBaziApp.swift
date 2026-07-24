@@ -3,6 +3,7 @@
 import BaziData
 import BaziDesign
 import BaziPresentation
+import ComposableArchitecture
 import SwiftUI
 
 @main
@@ -14,7 +15,11 @@ struct ChungBaziApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppCoordinatorContainer()
+            AppView(
+                store: Store(initialState: .splash) {
+                    AppFeature()
+                }
+            )
         }
     }
 }
