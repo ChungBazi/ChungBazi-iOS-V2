@@ -3,7 +3,8 @@
 import Foundation
 
 public struct APIDomain {
-    private static var _baseURL: URL?
+    // App.init()에서 1회만 configure(baseURL:)로 쓰고 이후로는 읽기만 하는 계약이라 동시 쓰기 경합이 없음
+    nonisolated(unsafe) private static var _baseURL: URL?
 
     public static var baseURL: URL {
         guard let url = _baseURL else {
