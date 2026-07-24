@@ -13,4 +13,5 @@ public struct LoginResponseDTO: Decodable {
     public let email: String
     public let socialType: String
     public let onboardingCompleted: Bool
+    public let nicknameChanged: Bool
 }

@@ -7,7 +7,7 @@ public enum AuthAPI {
     case kakaoLogin(body: KakaoLoginRequestDTO)
     case appleLogin(body: AppleLoginRequestDTO)
     case logout
-    case reissue
+    case reissue(body: ReissueRequestDTO)
 }
 
 extension AuthAPI: APITargetType {
@@ -28,7 +28,8 @@ extension AuthAPI: APITargetType {
         switch self {
         case .kakaoLogin(let body): return .requestJSONEncodable(body)
         case .appleLogin(let body): return .requestJSONEncodable(body)
-        case .logout, .reissue:     return .requestPlain
+        case .reissue(let body): return .requestJSONEncodable(body)
+        case .logout: return .requestPlain
         }
     }
 }

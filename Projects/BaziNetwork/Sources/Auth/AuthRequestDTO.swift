@@ -2,6 +2,14 @@
 
 import Foundation
 
+public struct ReissueRequestDTO: Encodable {
+    public let refreshToken: String
+    
+    public init(refreshToken: String) {
+        self.refreshToken = refreshToken
+    }
+}
+
 public struct KakaoLoginRequestDTO: Encodable {
     public let accessToken: String
     public let fcmToken: String
