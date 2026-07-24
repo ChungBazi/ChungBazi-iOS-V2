@@ -11,6 +11,10 @@ extension Project {
 // MARK: - Project Factory
 
 extension Project {
+    public static let swiftVersionSettings: SettingsDictionary = [
+        "SWIFT_VERSION": "6.0",
+    ]
+
     public static func project(
         name: String,
         targets: [Target] = [],
@@ -19,6 +23,7 @@ extension Project {
     ) -> Project {
         Project(
             name: name,
+            settings: .settings(base: swiftVersionSettings),
             targets: targets,
             schemes: schemes,
             additionalFiles: additionalFiles

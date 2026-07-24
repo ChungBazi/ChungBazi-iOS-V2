@@ -23,7 +23,7 @@ public final class NetworkProvider {
     }
 
     // MARK: - 1. 필수 데이터 요청
-    public func request<T: Decodable>(_ target: any APITargetType) async throws -> T {
+    public func request<T: Decodable & Sendable>(_ target: any APITargetType) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             provider.request(MultiTarget(target)) { result in
                 switch result {
