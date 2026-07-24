@@ -2,6 +2,13 @@
 
 import Foundation
 
+public struct HomePolicySectionResponseDTO: Decodable {
+    public let recentViewedPolicies: [PolicyItemDTO]
+    public let popularPolicies: [PolicyItemDTO]
+    public let upcomingDeadlinePolicies: [PolicyItemDTO]
+    public let latestPolicies: [PolicyItemDTO]
+}
+
 /// Home과 Search 결과 정책 리스트 Response를 담는 DTO
 public struct PolicyListResponseDTO: Decodable {
     public let totalCount: Int
