@@ -17,12 +17,10 @@ struct HomeTabView: View {
     @ViewBuilder
     private func buildHomeView(for route: HomeRoute) -> some View {
         switch route {
-        case .customPolicyList:             Text("맞춤정책 더보기")       // TODO
         case .categoryPolicyList(let cat):  Text("분야별: \(cat)")        // TODO
         case .popularPolicyList:            Text("인기정책 더보기")        // TODO
         case .deadlinePolicyList:           Text("마감임박 더보기")        // TODO
         case .newPolicyList:                Text("새로 뜬 정책 더보기")    // TODO
-        case .attendanceCalendar:           Text("출석 달력")              // TODO
         case .notification:                 Text("알림")                   // TODO
         }
     }
