@@ -14,5 +14,6 @@ let package = Package(
     name: "ChungBazi",
     dependencies: [
         .package(url: "https://github.com/Moya/Moya.git", exact: "15.0.3"),
+        .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.26.0"),
     ]
 )

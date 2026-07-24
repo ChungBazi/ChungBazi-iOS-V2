@@ -25,6 +25,7 @@ let project = Project.project(
                 .domain(),
                 .design(),
                 .core(),
+                .external(.ComposableArchitecture),
             ],
             settings: .settings(
                 configurations: [

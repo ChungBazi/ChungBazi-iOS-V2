@@ -12,6 +12,7 @@ let project = Project.project(
                 .domain(),
                 .design(),
                 .core(),
+                .external(.ComposableArchitecture),
             ]
         ),
         .tests(
