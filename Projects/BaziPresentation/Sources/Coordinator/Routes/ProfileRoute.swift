@@ -7,7 +7,6 @@ public enum ProfileRoute: Hashable {
     case withdrawal                 // 32: 탈퇴
     case baroCloset                 // 27: 바로의 옷장
     case attendanceCalendar         // 28: 출석 달력
-    case policyRecommendationEdit   // 24: 정책 추천 기준 수정
     case notificationSettings       // 25: 알림 설정
     case termsOfService             // 26: 서비스 이용약관
     case privacyPolicy              // 36: 개인정보처리방침
