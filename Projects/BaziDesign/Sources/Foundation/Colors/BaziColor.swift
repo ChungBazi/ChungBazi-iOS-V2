@@ -13,7 +13,8 @@ public enum BaziColor {
 
     // MARK: - Purpose
     case accent     // Red/400
-    case dim        // Grayscale/Black45%
+    case dim1       // Grayscale/Black45%
+    case dim2       // Grayscale/Black80%
 
     public var color: Color {
         switch self {
@@ -22,7 +23,8 @@ public enum BaziColor {
         case .bgGray:    return BaziDesignAsset.gray100.swiftUIColor
         case .bgWhite:   return BaziDesignAsset.grayWhite.swiftUIColor
         case .accent:    return BaziDesignAsset.red400.swiftUIColor
-        case .dim:       return BaziDesignAsset.grayBlack45.swiftUIColor
+        case .dim1:      return BaziDesignAsset.grayBlack45.swiftUIColor
+        case .dim2:      return BaziDesignAsset.grayBlack80.swiftUIColor
         }
     }
 }
