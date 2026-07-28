@@ -7,7 +7,7 @@ public enum FontRegistrator {
     public static func registerFonts() {
         let extensions = ["otf", "ttf"]
         let fontURLs = extensions.flatMap {
-            Bundle.module.urls(forResourcesWithExtension: $0, subdirectory: "Fonts") ?? []
+            Bundle.module.urls(forResourcesWithExtension: $0, subdirectory: nil) ?? []
         }
         fontURLs.forEach { CTFontManagerRegisterFontsForURL($0 as CFURL, .process, nil) }
     }
