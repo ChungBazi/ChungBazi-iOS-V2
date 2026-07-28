@@ -54,32 +54,32 @@ extension BZButtonStyleBody {
     private var isPressed: Bool { configuration.isPressed }
 
     private var backgroundColor: Color {
-        guard isEnabled else { return BaziDesignAsset.gray200.swiftUIColor }
+        guard isEnabled else { return Color.gray200 }
 
         switch type {
         case .cta:
-            return isPressed ? BaziDesignAsset.blue800.swiftUIColor : BaziColor.primary.color
+            return isPressed ? Color.blue800 : Color.bazi(.primary)
         case .normal, .normal2:
-            return isPressed ? BaziDesignAsset.gray400.swiftUIColor : BaziColor.bgWhite.color
+            return isPressed ? Color.gray400 : Color.bazi(.bgWhite)
         case .accent:
-            return BaziColor.accent.color
+            return Color.bazi(.accent)
         }
     }
 
     private var foregroundColor: Color {
-        guard isEnabled else { return BaziDesignAsset.gray400.swiftUIColor }
+        guard isEnabled else { return Color.gray400 }
 
         switch type {
         case .cta, .accent:
-            return isPressed ? BaziDesignAsset.gray300.swiftUIColor : BaziColor.bgWhite.color
+            return isPressed ? Color.gray300 : Color.bazi(.bgWhite)
         case .normal, .normal2:
-            return BaziDesignAsset.gray700.swiftUIColor
+            return Color.gray700
         }
     }
 
     private var borderColor: Color? {
         guard type == .normal else { return nil }
-        guard isEnabled else { return BaziDesignAsset.gray200.swiftUIColor }
-        return isPressed ? BaziDesignAsset.gray400.swiftUIColor : BaziDesignAsset.gray200.swiftUIColor
+        guard isEnabled else { return Color.gray200 }
+        return isPressed ? Color.gray400 : Color.gray200
     }
 }
