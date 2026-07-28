@@ -38,20 +38,31 @@ else
   echo "[mise] Already installed: $(mise --version)"
 fi
 
-# 2. xcconfig 파일 생성 (없으면 템플릿에서 복사)
+# 2. xcconfig 파일 생성 (없으면 기본값으로 생성)
 CONFIG_DIR="Projects/ChungBazi/Configurations"
 mkdir -p "$CONFIG_DIR"
-for ENV in Debug Release; do
-  if [ ! -f "$CONFIG_DIR/$ENV.xcconfig" ]; then
-    echo "[xcconfig] $ENV.xcconfig not found. Creating from template..."
-    if [ ! -f "$CONFIG_DIR/$ENV.xcconfig.template" ]; then
-      echo "[xcconfig] ERROR: $CONFIG_DIR/$ENV.xcconfig.template not found."
-      exit 1
-    fi
-    cp "$CONFIG_DIR/$ENV.xcconfig.template" "$CONFIG_DIR/$ENV.xcconfig"
-    echo "[xcconfig] $CONFIG_DIR/$ENV.xcconfig created. 값을 채운 후 빌드를 진행하세요."
-  fi
-done
+
+create_xcconfig() {
+  local ENV="$1"
+  local PROVISIONING_PROFILE="$2"
+  cat > "$CONFIG_DIR/$ENV.xcconfig" <<EOF
+DEVELOPMENT_TEAM = UKY6HK6U6Y
+CODE_SIGN_STYLE = Manual
+PROVISIONING_PROFILE_SPECIFIER = $PROVISIONING_PROFILE
+BASE_URL =
+EOF
+  echo "[xcconfig] $CONFIG_DIR/$ENV.xcconfig created. 값을 채운 후 빌드를 진행하세요."
+}
+
+if [ ! -f "$CONFIG_DIR/Debug.xcconfig" ]; then
+  echo "[xcconfig] Debug.xcconfig not found. Creating with defaults..."
+  create_xcconfig "Debug" "match Development com.yeonho.chungbazi"
+fi
+
+if [ ! -f "$CONFIG_DIR/Release.xcconfig" ]; then
+  echo "[xcconfig] Release.xcconfig not found. Creating with defaults..."
+  create_xcconfig "Release" "match AppStore com.yeonho.chungbazi"
+fi
 
 # 3. .mise.toml에 정의된 Tuist 버전 설치
 echo "[tuist] Installing pinned version from .mise.toml..."
