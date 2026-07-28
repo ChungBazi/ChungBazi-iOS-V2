@@ -10,16 +10,15 @@ public enum BZButtonType {
 }
 
 public enum BZButtonSize {
+    /// 고정 106pt — 다른 버튼과 짝지어 쓰는 보조 액션
     case small
+    /// 남는 너비를 채움 — small과 짝지어 쓸 때의 주 액션.
     case medium
+    /// 전체 너비를 채움 — 단독으로 쓸 때의 주 액션
     case large
 
     var fixedWidth: CGFloat? {
-        switch self {
-        case .small:  return 106
-        case .medium: return 219
-        case .large:  return nil // 부모 너비를 꽉 채움
-        }
+        self == .small ? 106 : nil
     }
 }
 

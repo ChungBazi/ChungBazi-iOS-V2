@@ -67,8 +67,7 @@ public enum BaziFont: CaseIterable {
 
     private var postScriptName: String {
         switch self {
-        case .head28B, .head24B, .head22B, .head20B, .head18B,
-             .body16B:
+        case .head28B, .head24B, .head22B, .head20B, .head18B, .body16B:
             return "Pretendard-Bold"
         case .body16SB, .body15SB,
              .small14SB, .small12SB,
