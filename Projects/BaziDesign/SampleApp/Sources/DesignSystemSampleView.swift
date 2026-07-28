@@ -124,7 +124,7 @@ extension DesignSystemSampleView {
 
                 HStack(spacing: 12) {
                     BZButton("이전", type: .normal, size: .small) {
-                        if onboardingStep > 0 { onboardingStep -= 1 }
+                        if onboardingStep > 1 { onboardingStep -= 1 }
                     }
                     BZButton("다음", type: .cta, size: .small) {
                         if onboardingStep < 6 { onboardingStep += 1 }

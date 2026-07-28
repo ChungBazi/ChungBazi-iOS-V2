@@ -42,7 +42,7 @@ public struct BZSelectField: View {
         }
         .disabled(isDisabled)
         .sheet(isPresented: $isPresented) {
-            BZBottomSheet(title: title, options: options, maxVisibleRows: maxVisibleRows) { option in
+            BZBottomSheet(title: title, options: options) { option in
                 selection = option
                 isPresented = false
             }
