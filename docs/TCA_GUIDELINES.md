@@ -8,8 +8,7 @@ The Composable Architecture(이하 TCA)를 사용하는 **iOS SwiftUI 프로젝�
 관련 문서: [CODING_GUIDELINES.md](./CODING_GUIDELINES.md)
 
 > **이 문서에 대하여**
-> - 모듈명: `DVPresentation` → `BaziPresentation`, `DVDomain` → `BaziDomain`, `DVData` → `BaziData`, App 타겟 `Devault` → `ChungBazi`
-> - ChungBazi는 `BaziDomain`/`BaziData` 2단 구조가 아니라 `BaziDomain`(순수 규칙) · `BaziData`(Repository 구현, `BaziNetwork`+`BaziStorage`에 의존) 구조입니다.
+> - `BaziPresentation`(Feature 구현) / `BaziDomain`(순수 규칙) / `BaziData`(Repository 구현, `BaziNetwork`+`BaziStorage`에 의존) / App 타겟 `ChungBazi`(Composition Root) 구조를 기준으로 작성했습니다.
 > - 전 모듈이 **Swift 6 언어 모드**(`SWIFT_VERSION = 6.0`, strict concurrency)로 설정되어 있습니다. 5.4절의 `Result { try await ... }` 축약을 사용합니다.
 > - `@Reducer enum`(Path/Destination) 선언 뒤에는 **반드시 `extension X.State: Equatable {}`을 직접 추가**해야 합니다. 생성된 `State`가 기본적으로 `Equatable`을 준수하지 않아 부모 `State: Equatable`이 깨집니다 — 7.5절 참고 (TCA 1.26.0 매크로 소스로 직접 확인). `@Reducer(state: .equatable)` 매크로 인자 방식은 deprecated이니 쓰지 않습니다.
 > - `SWIFT_DEFAULT_ACTOR_ISOLATION`을 `nonisolated`로 명시 고정해뒀습니다(`Project+Templates.swift`). 위 이슈의 원인은 아니었지만 Swift 6 + TCA 조합에서 일반적으로 안전한 기본값이라 유지합니다.
@@ -176,7 +175,7 @@ BaziPresentation/Sources/Features/
 지금은 `BaziPresentation` **모듈 하나**에 모든 Feature를 `Features/{도메인}/` 디렉토리로만 나눕니다. `BaziPresentation-Home`, `BaziPresentation-Search`처럼 기능마다 별도 Tuist 모듈(별도 `Project.swift`)로 쪼개는 것은 **지금 하지 않습니다.**
 
 **지금 안 하는 이유**
-- Devault(`DVPresentation`)도 기능별로 모듈을 쪼개지 않은 단일 모듈입니다. TCA의 Composition(`Scope`/`ifLet`/`forEach`)은 같은 모듈 안에서도 완전히 동작하므로 모듈 분리가 TCA 도입의 전제 조건이 아닙니다.
+- TCA의 Composition(`Scope`/`ifLet`/`forEach`)은 같은 모듈 안에서도 완전히 동작하므로 모듈 분리가 TCA 도입의 전제 조건이 아닙니다.
 - 모듈 분리의 실익(빌드 시간 단축, 컴파일러가 강제하는 경계)은 코드량과 팀 규모가 커져야 체감됩니다. 아직 존재하지 않는 병목을 위해 미리 쪼개는 건 과설계입니다.
 - 혼자 개발 중이라 모듈 분리의 핵심 이득(동시 작업 시 머지 충돌 방지)이 지금은 발생하지 않습니다.
 - scaffold 템플릿도 아직 없는 상태에서 Feature 하나 추가할 때마다 새 `Project.swift`와 의존성 그래프를 손으로 관리하는 오버헤드가, 지금 단계에서는 개발 속도를 오히려 늦춥니다.
