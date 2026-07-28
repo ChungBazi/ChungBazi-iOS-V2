@@ -18,13 +18,13 @@ public enum BaziColor {
 
     public var color: Color {
         switch self {
-        case .primary:   return BaziDesignAsset.blue700.swiftUIColor
-        case .secondary: return BaziDesignAsset.green300.swiftUIColor
-        case .bgGray:    return BaziDesignAsset.gray100.swiftUIColor
-        case .bgWhite:   return BaziDesignAsset.grayWhite.swiftUIColor
-        case .accent:    return BaziDesignAsset.red400.swiftUIColor
-        case .dim1:      return BaziDesignAsset.grayBlack45.swiftUIColor
-        case .dim2:      return BaziDesignAsset.grayBlack80.swiftUIColor
+        case .primary:   return Color.blue700
+        case .secondary: return Color.green300
+        case .bgGray:    return Color.gray100
+        case .bgWhite:   return Color.grayWhite
+        case .accent:    return Color.red400
+        case .dim1:      return Color.grayBlack45
+        case .dim2:      return Color.grayBlack80
         }
     }
 }
