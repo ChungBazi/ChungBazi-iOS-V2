@@ -8,7 +8,6 @@ public struct BZBottomSheet: View {
 
     private let title: String
     private let options: [String]
-    private let maxVisibleRows: Int
     private let onSelect: (String) -> Void
 
     // MARK: - Init
@@ -16,12 +15,10 @@ public struct BZBottomSheet: View {
     public init(
         title: String,
         options: [String],
-        maxVisibleRows: Int = 7,
         onSelect: @escaping (String) -> Void
     ) {
         self.title = title
         self.options = options
-        self.maxVisibleRows = maxVisibleRows
         self.onSelect = onSelect
     }
 
@@ -97,13 +94,16 @@ private struct BZBottomSheetRowStyle: ButtonStyle {
 extension BZBottomSheet {
 
     /// 행 개수에 맞는 시트 높이를 계산한다. `.presentationDetents`에 그대로 사용한다.
+    /// BZBottomSheet 자체는 항상 모든 행을 ScrollView로 렌더링하므로,
+    /// 실제 보이는 행 수 제한은 이 높이를 시트의 detent로 잠그는 방식으로만 이뤄진다.
     public static func height(forRowCount rowCount: Int, maxVisibleRows: Int = 7) -> CGFloat {
         let titleHeight: CGFloat = 62
         let rowHeight: CGFloat = 52
         let borderHeight: CGFloat = 1
         let bottomPadding: CGFloat = 20
-        let visibleRows = CGFloat(min(rowCount, maxVisibleRows))
-        return titleHeight + visibleRows * rowHeight + (visibleRows - 1) * borderHeight + bottomPadding
+        let visibleRows = CGFloat(max(0, min(rowCount, maxVisibleRows)))
+        let dividerCount = max(visibleRows - 1, 0)
+        return titleHeight + visibleRows * rowHeight + dividerCount * borderHeight + bottomPadding
     }
 }
 
