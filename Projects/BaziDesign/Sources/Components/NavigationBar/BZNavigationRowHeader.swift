@@ -40,7 +40,7 @@ extension BZNavigationRowHeader {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.gray900)
+                .foregroundStyle(Color.gray600)
 
             Spacer()
         }
