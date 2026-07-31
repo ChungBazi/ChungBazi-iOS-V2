@@ -12,7 +12,7 @@ public struct AppFeature {
         case splash(SplashFeature.State)
         case login(LoginFeature.State)
         case nicknameSetup(NicknameSetupFeature.State)
-        case onboarding(OnboardingFeature.State)
+        case onboarding(OnboardingStartFeature.State)
         case main(MainFeature.State)
     }
 
@@ -23,7 +23,7 @@ public struct AppFeature {
         case splash(SplashFeature.Action)
         case login(LoginFeature.Action)
         case nicknameSetup(NicknameSetupFeature.Action)
-        case onboarding(OnboardingFeature.Action)
+        case onboarding(OnboardingStartFeature.Action)
         case main(MainFeature.Action)
     }
 
@@ -60,7 +60,7 @@ public struct AppFeature {
                 return .none
 
             case .nicknameSetup(.delegate(.didSetNickname)):
-                state = .onboarding(OnboardingFeature.State())
+                state = .onboarding(OnboardingStartFeature.State())
                 return .none
 
             case .nicknameSetup:
@@ -91,7 +91,7 @@ public struct AppFeature {
             NicknameSetupFeature()
         }
         .ifCaseLet(\.onboarding, action: \.onboarding) {
-            OnboardingFeature()
+            OnboardingStartFeature()
         }
         .ifCaseLet(\.main, action: \.main) {
             MainFeature()
@@ -115,7 +115,7 @@ extension AppFeature {
     ) -> State {
         guard hasValidToken else { return .login(LoginFeature.State()) }
         guard hasNickname else { return .nicknameSetup(NicknameSetupFeature.State()) }
-        guard hasCompletedOnboarding else { return .onboarding(OnboardingFeature.State()) }
+        guard hasCompletedOnboarding else { return .onboarding(OnboardingStartFeature.State()) }
         return .main(MainFeature.State())
     }
 }

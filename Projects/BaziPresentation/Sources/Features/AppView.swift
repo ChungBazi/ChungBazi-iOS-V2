@@ -47,7 +47,7 @@ extension AppView {
 
         case .onboarding:
             if let store = store.scope(state: \.onboarding, action: \.onboarding) {
-                OnboardingView(store: store)
+                OnboardingStartView(store: store)
             }
 
         case .main:
