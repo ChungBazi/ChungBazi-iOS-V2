@@ -2,6 +2,7 @@
 
 import SwiftUI
 
+import BaziDesign
 import ComposableArchitecture
 
 public struct NicknameSetupView: View {
@@ -28,18 +29,34 @@ public struct NicknameSetupView: View {
 extension NicknameSetupView {
 
     private var content: some View {
-        VStack(spacing: 16) {
-            Text("닉네임을 설정해주세요")
-                .font(.title2)
-
-            TextField("닉네임", text: $store.nickname)
-                .textFieldStyle(.roundedBorder)
-
-            Button("확인") {
-                store.send(.didTapConfirmButton)
-            }
+        VStack(spacing: 36) {
+            titleText
+                .padding(.top, 35)
+            inputField
+            Spacer()
+            confirmButton
+                .padding(.bottom, 5)
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .background(Color.bazi(.bgWhite))
+    }
+
+    private var titleText: some View {
+        Text("어떤 이름으로 불러드릴까요?")
+            .baziFont(.head22B)
+            .foregroundStyle(Color.grayBlack)
+            .multilineTextAlignment(.center)
+    }
+
+    private var inputField: some View {
+        BZInputField(text: $store.nickname, placeholder: "닉네임을 입력해주세요")
+    }
+
+    private var confirmButton: some View {
+        BZButton("완료하기") {
+            store.send(.didTapConfirmButton)
+        }
+        .disabled(!store.isNicknameValid)
     }
 }
 

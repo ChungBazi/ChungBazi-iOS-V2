@@ -9,7 +9,7 @@ public struct AppFeature {
 
     @ObservableState
     public enum State: Equatable {
-        case splash
+        case splash(SplashFeature.State)
         case login(LoginFeature.State)
         case nicknameSetup(NicknameSetupFeature.State)
         case onboarding(OnboardingFeature.State)
@@ -19,13 +19,8 @@ public struct AppFeature {
     // MARK: - Action
 
     public enum Action {
-        // MARK: View
-        case onAppear
-
-        // MARK: Internal
-        case sessionChecked(hasValidToken: Bool, hasNickname: Bool, hasCompletedOnboarding: Bool)
-
         // MARK: Child
+        case splash(SplashFeature.Action)
         case login(LoginFeature.Action)
         case nicknameSetup(NicknameSetupFeature.Action)
         case onboarding(OnboardingFeature.Action)
@@ -41,22 +36,15 @@ public struct AppFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                return .run { send in
-                    // TODO: BaziStorage(토큰) + BaziDomain(유저 정보 UseCase)가 준비되면 실제 값으로 교체.
-                    await send(.sessionChecked(
-                        hasValidToken: false,
-                        hasNickname: false,
-                        hasCompletedOnboarding: false
-                    ))
-                }
-
-            case .sessionChecked(let hasValidToken, let hasNickname, let hasCompletedOnboarding):
+            case .splash(.delegate(.didFinishSplash(let hasValidToken, let hasNickname, let hasCompletedOnboarding))):
                 state = Self.resolveRoot(
                     hasValidToken: hasValidToken,
                     hasNickname: hasNickname,
                     hasCompletedOnboarding: hasCompletedOnboarding
                 )
+                return .none
+
+            case .splash:
                 return .none
 
             case .login(.delegate(.didLogin(let hasNickname, let hasCompletedOnboarding))):
@@ -92,6 +80,9 @@ public struct AppFeature {
             case .main:
                 return .none
             }
+        }
+        .ifCaseLet(\.splash, action: \.splash) {
+            SplashFeature()
         }
         .ifCaseLet(\.login, action: \.login) {
             LoginFeature()

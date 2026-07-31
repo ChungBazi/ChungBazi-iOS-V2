@@ -1,5 +1,6 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import BaziDesign
 import ComposableArchitecture
 
 @Reducer
@@ -10,6 +11,10 @@ public struct NicknameSetupFeature {
     @ObservableState
     public struct State: Equatable {
         public var nickname = ""
+
+        public var isNicknameValid: Bool {
+            (BZInputField.defaultMinLength...BZInputField.defaultMaxLength).contains(nickname.count)
+        }
 
         public init() {}
     }
