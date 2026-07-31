@@ -30,7 +30,7 @@ public struct BZBottomSheet: View {
             optionList
                 .padding(.bottom, 20)
         }
-        .background(Color.bazi(.bgWhite))
+        .baziBackground(.bgWhite)
     }
 }
 

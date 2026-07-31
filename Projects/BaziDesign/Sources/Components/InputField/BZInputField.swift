@@ -65,7 +65,7 @@ extension BZInputField {
         }
         .padding(.horizontal, 16)
         .frame(height: 52)
-        .background(Color.bazi(.bgWhite))
+        .baziBackground(.bgWhite)
         .overlay(
             RoundedRectangle(cornerRadius: BaziRadius.medium.rawValue, style: .continuous)
                 .strokeBorder(borderColor, lineWidth: 0.8)

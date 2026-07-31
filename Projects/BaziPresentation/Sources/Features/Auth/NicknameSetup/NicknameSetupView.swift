@@ -38,7 +38,7 @@ extension NicknameSetupView {
                 .padding(.bottom, 5)
         }
         .padding(.horizontal, 20)
-        .background(Color.bazi(.bgWhite))
+        .baziBackground(.bgWhite)
     }
 
     private var titleText: some View {
