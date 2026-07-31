@@ -1,6 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import SwiftUI
+import UIKit
 
 public enum BaziFont: CaseIterable {
     // MARK: - Head (140% line height)
@@ -64,6 +65,12 @@ public enum BaziFont: CaseIterable {
     public var font: Font {
         Self.registerFontsOnce
         return .custom(postScriptName, size: size)
+    }
+
+    /// UIKit(예: `UIPickerView` 델리게이트)에서 직접 라벨 스타일을 줘야 할 때 쓰는 변환.
+    public var uiFont: UIFont {
+        Self.registerFontsOnce
+        return UIFont(name: postScriptName, size: size) ?? .systemFont(ofSize: size)
     }
 
     /// 처음 `.font`에 접근하는 시점에 단 한 번만 폰트를 등록한다.
