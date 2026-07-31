@@ -3,7 +3,7 @@
 import ComposableArchitecture
 
 @Reducer
-public struct OnboardingFeature {
+public struct OnboardingCompleteFeature {
 
     // MARK: - State
 
@@ -16,7 +16,7 @@ public struct OnboardingFeature {
 
     public enum Action {
         // MARK: View
-        case didTapCompleteButton
+        case didTapConfirmButton
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -25,7 +25,7 @@ public struct OnboardingFeature {
     // MARK: - Delegate
 
     public enum Delegate: Equatable {
-        case didCompleteOnboarding
+        case didTapConfirm
     }
 
     // MARK: - Init
@@ -37,10 +37,8 @@ public struct OnboardingFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .didTapCompleteButton:
-                // TODO: 관심 정책 분야 설정(policyInterestSetup) 등 실제 온보딩 단계가 정해지면 그 흐름으로 교체.
-                // OnboardingRoute(RouteReference)의 policyInterestSetup → onboardingComplete 순서를 참고.
-                return .send(.delegate(.didCompleteOnboarding))
+            case .didTapConfirmButton:
+                return .send(.delegate(.didTapConfirm))
 
             case .delegate:
                 return .none

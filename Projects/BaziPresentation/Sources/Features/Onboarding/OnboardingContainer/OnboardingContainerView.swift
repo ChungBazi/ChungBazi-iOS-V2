@@ -1,0 +1,91 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+import BaziDesign
+import ComposableArchitecture
+
+public struct OnboardingContainerView: View {
+
+    // MARK: - Properties
+
+    @Bindable var store: StoreOf<OnboardingContainerFeature>
+
+    // MARK: - Init
+
+    public init(store: StoreOf<OnboardingContainerFeature>) {
+        self.store = store
+    }
+
+    // MARK: - Body
+
+    public var body: some View {
+        content
+            .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+// MARK: - Subviews
+
+extension OnboardingContainerView {
+
+    private var content: some View {
+        VStack(spacing: 64) {
+            BZOnboardingStep(currentStep: store.currentStep.rawValue, totalSteps: 6)
+                .padding(.top, 28)
+            
+            stepContent
+            Spacer()
+            buttonRow
+                .padding(.bottom, 5)
+        }
+        .padding(.horizontal, 20)
+        .baziBackground(.bgWhite)
+    }
+
+    @ViewBuilder
+    private var stepContent: some View {
+        switch store.currentStep {
+        case .birthDate:
+            BirthDateStepView(store: store)
+
+        case .region:
+            RegionStepView(store: store)
+
+        case .education:
+            EducationStepView(store: store)
+
+        case .employment:
+            EmploymentStepView(store: store)
+
+        case .income:
+            IncomeStepView(store: store)
+
+        case .interest:
+            InterestStepView(store: store)
+        }
+    }
+
+    private var buttonRow: some View {
+        HStack(spacing: 10) {
+            BZButton("이전으로", type: .normal, size: .small) {
+                store.send(.didTapPreviousButton)
+            }
+
+            BZButton("다음으로", type: .cta, size: .medium) {
+                store.send(.didTapNextButton)
+            }
+            .disabled(!store.isCurrentStepValid)
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    OnboardingContainerView(
+        store: Store(initialState: .init()) {
+            OnboardingContainerFeature()
+        }
+    )
+}
