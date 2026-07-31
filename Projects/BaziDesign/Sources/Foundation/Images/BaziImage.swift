@@ -1,0 +1,77 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+public enum BaziImage {
+    case appLogo
+
+    // MARK: Background
+    case loginBackground
+    case startOnboardingBackground
+    case endOnboardingBackground
+
+    // MARK: Icon
+    case bellIcon
+    case checkIcon
+    case eyeIcon
+    case historyIcon
+    case kakaoIcon
+    case memoIcon
+    case searchIcon
+    case shareIcon
+    case trashIcon
+
+    // MARK: Icon - Checkbox
+    case filledCheckbox
+    case unfilledCheckbox
+
+    // MARK: Icon - Star
+    case filledStar
+    case unfilledStar
+
+    // MARK: Icon - Alarm
+    case baziAlarmIcon
+    case policyAlarmIcon
+
+    // MARK: Icon - PolicyField
+    case activityIcon
+    case dwellingIcon
+    case jobIcon
+    case livingSupportIcon
+    case studyIcon
+
+    public var image: Image {
+        switch self {
+        case .appLogo: return BaziDesignAsset.appLogo.swiftUIImage
+
+        case .loginBackground: return BaziDesignAsset.loginBackground.swiftUIImage
+        case .startOnboardingBackground: return BaziDesignAsset.startOnboardingBackground.swiftUIImage
+        case .endOnboardingBackground: return BaziDesignAsset.endOnboardingBackground.swiftUIImage
+
+        case .bellIcon: return BaziDesignAsset.bellIcon.swiftUIImage
+        case .checkIcon: return BaziDesignAsset.checkIcon.swiftUIImage
+        case .eyeIcon: return BaziDesignAsset.eyeIcon.swiftUIImage
+        case .historyIcon: return BaziDesignAsset.historyIcon.swiftUIImage
+        case .kakaoIcon: return BaziDesignAsset.kakaoIcon.swiftUIImage
+        case .memoIcon: return BaziDesignAsset.memoIcon.swiftUIImage
+        case .searchIcon: return BaziDesignAsset.searchIcon.swiftUIImage
+        case .shareIcon: return BaziDesignAsset.shareIcon.swiftUIImage
+        case .trashIcon: return BaziDesignAsset.trashIcon.swiftUIImage
+
+        case .filledCheckbox: return BaziDesignAsset.filledCheckbox.swiftUIImage
+        case .unfilledCheckbox: return BaziDesignAsset.unfilledCheckbox.swiftUIImage
+
+        case .filledStar: return BaziDesignAsset.filledStar.swiftUIImage
+        case .unfilledStar: return BaziDesignAsset.unfilledStar.swiftUIImage
+
+        case .baziAlarmIcon: return BaziDesignAsset.baziAlarmIcon.swiftUIImage
+        case .policyAlarmIcon: return BaziDesignAsset.policyAlarmIcon.swiftUIImage
+
+        case .activityIcon: return BaziDesignAsset.activityIcon.swiftUIImage
+        case .dwellingIcon: return BaziDesignAsset.dwellingIcon.swiftUIImage
+        case .jobIcon: return BaziDesignAsset.jobIcon.swiftUIImage
+        case .livingSupportIcon: return BaziDesignAsset.livingSupportIcon.swiftUIImage
+        case .studyIcon: return BaziDesignAsset.studyIcon.swiftUIImage
+        }
+    }
+}
