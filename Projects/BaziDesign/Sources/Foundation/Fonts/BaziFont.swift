@@ -62,8 +62,14 @@ public enum BaziFont: CaseIterable {
     public var lineSpacing: CGFloat { max(lineHeight - size, 0) }
 
     public var font: Font {
-        .custom(postScriptName, size: size)
+        Self.registerFontsOnce
+        return .custom(postScriptName, size: size)
     }
+
+    /// 처음 `.font`에 접근하는 시점에 단 한 번만 폰트를 등록한다.
+    private static let registerFontsOnce: Void = {
+        FontRegistrator.registerFonts()
+    }()
 
     private var postScriptName: String {
         switch self {
