@@ -40,15 +40,19 @@ enum BZNavigationBarItemBuilder {
 
         case .share(let action):
             Button(action: action) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 18, weight: .medium))
+                Image.bazi(.shareIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24)
             }
             .tint(Color.gray900)
 
         case .bell(let action):
             Button(action: action) {
-                Image(systemName: "bell")
-                    .font(.system(size: 18, weight: .medium))
+                Image.bazi(.bellIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24)
             }
             .tint(Color.gray900)
 
@@ -56,7 +60,7 @@ enum BZNavigationBarItemBuilder {
             Image.bazi(.appLogo)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 62, height: 20)
+                .frame(width: 61.5)
         }
     }
 }
