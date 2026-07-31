@@ -1,0 +1,79 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+public extension View {
+
+    /// 기본 nav bar를 숨기고 leading/center/trailing에 `BZNavigationBarItem`을 배치한다.
+    func baziNavigationBar(
+        leading: BZNavigationBarItem? = nil,
+        center: BZNavigationBarItem? = nil,
+        trailing: BZNavigationBarItem? = nil
+    ) -> some View {
+        self
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                if let leading {
+                    ToolbarItem(placement: .topBarLeading) {
+                        BZNavigationBarItemBuilder.buildView(for: leading)
+                    }
+                }
+                if let center {
+                    ToolbarItem(placement: .principal) {
+                        BZNavigationBarItemBuilder.buildView(for: center)
+                    }
+                }
+                if let trailing {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        BZNavigationBarItemBuilder.buildView(for: trailing)
+                    }
+                }
+            }
+    }
+
+    /// NaviBar3 Type=1 — 뒤로가기 + 중앙 타이틀
+    func baziNavigationBar_backWithTitle(
+        _ title: String,
+        onBack: @escaping () -> Void
+    ) -> some View {
+        baziNavigationBar(
+            leading: .back(action: onBack),
+            center: .title(title)
+        )
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// NaviBar3 Type=2 — 로고(좌) + 알림벨(우), 탭 루트용
+    func baziNavigationBar_home(onBellTap: @escaping () -> Void) -> some View {
+        baziNavigationBar(
+            leading: .logo,
+            trailing: .bell(action: onBellTap)
+        )
+    }
+
+    /// NaviBar3 Type=3 — 뒤로가기 + 공유
+    func baziNavigationBar_backWithShare(
+        onBack: @escaping () -> Void,
+        onShare: @escaping () -> Void
+    ) -> some View {
+        baziNavigationBar(
+            leading: .back(action: onBack),
+            trailing: .share(action: onShare)
+        )
+    }
+
+    /// NaviBar3 Type=4 — 뒤로가기 + 중앙 타이틀 + 텍스트 버튼(예: 전체 삭제)
+    func baziNavigationBar_backWithTitleAndTextButton(
+        _ title: String,
+        buttonTitle: String,
+        onBack: @escaping () -> Void,
+        onButtonTap: @escaping () -> Void
+    ) -> some View {
+        baziNavigationBar(
+            leading: .back(action: onBack),
+            center: .title(title),
+            trailing: .textButton(buttonTitle, action: onButtonTap)
+        )
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
