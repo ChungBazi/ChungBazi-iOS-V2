@@ -5,6 +5,11 @@ import SwiftUI
 /// 닉네임 입력 전용 필드. 2자 미만이면 에러 상태를 스스로 표시한다.
 public struct BZInputField: View {
 
+    // MARK: - Length
+
+    public nonisolated static let defaultMinLength = 2
+    public nonisolated static let defaultMaxLength = 10
+
     // MARK: - Properties
 
     @Binding private var text: String
@@ -19,8 +24,8 @@ public struct BZInputField: View {
     public init(
         text: Binding<String>,
         placeholder: String,
-        maxLength: Int = 10,
-        minLength: Int = 2
+        maxLength: Int = BZInputField.defaultMaxLength,
+        minLength: Int = BZInputField.defaultMinLength
     ) {
         self._text = text
         self.placeholder = placeholder

@@ -33,4 +33,6 @@ extension Color {
     public static var green300: Color { BaziDesignAsset.green300.swiftUIColor }
 
     public static var red400: Color { BaziDesignAsset.red400.swiftUIColor }
+    
+    public static var kakao: Color { BaziDesignAsset.kakao.swiftUIColor }
 }

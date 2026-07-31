@@ -20,7 +20,6 @@ public struct AppView: View {
 
     public var body: some View {
         content
-            .task { store.send(.onAppear) }
     }
 }
 
@@ -32,7 +31,9 @@ extension AppView {
     private var content: some View {
         switch store.state {
         case .splash:
-            ProgressView()
+            if let store = store.scope(state: \.splash, action: \.splash) {
+                SplashView(store: store)
+            }
 
         case .login:
             if let store = store.scope(state: \.login, action: \.login) {

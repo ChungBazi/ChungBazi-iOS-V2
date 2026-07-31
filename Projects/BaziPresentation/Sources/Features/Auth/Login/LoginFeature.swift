@@ -16,7 +16,8 @@ public struct LoginFeature {
 
     public enum Action {
         // MARK: View
-        case didTapLoginButton
+        case didTapKakaoLoginButton
+        case didTapAppleLoginButton
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -43,8 +44,8 @@ public struct LoginFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .didTapLoginButton:
-                // TODO: authClient가 준비되면 실제 로그인 요청으로 교체.
+            case .didTapKakaoLoginButton, .didTapAppleLoginButton:
+                // TODO: authClient가 준비되면 실제 로그인 요청(카카오/애플 각각)으로 교체.
                 // 로그인 응답에 닉네임/온보딩 완료 여부가 함께 내려온다고 가정.
                 return .send(.delegate(.didLogin(hasNickname: false, hasCompletedOnboarding: false)))
 
