@@ -84,10 +84,15 @@ extension BZInputField {
 
 extension BZInputField {
 
-    /// 입력은 했지만 최소 길이 미만인 상태(에러 문구를 보여줘야 함)
-    private var isTooShort: Bool { !text.isEmpty && text.count < minLength }
+    /// 공백만 입력된 경우 실제 글자 수로 취급하지 않기 위해 다듬은(trim) 길이를 쓴다.
+    private var trimmedLength: Int {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).count
+    }
 
-    private var isValid: Bool { text.count >= minLength }
+    /// 입력은 했지만 최소 길이 미만인 상태(에러 문구를 보여줘야 함)
+    private var isTooShort: Bool { !text.isEmpty && trimmedLength < minLength }
+
+    private var isValid: Bool { trimmedLength >= minLength }
 }
 
 // MARK: - Colors & Text

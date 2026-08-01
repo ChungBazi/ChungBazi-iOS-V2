@@ -25,6 +25,7 @@ enum BZNavigationBarItemBuilder {
                     .font(.system(size: 18, weight: .medium))
             }
             .tint(Color.gray900)
+            .accessibilityLabel("뒤로가기")
 
         case .title(let text):
             Text(text)
@@ -46,6 +47,7 @@ enum BZNavigationBarItemBuilder {
                     .frame(width: 24)
             }
             .tint(Color.gray900)
+            .accessibilityLabel("공유")
 
         case .bell(let action):
             Button(action: action) {
@@ -55,6 +57,7 @@ enum BZNavigationBarItemBuilder {
                     .frame(width: 24)
             }
             .tint(Color.gray900)
+            .accessibilityLabel("알림")
 
         case .logo:
             Image.bazi(.appLogo)
