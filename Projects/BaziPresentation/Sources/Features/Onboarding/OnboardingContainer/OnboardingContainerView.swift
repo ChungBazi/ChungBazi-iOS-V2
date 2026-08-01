@@ -31,7 +31,10 @@ extension OnboardingContainerView {
 
     private var content: some View {
         VStack(spacing: 64) {
-            BZOnboardingStep(currentStep: store.currentStep.rawValue, totalSteps: 6)
+            BZOnboardingStep(
+                currentStep: store.currentStep.rawValue,
+                totalSteps: OnboardingContainerFeature.Step.allCases.count
+            )
                 .padding(.top, 28)
             
             stepContent
