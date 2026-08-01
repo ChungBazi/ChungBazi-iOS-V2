@@ -54,7 +54,7 @@ extension BZInputField {
 
     private var fieldContainer: some View {
         HStack(spacing: 8) {
-            TextField(placeholder, text: $text)
+            TextField("", text: $text, prompt: Text(placeholder).foregroundColor(Color.gray200))
                 .focused($isFocused)
                 .baziFont(.body16R)
                 .foregroundColor(Color.grayBlack)
