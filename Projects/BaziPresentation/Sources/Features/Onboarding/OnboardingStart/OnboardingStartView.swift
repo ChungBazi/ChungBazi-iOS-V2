@@ -8,8 +8,6 @@ import ComposableArchitecture
 public struct OnboardingStartView: View {
 
     // MARK: - Properties
-    private static let topInsetRatio: CGFloat = 0.1293
-    private static let bottomInsetRatio: CGFloat = 0.0443
     @Bindable var store: StoreOf<OnboardingStartFeature>
 
     // MARK: - Init
@@ -42,36 +40,12 @@ public struct OnboardingStartView: View {
 extension OnboardingStartView {
     
     private var content: some View {
-        GeometryReader { proxy in
-            ZStack {
-                Color.bazi(.primary)
-                background
-                VStack(spacing: 0) {
-                    titleText
-                        .padding(.top, proxy.size.height * Self.topInsetRatio)
-                    
-                    Spacer()
-                    
-                    startButton
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, proxy.size.height * Self.bottomInsetRatio)
-                }
-            }
+        OnboardingBackgroundLayout(
+            background: .startOnboardingBackground,
+            title: "딱 맞는 정책을 찾기 위해\n몇 가지만 물어볼게요"
+        ) {
+            startButton
         }
-        .ignoresSafeArea()
-    }
-
-    private var background: some View {
-        Image.bazi(.startOnboardingBackground)
-            .resizable()
-            .scaledToFit()
-    }
-
-    private var titleText: some View {
-        Text("딱 맞는 정책을 찾기 위해\n몇 가지만 물어볼게요")
-            .baziFont(.head24B)
-            .foregroundStyle(Color.grayWhite)
-            .multilineTextAlignment(.center)
     }
 
     private var startButton: some View {
