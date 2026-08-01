@@ -8,6 +8,8 @@ import UIKit
 public struct BZDatePicker: UIViewRepresentable {
 
     private static let rowHeight: CGFloat = 48
+    /// 호출부가 폭을 제안하지 않을 때 쓰는 기본 폭(단일 열 기준).
+    private static let defaultWidth: CGFloat = 80
 
     /// 호출부의 `.frame(height:)`에 그대로 써서 5줄(선택 위/아래 2줄씩)이 보이게 한다.
     public static let height: CGFloat = rowHeight * 5
@@ -47,7 +49,7 @@ public struct BZDatePicker: UIViewRepresentable {
     /// `UIPickerView`의 intrinsic 크기(넓은 고정 폭)를 그대로 쓰면 `HStack`에서 `.frame(maxWidth: .infinity)` 컬럼이 균등 분배되지 않고 한쪽이 다 차지해버린다.
     /// 호출부가 제안하는 크기를 그대로 받아들이도록 오버라이드한다.
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIPickerView, context: Context) -> CGSize? {
-        CGSize(width: proposal.width ?? Self.height, height: proposal.height ?? Self.height)
+        CGSize(width: proposal.width ?? Self.defaultWidth, height: proposal.height ?? Self.height)
     }
 
     /// `UIPickerView`의 두 번째 서브뷰가 선택 행 위아래 구분선을 그리는 오버레이라 배경을 지우면 사라진다.
