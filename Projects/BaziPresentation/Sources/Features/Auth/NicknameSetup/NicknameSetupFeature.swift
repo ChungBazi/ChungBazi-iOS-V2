@@ -13,7 +13,8 @@ public struct NicknameSetupFeature {
         public var nickname = ""
 
         public var isNicknameValid: Bool {
-            (BZInputField.defaultMinLength...BZInputField.defaultMaxLength).contains(nickname.count)
+            let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (BZInputField.defaultMinLength...BZInputField.defaultMaxLength).contains(trimmed.count)
         }
 
         public init() {}

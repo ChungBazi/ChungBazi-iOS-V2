@@ -39,6 +39,7 @@ extension IncomeStepView {
                     .font(.system(size: 20))
                     .foregroundStyle(Color.gray500)
             }
+            .accessibilityLabel("소득분위 안내")
             .sheet(isPresented: $isTooltipPresented) {
                 tooltipSheetView
                     .presentationDetents([.height(350)])
