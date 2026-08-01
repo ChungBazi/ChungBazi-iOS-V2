@@ -31,10 +31,14 @@ extension BirthDateStepView {
             .foregroundStyle(Color.grayBlack)
     }
 
+    private static var maxBirthYear: Int {
+        Calendar.current.component(.year, from: Date())
+    }
+
     private var datePicker: some View {
         HStack(spacing: 0) {
             dateColumn(label: "년") {
-                BZDatePicker(selection: $store.year, range: 1926...2026) { "\($0)" }
+                BZDatePicker(selection: $store.year, range: 1926...Self.maxBirthYear) { "\($0)" }
             }
 
             dateColumn(label: "월") {
