@@ -16,4 +16,11 @@ enum Config {
       }
       return apiURL
     }()
+
+    static let kakaoNativeAppKey: String = {
+      guard let appKey = infoDictionary["KAKAO_NATIVE_APP_KEY"] as? String else {
+        fatalError()
+      }
+      return appKey
+    }()
 }

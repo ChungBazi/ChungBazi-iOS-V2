@@ -13,6 +13,9 @@ let project = Project.project(
                 .network(),
                 .storage(),
                 .core(),
+                .external(.KakaoSDKAuth),
+                .external(.KakaoSDKUser),
+                .external(.FirebaseMessaging),
             ]
         ),
         .tests(

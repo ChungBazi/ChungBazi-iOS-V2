@@ -10,10 +10,21 @@ let project = Project.project(
             bundleId: Project.bundleID,
             infoPlist: .extendingDefault(with: [
                 "BASE_URL": .string("$(BASE_URL)"),
+                "KAKAO_NATIVE_APP_KEY": .string("$(KAKAO_NATIVE_APP_KEY)"),
                 "UILaunchScreen": .dictionary([:]),
                 "UISupportedInterfaceOrientations": .array([.string("UIInterfaceOrientationPortrait")]),
                 "UIApplicationSceneManifest": .dictionary([
                     "UIApplicationSupportsMultipleScenes": .boolean(false),
+                ]),
+                "UIBackgroundModes": .array([.string("remote-notification")]),
+                "CFBundleURLTypes": .array([
+                    .dictionary([
+                        "CFBundleURLSchemes": .array([.string("kakao$(KAKAO_NATIVE_APP_KEY)")]),
+                    ]),
+                ]),
+                "LSApplicationQueriesSchemes": .array([
+                    .string("kakaokompassauth"),
+                    .string("kakaolink"),
                 ]),
             ]),
             sources: .sources,
@@ -26,6 +37,10 @@ let project = Project.project(
                 .design(),
                 .core(),
                 .external(.ComposableArchitecture),
+                .external(.KakaoSDKCommon),
+                .external(.KakaoSDKAuth),
+                .external(.FirebaseCore),
+                .external(.FirebaseMessaging),
             ],
             // CODE_SIGN_IDENTITY는 팀/개발자마다 다른 인증서 이름을 쓸 수 있어서 소스에 고정하지 않고
             // 각자의 xcconfig(Debug/Release.xcconfig, setup.sh가 생성)에서 값을 채우도록 한다.

@@ -15,5 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Moya/Moya.git", exact: "15.0.3"),
         .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.26.0"),
+        .package(url: "https://github.com/kakao/kakao-ios-sdk.git", exact: "2.28.0"),
+        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.17.0"),
     ]
 )

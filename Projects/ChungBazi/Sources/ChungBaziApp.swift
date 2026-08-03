@@ -3,10 +3,13 @@
 import BaziData
 import BaziPresentation
 import ComposableArchitecture
+import KakaoSDKAuth
 import SwiftUI
 
 @main
 struct ChungBaziApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     init() {
         DataConfiguration.configure(baseURL: Config.baseURL)
     }
@@ -18,6 +21,11 @@ struct ChungBaziApp: App {
                     AppFeature()
                 }
             )
+            .onOpenURL { url in
+                if AuthApi.isKakaoTalkLoginUrl(url) {
+                    AuthController.handleOpenUrl(url: url)
+                }
+            }
         }
     }
 }
