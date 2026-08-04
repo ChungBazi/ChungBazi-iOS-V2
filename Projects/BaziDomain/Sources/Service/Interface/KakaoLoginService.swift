@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// 카카오 SDK로 로그인해서 카카오 accessToken을 받아오는 역할
+/// 카카오 SDK를 통해 로그인하여 accessToken을 받아온다.
 public protocol KakaoLoginService: Sendable {
     func login() async throws -> String
 }
