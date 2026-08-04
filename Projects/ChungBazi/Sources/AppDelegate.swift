@@ -3,6 +3,7 @@
 import UIKit
 import UserNotifications
 
+import BaziCore
 import FirebaseCore
 import FirebaseMessaging
 import KakaoSDKCommon
@@ -35,8 +36,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 // MARK: - MessagingDelegate
 
 extension AppDelegate: MessagingDelegate {
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        AppDependencies.userDefaultsStorage.fcmToken = fcmToken
+    nonisolated func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        Log.debug("FCM 토큰 수신: \(fcmToken?.prefix(8) ?? "nil")...", category: .lifecycle)
+        AppDependencies.pushTokenRepository.saveToken(fcmToken)
     }
 }
 
@@ -45,14 +47,14 @@ extension AppDelegate: MessagingDelegate {
 extension AppDelegate: UNUserNotificationCenterDelegate {
 
     /// 포그라운드에서도 배너/사운드/뱃지를 그대로 보여준다.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .sound, .badge]
     }
 
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
