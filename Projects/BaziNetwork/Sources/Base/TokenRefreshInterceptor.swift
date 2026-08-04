@@ -16,15 +16,20 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
         self.tokenStorage = tokenStorage
     }
 
+    // 로그인/재발급처럼 인증이 필요 없는 엔드포인트. accessToken이 남아있어도 붙이지 않는다.
+    private static let unauthenticatedPaths = ["/auth/kakao", "/auth/apple", "/auth/reissue"]
+
     // MARK: - adapt
-    // 매 요청 전 호출. accessToken이 nil이면 헤더 미첨부 → 로그인 등 비인증 엔드포인트에 안전
+    // 매 요청 전 호출. 인증이 필요 없는 엔드포인트는 accessToken 유무와 무관하게 헤더를 붙이지 않는다.
     public func adapt(
         _ urlRequest: URLRequest,
         for session: Session,
         completion: @escaping (Result<URLRequest, Error>) -> Void
     ) {
         var request = urlRequest
-        if let token = tokenStorage.accessToken {
+        let path = urlRequest.url?.path ?? ""
+        let isUnauthenticated = Self.unauthenticatedPaths.contains { path.contains($0) }
+        if !isUnauthenticated, let token = tokenStorage.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         completion(.success(request))
