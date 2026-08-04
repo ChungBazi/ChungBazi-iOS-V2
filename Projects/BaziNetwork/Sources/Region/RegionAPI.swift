@@ -26,7 +26,7 @@ extension RegionAPI: APITargetType {
             return .requestPlain
         case .getSigungu(let sido):
             return .requestParameters(
-                parameters: ["sido": sido],
+                parameters: ["sidoCode": sido],
                 encoding: URLEncoding.queryString
             )
         }

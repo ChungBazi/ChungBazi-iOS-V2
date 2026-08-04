@@ -5,7 +5,9 @@ import Foundation
 import Moya
 import BaziCore
 
-public final class NetworkProvider {
+// @unchecked Sendable: 내부 MoyaProvider/Alamofire Session은 동시 요청을 안전하게 처리하도록 설계되어 있다.
+// 토큰 재발급 동기화는 TokenRefreshInterceptor가 자체적으로 lock으로 보장한다.
+public final class NetworkProvider: @unchecked Sendable {
     private let provider: MoyaProvider<MultiTarget>
 
     public init(tokenStorage: TokenStorage) {

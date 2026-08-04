@@ -4,7 +4,6 @@ import Foundation
 
 /// 온보딩, 정책 추천 기준 수정 Request DTO
 public struct OnboardingRequestDTO: Encodable {
-    public let name: String
     public let birth: String
     public let sidoCode: String
     public let sigunguCode: String
@@ -12,9 +11,8 @@ public struct OnboardingRequestDTO: Encodable {
     public let employmentCode: String
     public let incomeLevel: String
     public let interestCategories: [String]
-    
-    public init(name: String, birth: String, sidoCode: String, sigunguCode: String, educationCode: String, employmentCode: String, incomeLevel: String, interestCategories: [String]) {
-        self.name = name
+
+    public init(birth: String, sidoCode: String, sigunguCode: String, educationCode: String, employmentCode: String, incomeLevel: String, interestCategories: [String]) {
         self.birth = birth
         self.sidoCode = sidoCode
         self.sigunguCode = sigunguCode
