@@ -46,6 +46,8 @@ extension HomeView {
                 store.send(.didTapPlaceholderRow)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .baziBackground(.bgGray)
     }
 }
 

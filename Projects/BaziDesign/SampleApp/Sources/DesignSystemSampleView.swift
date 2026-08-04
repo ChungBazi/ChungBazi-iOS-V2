@@ -19,7 +19,6 @@ struct DesignSystemSampleView: View {
     @State private var isFlipCardBookmarked = true
 
     @State private var segmentDemoSelection = "전체"
-    @State private var selectedTabBarItem: BZTabBarItem = .home
     @State private var isToastPresented = false
 
     private let categories = ["Foundation", "Button", "Onboarding", "NavBar", "Card", "Overlay"]
@@ -56,7 +55,6 @@ struct DesignSystemSampleView: View {
             choiceChipSection
 
         case "NavBar":
-            tabBarSection
             segmentControlSection
 
         case "Card":
@@ -235,27 +233,6 @@ extension DesignSystemSampleView {
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-// MARK: - BZTabBar
-
-extension DesignSystemSampleView {
-
-    private var tabBarSection: some View {
-        sectionContainer(title: "BZTabBar (NaviBar1 · NaviBar2)") {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("캡슐형(iOS 26+)/평면형(iOS 18 이하)은 OS가 자동으로 그려준다.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                BZTabBar(selection: $selectedTabBarItem) { item in
-                    Color.bazi(.bgGray)
-                        .overlay(Text("\(item.id)"))
-                }
-                .frame(height: 400)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
     }
