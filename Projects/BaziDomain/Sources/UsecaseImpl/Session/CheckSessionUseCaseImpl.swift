@@ -16,7 +16,7 @@ public struct CheckSessionUseCaseImpl: CheckSessionUseCase {
 
     public func execute() -> (hasValidToken: Bool, hasNickname: Bool, hasCompletedOnboarding: Bool) {
         (
-            hasValidToken: tokenStorage.accessToken != nil,
+            hasValidToken: tokenStorage.accessToken != nil && tokenStorage.hasValidLocalSession,
             hasNickname: sessionStateRepository.hasSetNickname,
             hasCompletedOnboarding: sessionStateRepository.hasCompletedOnboarding
         )
