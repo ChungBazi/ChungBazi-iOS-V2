@@ -50,6 +50,9 @@ let project = Project.project(
                         name: "Debug",
                         settings: [
                             "CODE_SIGN_IDENTITY": "$(CODE_SIGN_IDENTITY)",
+                            // Firebase/GoogleUtilities가 카테고리(NSData+gul_dataByGzippingData 등)로 추가하는
+                            // 메서드는 -ObjC 없이 정적 링크하면 런타임에 unrecognized selector로 죽는다.
+                            "OTHER_LDFLAGS": ["$(inherited)", "-ObjC"],
                         ],
                         xcconfig: .relativeToRoot("Projects/ChungBazi/Configurations/Debug.xcconfig")
                     ),
@@ -57,6 +60,7 @@ let project = Project.project(
                         name: "Release",
                         settings: [
                             "CODE_SIGN_IDENTITY": "$(CODE_SIGN_IDENTITY)",
+                            "OTHER_LDFLAGS": ["$(inherited)", "-ObjC"],
                         ],
                         xcconfig: .relativeToRoot("Projects/ChungBazi/Configurations/Release.xcconfig")
                     ),
