@@ -22,6 +22,7 @@ public struct OnboardingContainerView: View {
     public var body: some View {
         content
             .toolbar(.hidden, for: .navigationBar)
+            .task { store.send(.onAppear) }
     }
 }
 
@@ -78,7 +79,7 @@ extension OnboardingContainerView {
             BZButton("다음으로", type: .cta, size: .medium) {
                 store.send(.didTapNextButton)
             }
-            .disabled(!store.isCurrentStepValid)
+            .disabled(!store.isCurrentStepValid || store.isSubmitting)
         }
     }
 }

@@ -51,6 +51,7 @@ public struct SplashFeature {
     // MARK: - Dependencies
 
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.splashClient) var splashClient
 
     // MARK: - Init
 
@@ -69,12 +70,12 @@ public struct SplashFeature {
                         try await clock.sleep(for: .seconds(1))
                         await send(.didFinishMinimumDuration)
                     },
-                    .run { send in
-                        // TODO: BaziStorage(토큰) + BaziDomain(유저 정보 UseCase)가 준비되면 실제 값으로 교체.
+                    .run { [splashClient] send in
+                        let session = splashClient.checkSession()
                         await send(.sessionChecked(
-                            hasValidToken: false,
-                            hasNickname: false,
-                            hasCompletedOnboarding: false
+                            hasValidToken: session.hasValidToken,
+                            hasNickname: session.hasNickname,
+                            hasCompletedOnboarding: session.hasCompletedOnboarding
                         ))
                     }
                 )

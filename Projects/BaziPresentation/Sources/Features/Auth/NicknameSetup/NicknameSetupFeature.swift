@@ -1,6 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import BaziDesign
+import BaziDomain
 import ComposableArchitecture
 
 @Reducer
@@ -22,10 +23,14 @@ public struct NicknameSetupFeature {
 
     // MARK: - Action
 
-    public enum Action: BindableAction {
+    public enum Action: BindableAction, Equatable {
         // MARK: View
         case binding(BindingAction<State>)
         case didTapConfirmButton
+
+        // MARK: Internal
+        case didSetNickname
+        case didFailToSetNickname(UseCaseError)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -39,8 +44,7 @@ public struct NicknameSetupFeature {
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 유저 UseCase가 준비되면 추가
-    // @Dependency(\.userClient) var userClient
+    @Dependency(\.nicknameClient) var nicknameClient
 
     // MARK: - Init
 
@@ -56,8 +60,23 @@ public struct NicknameSetupFeature {
                 return .none
 
             case .didTapConfirmButton:
-                // TODO: userClient가 준비되면 닉네임 저장 요청 후 delegate로 교체.
+                guard state.isNicknameValid else { return .none }
+                let name = state.nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+                return .run { [nicknameClient] send in
+                    do {
+                        try await nicknameClient.setNickname(name)
+                        await send(.didSetNickname)
+                    } catch {
+                        await send(.didFailToSetNickname(UseCaseError.map(error)))
+                    }
+                }
+
+            case .didSetNickname:
                 return .send(.delegate(.didSetNickname))
+
+            case .didFailToSetNickname:
+                // TODO: 닉네임 저장 실패 알림 UI가 정해지면 State에 반영.
+                return .none
 
             case .delegate:
                 return .none

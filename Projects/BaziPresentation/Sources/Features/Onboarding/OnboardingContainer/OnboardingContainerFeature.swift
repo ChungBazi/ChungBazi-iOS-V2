@@ -2,11 +2,11 @@
 
 import Foundation
 
+import BaziDomain
 import ComposableArchitecture
 
 /// 온보딩의 "진행 중" 6단계(생년월일~관심분야)를 하나의 컨테이너로 관리한다.
-/// 진행바/하단 버튼이 화면 전환 없이 유지되어야 해서 각 단계를 별도 push 화면이 아닌
-/// `currentStep` 전환으로 다룬다.
+/// 진행바/하단 버튼이 화면 전환 없이 유지되어야 하므로 각 단계를 별도 push 화면이 아닌 `currentStep` 전환으로 다룬다.
 @Reducer
 public struct OnboardingContainerFeature {
 
@@ -39,6 +39,8 @@ public struct OnboardingContainerFeature {
         public var hasChangedDay = false
 
         // MARK: Region
+        public var sidoList: [RegionEntity] = []
+        public var sigunguList: [RegionEntity] = []
         public var province: String?
         public var district: String?
 
@@ -53,6 +55,9 @@ public struct OnboardingContainerFeature {
 
         // MARK: Interest
         public var selectedCategories: Set<String> = []
+
+        // MARK: Submit
+        public var isSubmitting = false
 
         public init() {}
 
@@ -83,12 +88,19 @@ public struct OnboardingContainerFeature {
 
     // MARK: - Action
 
-    public enum Action: BindableAction {
+    public enum Action: BindableAction, Equatable {
         // MARK: View
+        case onAppear
         case binding(BindingAction<State>)
         case didTapCategory(String)
         case didTapPreviousButton
         case didTapNextButton
+
+        // MARK: Internal
+        case sidoListResponse(Result<[RegionEntity], UseCaseError>)
+        case sigunguListResponse(Result<[RegionEntity], UseCaseError>)
+        case didSubmitOnboarding
+        case didFailToSubmitOnboarding(UseCaseError)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -101,6 +113,10 @@ public struct OnboardingContainerFeature {
         case didCompleteAllSteps
     }
 
+    // MARK: - Dependencies
+
+    @Dependency(\.onboardingClient) var onboardingClient
+
     // MARK: - Init
 
     public init() {}
@@ -111,8 +127,45 @@ public struct OnboardingContainerFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
+            case .onAppear:
+                return .run { [onboardingClient] send in
+                    do {
+                        let sidoList = try await onboardingClient.fetchSidoList()
+                        await send(.sidoListResponse(.success(sidoList)))
+                    } catch {
+                        await send(.sidoListResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
+            case .sidoListResponse(.success(let list)):
+                state.sidoList = list
+                return .none
+
+            case .sidoListResponse(.failure):
+                // TODO: 시도 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+                return .none
+
             case .binding(\.province):
                 state.district = nil
+                state.sigunguList = []
+                guard let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code else {
+                    return .none
+                }
+                return .run { [onboardingClient] send in
+                    do {
+                        let list = try await onboardingClient.fetchSigunguList(sidoCode)
+                        await send(.sigunguListResponse(.success(list)))
+                    } catch {
+                        await send(.sigunguListResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
+            case .sigunguListResponse(.success(let list)):
+                state.sigunguList = list
+                return .none
+
+            case .sigunguListResponse(.failure):
+                // TODO: 시군구 목록 로드 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 
             case .binding(\.year):
@@ -150,13 +203,59 @@ public struct OnboardingContainerFeature {
             case .didTapNextButton:
                 guard state.isCurrentStepValid else { return .none }
                 guard let nextStep = state.currentStep.next else {
-                    return .send(.delegate(.didCompleteAllSteps))
+                    return submitOnboarding(state: &state)
                 }
                 state.currentStep = nextStep
                 return .none
 
+            case .didSubmitOnboarding:
+                state.isSubmitting = false
+                return .send(.delegate(.didCompleteAllSteps))
+
+            case .didFailToSubmitOnboarding:
+                state.isSubmitting = false
+                // TODO: 온보딩 제출 실패 알림 UI가 정해지면 State에 반영.
+                return .none
+
             case .delegate:
                 return .none
+            }
+        }
+    }
+
+    // MARK: - Private
+
+    private func submitOnboarding(state: inout State) -> Effect<Action> {
+        guard
+            let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code,
+            let sigunguCode = state.sigunguList.first(where: { $0.name == state.district })?.code,
+            let educationCode = EducationCode.onboardingOptions.first(where: { $0.displayName == state.education }),
+            let employmentCode = EmploymentCode.onboardingOptions.first(where: { $0.displayName == state.employment }),
+            let incomeLevel = IncomeLevel.onboardingOptions.first(where: { $0.displayName == state.income })
+        else {
+            return .none
+        }
+
+        let interestCategories = PolicySubCategoryType.allCases.filter {
+            state.selectedCategories.contains($0.displayName)
+        }
+        let info = OnboardingInfoEntity(
+            birth: String(format: "%04d-%02d-%02d", state.year, state.month, state.day),
+            sidoCode: sidoCode,
+            sigunguCode: sigunguCode,
+            educationCode: educationCode,
+            employmentCode: employmentCode,
+            incomeLevel: incomeLevel,
+            interestCategories: interestCategories
+        )
+
+        state.isSubmitting = true
+        return .run { [onboardingClient] send in
+            do {
+                try await onboardingClient.submitOnboarding(info)
+                await send(.didSubmitOnboarding)
+            } catch {
+                await send(.didFailToSubmitOnboarding(UseCaseError.map(error)))
             }
         }
     }
@@ -166,47 +265,9 @@ public struct OnboardingContainerFeature {
 
 extension OnboardingContainerFeature {
 
-    // TODO: BaziDomain에 실제 행정구역 UseCase가 준비되면 교체.
-    public static let provinces = [
-        "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시",
-        "대전광역시", "울산광역시", "세종특별자치시", "경기도", "강원특별자치도",
-        "충청북도", "충청남도", "전북특별자치도", "전라남도", "경상북도", "경상남도", "제주특별자치도",
-    ]
-
-    // TODO: province별 실제 시/군/구 목록으로 교체.
-    public static let districts = ["전체"]
-
-    public static let educationOptions = [
-        "고등학교에 재학 중이에요",
-        "고등학교를 졸업했어요 (검정고시 포함)",
-        "대학교에 재학·휴학·수료 중이에요",
-        "대학교를 졸업했어요",
-        "석·박사 과정을 밟고 있거나 마쳤어요",
-        "기타 / 해당 없어요",
-    ]
-
-    public static let employmentOptions = [
-        "재직 중이에요 (정규직/계약직 포함)",
-        "단기·일용 근로 중이에요",
-        "자영업/사업을 하고 있어요",
-        "프리랜서로 일하고 있어요",
-        "현재 일하고 있지 않아요",
-        "기타 / 해당 없어요",
-    ]
-
-    public static let incomeOptions = [
-        "1분위", "2분위", "3분위", "4분위", "5분위",
-        "6분위", "7분위", "8분위", "9분위", "10분위",
-        "잘 모르겠어요",
-    ]
-
+    public static let educationOptions = EducationCode.onboardingOptions.map(\.displayName)
+    public static let employmentOptions = EmploymentCode.onboardingOptions.map(\.displayName)
+    public static let incomeOptions = IncomeLevel.onboardingOptions.map(\.displayName)
     public static let minimumInterestCount = 3
-
-    public static let interestCategories = [
-        "취업 준비", "직장 생활",
-        "창업", "주거",
-        "교육 · 성장", "생활비 · 금융",
-        "건강 · 복지", "권리 보호",
-        "문화 · 예술", "참여 · 활동",
-    ]
+    public static let interestCategories = PolicySubCategoryType.allCases.map(\.displayName)
 }
