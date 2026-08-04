@@ -4,6 +4,7 @@ import SwiftUI
 
 public enum BaziImage {
     case appLogo
+    case imagePlaceholder
 
     // MARK: Background
     case loginBackground
@@ -40,9 +41,20 @@ public enum BaziImage {
     case livingSupportIcon
     case studyIcon
 
+    // MARK: Icon - TabMenu
+    case homeSelectIcon
+    case homeUnselectIcon
+    case mypolicySelectIcon
+    case mypolicyUnselectIcon
+    case searchSelectIcon
+    case searchUnselectIcon
+    case profileSelectIcon
+    case profileUnselectIcon
+
     public var image: Image {
         switch self {
         case .appLogo: return BaziDesignAsset.appLogo.swiftUIImage
+        case .imagePlaceholder: return BaziDesignAsset.imagePlaceholder.swiftUIImage
 
         case .loginBackground: return BaziDesignAsset.loginBackground.swiftUIImage
         case .startOnboardingBackground: return BaziDesignAsset.startOnboardingBackground.swiftUIImage
@@ -72,6 +84,15 @@ public enum BaziImage {
         case .jobIcon: return BaziDesignAsset.jobIcon.swiftUIImage
         case .livingSupportIcon: return BaziDesignAsset.livingSupportIcon.swiftUIImage
         case .studyIcon: return BaziDesignAsset.studyIcon.swiftUIImage
+
+        case .homeSelectIcon: return BaziDesignAsset.homeSelectIcon.swiftUIImage
+        case .homeUnselectIcon: return BaziDesignAsset.homeUnselectIcon.swiftUIImage
+        case .mypolicySelectIcon: return BaziDesignAsset.mypolicySelectIcon.swiftUIImage
+        case .mypolicyUnselectIcon: return BaziDesignAsset.mypolicyUnselectIcon.swiftUIImage
+        case .searchSelectIcon: return BaziDesignAsset.searchSelectIcon.swiftUIImage
+        case .searchUnselectIcon: return BaziDesignAsset.searchUnselectIcon.swiftUIImage
+        case .profileSelectIcon: return BaziDesignAsset.profileSelectIcon.swiftUIImage
+        case .profileUnselectIcon: return BaziDesignAsset.profileUnselectIcon.swiftUIImage
         }
     }
 }
