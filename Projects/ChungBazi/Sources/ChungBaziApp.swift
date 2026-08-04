@@ -23,7 +23,7 @@ struct ChungBaziApp: App {
             )
             .onOpenURL { url in
                 if AuthApi.isKakaoTalkLoginUrl(url) {
-                    AuthController.handleOpenUrl(url: url)
+                    _ = AuthController.handleOpenUrl(url: url)
                 }
             }
         }

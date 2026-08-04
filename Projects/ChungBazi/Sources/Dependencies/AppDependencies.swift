@@ -1,0 +1,22 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import Foundation
+
+import BaziCore
+import BaziData
+import BaziDomain
+import BaziNetwork
+import BaziStorage
+
+/// Composition Root(`ChungBazi`)에서 공유해야만 하는 인스턴스만 모아둔다.
+///
+/// - `networkProvider`: 내부 `TokenRefreshInterceptor`가 토큰 재발급 진행 상태를 락으로
+///   추적한다. Repository마다 따로 만들면 동시에 401을 받았을 때 각자 독립적으로 재발급을
+///   시도해 경합이 생기므로, 앱 전체에서 반드시 하나만 공유해야 한다.
+/// - `pushTokenRepository`: `AppDelegate`(Composition Root 바깥의 소비자)가 FCM 토큰을
+///   저장할 때 써야 하는데, `AppDelegate`가 `BaziData`/`BaziStorage`를 직접 import하게
+///   만들지 않기 위해 여기서 미리 조립해 Domain 인터페이스로만 노출한다.
+enum AppDependencies {
+    static let networkProvider = NetworkProvider(tokenStorage: KeychainTokenStorage())
+    static let pushTokenRepository: any PushTokenRepository = PushTokenRepositoryImpl(storage: UserDefaultsStorage())
+}
