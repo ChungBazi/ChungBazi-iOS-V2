@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-/// NaviBar3(Figma) 각 타입을 구성하는 leading/center/trailing 아이템.
+/// 각 타입을 구성하는 leading/center/trailing 아이템.
 public enum BZNavigationBarItem {
     case back(action: () -> Void)
     case title(String)

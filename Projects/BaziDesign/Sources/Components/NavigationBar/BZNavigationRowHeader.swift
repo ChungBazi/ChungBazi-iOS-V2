@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-/// NaviBar3 Type=5 — 상단 nav bar가 아니라, 타이틀 + 화살표로 이루어진 전체 탭 가능한 행.
+/// 상단 nav bar가 아니라, 타이틀 + 화살표로 이루어진 전체 탭 가능한 행.
 /// 화면 내부에서 다른 화면으로 이동하는 진입점(row) 용도로 쓴다.
 public struct BZNavigationRowHeader: View {
 
