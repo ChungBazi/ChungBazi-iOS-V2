@@ -47,6 +47,7 @@ extension View {
                     .allowsHitTesting(false)
                     .zIndex(999)
                     .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+                    .id(message)
                     .task {
                         try? await Task.sleep(for: .seconds(2.0))
                         isPresented.wrappedValue = false

@@ -16,5 +16,7 @@ struct BZBookmarkButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
+        .accessibilityLabel("찜하기")
+        .accessibilityAddTraits(isBookmarked ? .isSelected : [])
     }
 }

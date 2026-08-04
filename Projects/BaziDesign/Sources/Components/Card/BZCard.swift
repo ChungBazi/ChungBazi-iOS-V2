@@ -100,7 +100,7 @@ extension BZCard {
             .frame(height: 139)
             .frame(maxWidth: .infinity)
             .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: BaziRadius.small.rawValue, style: .continuous))
+            .baziRadius(.small)
     }
 
     private var tagRow: some View {
@@ -133,7 +133,7 @@ extension BZCard {
                 .scaledToFit()
                 .frame(width: 14)
             
-            Text("\(viewCount)")
+            Text(viewCount, format: .number)
                 .baziFont(.small12R)
         }
         .foregroundStyle(Color.gray400)

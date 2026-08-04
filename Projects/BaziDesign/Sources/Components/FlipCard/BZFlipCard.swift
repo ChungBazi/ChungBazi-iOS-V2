@@ -147,7 +147,7 @@ extension BZFlipCard {
                 .clipped()
         }
         .aspectRatio(Self.thumbnailAspectRatio, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: BaziRadius.small.rawValue, style: .continuous))
+        .baziRadius(.small)
     }
 }
 
