@@ -2,12 +2,12 @@
 
 import Foundation
 
-public struct ReissueResponseDTO: Decodable {
+public struct ReissueResponseDTO: Decodable, Sendable {
     public let accessToken: String
     public let refreshToken: String
 }
 
-public struct LoginResponseDTO: Decodable {
+public struct LoginResponseDTO: Decodable, Sendable {
     public let accessToken: String
     public let refreshToken: String
     public let email: String
