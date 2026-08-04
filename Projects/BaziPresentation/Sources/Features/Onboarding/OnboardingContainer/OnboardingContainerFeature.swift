@@ -39,8 +39,8 @@ public struct OnboardingContainerFeature {
         public var hasChangedDay = false
 
         // MARK: Region
-        public var sidoList: [RegionEntity] = []
-        public var sigunguList: [RegionEntity] = []
+        public var sidoList: [RegionInfo] = []
+        public var sigunguList: [RegionInfo] = []
         public var province: String?
         public var district: String?
 
@@ -97,8 +97,8 @@ public struct OnboardingContainerFeature {
         case didTapNextButton
 
         // MARK: Internal
-        case sidoListResponse(Result<[RegionEntity], UseCaseError>)
-        case sigunguListResponse(Result<[RegionEntity], UseCaseError>)
+        case sidoListResponse(Result<[RegionInfo], UseCaseError>)
+        case sigunguListResponse(Result<[RegionInfo], UseCaseError>)
         case didSubmitOnboarding
         case didFailToSubmitOnboarding(UseCaseError)
 
@@ -146,19 +146,7 @@ public struct OnboardingContainerFeature {
                 return .none
 
             case .binding(\.province):
-                state.district = nil
-                state.sigunguList = []
-                guard let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code else {
-                    return .none
-                }
-                return .run { [onboardingClient] send in
-                    do {
-                        let list = try await onboardingClient.fetchSigunguList(sidoCode)
-                        await send(.sigunguListResponse(.success(list)))
-                    } catch {
-                        await send(.sigunguListResponse(.failure(UseCaseError.map(error))))
-                    }
-                }
+                return fetchSigunguList(state: &state)
 
             case .sigunguListResponse(.success(let list)):
                 state.sigunguList = list
@@ -225,6 +213,27 @@ public struct OnboardingContainerFeature {
 
     // MARK: - Private
 
+    private enum CancelID {
+        case sigunguFetch
+    }
+
+    private func fetchSigunguList(state: inout State) -> Effect<Action> {
+        state.district = nil
+        state.sigunguList = []
+        guard let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code else {
+            return .cancel(id: CancelID.sigunguFetch)
+        }
+        return .run { [onboardingClient] send in
+            do {
+                let list = try await onboardingClient.fetchSigunguList(sidoCode)
+                await send(.sigunguListResponse(.success(list)))
+            } catch {
+                await send(.sigunguListResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+        .cancellable(id: CancelID.sigunguFetch, cancelInFlight: true)
+    }
+
     private func submitOnboarding(state: inout State) -> Effect<Action> {
         guard
             let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code,
@@ -239,7 +248,7 @@ public struct OnboardingContainerFeature {
         let interestCategories = PolicySubCategoryType.allCases.filter {
             state.selectedCategories.contains($0.displayName)
         }
-        let info = OnboardingInfoEntity(
+        let info = OnboardingInfo(
             birth: String(format: "%04d-%02d-%02d", state.year, state.month, state.day),
             sidoCode: sidoCode,
             sigunguCode: sigunguCode,
