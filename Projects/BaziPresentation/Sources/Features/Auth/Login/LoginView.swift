@@ -82,15 +82,21 @@ extension LoginView {
     }
 
     private var appleLoginButton: some View {
-        SignInWithAppleButton(.signIn) { _ in
-            // TODO: authClient가 준비되면 실제 request 구성으로 교체.
+        SignInWithAppleButton(.signIn) { request in
+            request.requestedScopes = [.fullName, .email]
         } onCompletion: { result in
-            switch result {
-            case .success:
-                store.send(.didTapAppleLoginButton)
-            case .failure:
-                break
+            guard
+                case .success(let authorization) = result,
+                let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let identityTokenData = credential.identityToken,
+                let idToken = String(data: identityTokenData, encoding: .utf8)
+            else { return }
+
+            // fullName은 최초 로그인 시에만 내려온다.
+            let name = credential.fullName.flatMap {
+                PersonNameComponentsFormatter().string(from: $0)
             }
+            store.send(.didTapAppleLoginButton(idToken: idToken, name: name?.isEmpty == false ? name : nil))
         }
         .signInWithAppleButtonStyle(.black)
         .frame(height: 45)

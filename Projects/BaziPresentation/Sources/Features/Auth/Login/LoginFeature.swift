@@ -2,6 +2,8 @@
 
 import ComposableArchitecture
 
+import BaziDomain
+
 @Reducer
 public struct LoginFeature {
 
@@ -14,10 +16,13 @@ public struct LoginFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case didTapKakaoLoginButton
-        case didTapAppleLoginButton
+        case didTapAppleLoginButton(idToken: String, name: String?)
+
+        // MARK: Internal
+        case loginResponse(Result<AuthSessionEntity, UseCaseError>)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -32,8 +37,7 @@ public struct LoginFeature {
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 인증 UseCase가 준비되면 추가
-    // @Dependency(\.authClient) var authClient
+    @Dependency(\.authClient) var authClient
 
     // MARK: - Init
 
@@ -44,10 +48,35 @@ public struct LoginFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .didTapKakaoLoginButton, .didTapAppleLoginButton:
-                // TODO: authClient가 준비되면 실제 로그인 요청(카카오/애플 각각)으로 교체.
-                // 로그인 응답에 닉네임/온보딩 완료 여부가 함께 내려온다고 가정.
-                return .send(.delegate(.didLogin(hasNickname: false, hasCompletedOnboarding: false)))
+            case .didTapKakaoLoginButton:
+                return .run { [authClient] send in
+                    do {
+                        let result = try await authClient.loginWithKakao()
+                        await send(.loginResponse(.success(result)))
+                    } catch {
+                        await send(.loginResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
+            case .didTapAppleLoginButton(let idToken, let name):
+                return .run { [authClient] send in
+                    do {
+                        let result = try await authClient.loginWithApple(idToken, name)
+                        await send(.loginResponse(.success(result)))
+                    } catch {
+                        await send(.loginResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
+            case .loginResponse(.success(let result)):
+                return .send(.delegate(.didLogin(
+                    hasNickname: result.hasNickname,
+                    hasCompletedOnboarding: result.hasCompletedOnboarding
+                )))
+
+            case .loginResponse(.failure):
+                // TODO: 로그인 실패 알림 UI가 정해지면 State에 반영.
+                return .none
 
             case .delegate:
                 return .none

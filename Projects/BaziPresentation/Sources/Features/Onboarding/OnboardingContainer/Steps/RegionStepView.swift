@@ -36,14 +36,14 @@ extension RegionStepView {
             BZSelectField(
                 title: "시/도 선택",
                 placeholder: "시/도 선택",
-                options: OnboardingContainerFeature.provinces,
+                options: store.sidoList.map(\.name),
                 selection: $store.province
             )
 
             BZSelectField(
                 title: "시/군/구 선택",
                 placeholder: "시/군/구 선택",
-                options: OnboardingContainerFeature.districts,
+                options: store.sigunguList.map(\.name),
                 selection: $store.district,
                 isDisabled: store.province == nil
             )
