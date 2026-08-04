@@ -11,6 +11,8 @@ public struct LoginFeature {
 
     @ObservableState
     public struct State: Equatable {
+        public var isLoading = false
+
         public init() {}
     }
 
@@ -43,12 +45,20 @@ public struct LoginFeature {
 
     public init() {}
 
+    // MARK: - CancelID
+
+    private enum CancelID {
+        case login
+    }
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .didTapKakaoLoginButton:
+                guard !state.isLoading else { return .none }
+                state.isLoading = true
                 return .run { [authClient] send in
                     do {
                         let result = try await authClient.loginWithKakao()
@@ -57,8 +67,11 @@ public struct LoginFeature {
                         await send(.loginResponse(.failure(UseCaseError.map(error))))
                     }
                 }
+                .cancellable(id: CancelID.login, cancelInFlight: true)
 
             case .didTapAppleLoginButton(let idToken, let name):
+                guard !state.isLoading else { return .none }
+                state.isLoading = true
                 return .run { [authClient] send in
                     do {
                         let result = try await authClient.loginWithApple(idToken, name)
@@ -67,14 +80,17 @@ public struct LoginFeature {
                         await send(.loginResponse(.failure(UseCaseError.map(error))))
                     }
                 }
+                .cancellable(id: CancelID.login, cancelInFlight: true)
 
             case .loginResponse(.success(let result)):
+                state.isLoading = false
                 return .send(.delegate(.didLogin(
                     hasNickname: result.hasNickname,
                     hasCompletedOnboarding: result.hasCompletedOnboarding
                 )))
 
             case .loginResponse(.failure):
+                state.isLoading = false
                 // TODO: 로그인 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 

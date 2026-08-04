@@ -12,6 +12,7 @@ public struct NicknameSetupFeature {
     @ObservableState
     public struct State: Equatable {
         public var nickname = ""
+        public var isSaving = false
 
         public var isNicknameValid: Bool {
             let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -50,6 +51,12 @@ public struct NicknameSetupFeature {
 
     public init() {}
 
+    // MARK: - CancelID
+
+    private enum CancelID {
+        case setNickname
+    }
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -60,7 +67,8 @@ public struct NicknameSetupFeature {
                 return .none
 
             case .didTapConfirmButton:
-                guard state.isNicknameValid else { return .none }
+                guard state.isNicknameValid, !state.isSaving else { return .none }
+                state.isSaving = true
                 let name = state.nickname.trimmingCharacters(in: .whitespacesAndNewlines)
                 return .run { [nicknameClient] send in
                     do {
@@ -70,11 +78,14 @@ public struct NicknameSetupFeature {
                         await send(.didFailToSetNickname(UseCaseError.map(error)))
                     }
                 }
+                .cancellable(id: CancelID.setNickname, cancelInFlight: true)
 
             case .didSetNickname:
+                state.isSaving = false
                 return .send(.delegate(.didSetNickname))
 
             case .didFailToSetNickname:
+                state.isSaving = false
                 // TODO: 닉네임 저장 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 

@@ -56,7 +56,7 @@ extension NicknameSetupView {
         BZButton("완료하기") {
             store.send(.didTapConfirmButton)
         }
-        .disabled(!store.isNicknameValid)
+        .disabled(!store.isNicknameValid || store.isSaving)
     }
 }
 

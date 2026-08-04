@@ -58,6 +58,7 @@ extension LoginView {
             kakaoLoginButton
             appleLoginButton
         }
+        .disabled(store.isLoading)
     }
 
     private var kakaoLoginButton: some View {
