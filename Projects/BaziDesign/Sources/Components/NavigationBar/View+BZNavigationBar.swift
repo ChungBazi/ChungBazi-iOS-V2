@@ -31,7 +31,7 @@ public extension View {
             }
     }
 
-    /// NaviBar3 Type=1 — 뒤로가기 + 중앙 타이틀
+    /// Type=1 — 뒤로가기 + 중앙 타이틀
     func baziNavigationBar_backWithTitle(
         _ title: String,
         onBack: @escaping () -> Void
@@ -43,7 +43,7 @@ public extension View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// NaviBar3 Type=2 — 로고(좌) + 알림벨(우), 탭 루트용
+    /// Type=2 — 로고(좌) + 알림벨(우), 탭 루트용
     func baziNavigationBar_home(onBellTap: @escaping () -> Void) -> some View {
         baziNavigationBar(
             leading: .logo,
@@ -51,7 +51,7 @@ public extension View {
         )
     }
 
-    /// NaviBar3 Type=3 — 뒤로가기 + 공유
+    /// Type=3 — 뒤로가기 + 공유
     func baziNavigationBar_backWithShare(
         onBack: @escaping () -> Void,
         onShare: @escaping () -> Void
@@ -62,7 +62,7 @@ public extension View {
         )
     }
 
-    /// NaviBar3 Type=4 — 뒤로가기 + 중앙 타이틀 + 텍스트 버튼(예: 전체 삭제)
+    /// Type=4 — 뒤로가기 + 중앙 타이틀 + 텍스트 버튼(예: 전체 삭제)
     func baziNavigationBar_backWithTitleAndTextButton(
         _ title: String,
         buttonTitle: String,
