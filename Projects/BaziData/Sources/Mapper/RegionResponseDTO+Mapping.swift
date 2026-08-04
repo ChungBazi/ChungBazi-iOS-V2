@@ -6,13 +6,13 @@ import BaziDomain
 import BaziNetwork
 
 extension SidoResponseDTO {
-    func toDomain() -> RegionEntity {
-        RegionEntity(code: sidoCode, name: sidoName)
+    func toDomain() -> RegionInfo {
+        RegionInfo(code: sidoCode, name: sidoName)
     }
 }
 
 extension SigunguResponseDTO {
-    func toDomain() -> RegionEntity {
-        RegionEntity(code: sigunguCode, name: sigunguName)
+    func toDomain() -> RegionInfo {
+        RegionInfo(code: sigunguCode, name: sigunguName)
     }
 }

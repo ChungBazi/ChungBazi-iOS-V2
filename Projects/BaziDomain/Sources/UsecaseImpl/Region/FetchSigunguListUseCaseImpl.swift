@@ -11,7 +11,7 @@ public struct FetchSigunguListUseCaseImpl: FetchSigunguListUseCase {
     }
 
     /// 가나다순 Sorting
-    public func execute(sidoCode: String) async throws -> [RegionEntity] {
+    public func execute(sidoCode: String) async throws -> [RegionInfo] {
         let list = try await regionRepository.fetchSigunguList(sidoCode: sidoCode)
         return list.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }

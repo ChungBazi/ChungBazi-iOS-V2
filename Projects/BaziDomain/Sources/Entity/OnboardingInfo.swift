@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct OnboardingInfoEntity: Equatable, Sendable {
+public struct OnboardingInfo: Equatable, Sendable {
     public let birth: String
     public let sidoCode: String
     public let sigunguCode: String

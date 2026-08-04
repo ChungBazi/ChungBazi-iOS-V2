@@ -13,12 +13,12 @@ public struct RegionRepositoryImpl: RegionRepository {
         self.networkProvider = networkProvider
     }
 
-    public func fetchSidoList() async throws -> [RegionEntity] {
+    public func fetchSidoList() async throws -> [RegionInfo] {
         let dtos: [SidoResponseDTO] = try await networkProvider.request(RegionAPI.getSido)
         return dtos.map { $0.toDomain() }
     }
 
-    public func fetchSigunguList(sidoCode: String) async throws -> [RegionEntity] {
+    public func fetchSigunguList(sidoCode: String) async throws -> [RegionInfo] {
         let dtos: [SigunguResponseDTO] = try await networkProvider.request(RegionAPI.getSigungu(sido: sidoCode))
         return dtos.map { $0.toDomain() }
     }

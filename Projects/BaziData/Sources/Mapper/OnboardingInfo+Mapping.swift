@@ -5,7 +5,7 @@ import Foundation
 import BaziDomain
 import BaziNetwork
 
-extension OnboardingInfoEntity {
+extension OnboardingInfo {
     func toRequestDTO() -> OnboardingRequestDTO {
         OnboardingRequestDTO(
             birth: birth,
