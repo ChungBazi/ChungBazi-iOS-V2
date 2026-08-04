@@ -7,27 +7,33 @@ import Security
 // @unchecked Sendable: SecItem API는 OS 레벨에서 직렬화하므로 thread-safe 보장
 public final class KeychainTokenStorage: TokenStorage, @unchecked Sendable {
     private let service: String
+    private let userDefaultsStorage: UserDefaultsStorage
 
     private enum Key: String {
         case accessToken  = "com.yeonho.chungbazi.accessToken"
         case refreshToken = "com.yeonho.chungbazi.refreshToken"
     }
 
-    public init(service: String = "com.yeonho.chungbazi") {
+    public init(service: String = "com.yeonho.chungbazi", userDefaultsStorage: UserDefaultsStorage = UserDefaultsStorage()) {
         self.service = service
+        self.userDefaultsStorage = userDefaultsStorage
     }
 
     public var accessToken: String? { read(key: .accessToken) }
     public var refreshToken: String? { read(key: .refreshToken) }
 
+    public var hasValidLocalSession: Bool { userDefaultsStorage.hasValidLocalSession }
+
     public func saveTokens(accessToken: String, refreshToken: String) {
         save(key: .accessToken, value: accessToken)
         save(key: .refreshToken, value: refreshToken)
+        userDefaultsStorage.markSessionValid()
     }
 
     public func clearTokens() {
         delete(key: .accessToken)
         delete(key: .refreshToken)
+        userDefaultsStorage.invalidateSession()
     }
 
     // MARK: - Private, Keychain CRUD Low-level 메서드
