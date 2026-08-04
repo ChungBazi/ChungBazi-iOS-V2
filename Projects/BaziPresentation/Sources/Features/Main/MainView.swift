@@ -16,6 +16,9 @@ public struct MainView: View {
 
     public init(store: StoreOf<MainFeature>) {
         self.store = store
+        // UIAppearance 프록시는 tab bar가 window에 붙은 뒤(onAppear)에 설정하면
+        // 이미 만들어진 인스턴스에 반영되지 않을 수 있어, init 시점에 실행한다.
+        Self.configureAppearanceOnce
     }
 
     // MARK: - Body
@@ -30,8 +33,9 @@ public struct MainView: View {
         }
         .tint(Color.grayBlack)
         .onAppear {
-            Self.configureTabBarAppearance()
-            Self.configureLegacyTabBarLayoutIfNeeded()
+            // 실제 UITabBar 인스턴스를 찾아야 해서 window에 붙은 뒤인 onAppear에서 실행하되,
+            // 참조 시점에 단 한 번만 평가되는 static let으로 재실행을 막는다.
+            Self.configureLegacyLayoutOnce
         }
     }
 }
@@ -96,6 +100,9 @@ extension MainView {
 // MARK: - Tab Bar Appearance
 
 extension MainView {
+
+    private static let configureAppearanceOnce: Void = configureTabBarAppearance()
+    private static let configureLegacyLayoutOnce: Void = configureLegacyTabBarLayoutIfNeeded()
 
     private static func configureTabBarAppearance() {
         let appearance = UITabBarAppearance()
