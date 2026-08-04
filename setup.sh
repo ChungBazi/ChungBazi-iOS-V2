@@ -46,11 +46,13 @@ create_xcconfig() {
   local ENV="$1"
   local PROVISIONING_PROFILE="$2"
   local CODE_SIGN_IDENTITY="$3"
+  local APS_ENVIRONMENT="$4"
   cat > "$CONFIG_DIR/$ENV.xcconfig" <<EOF
 DEVELOPMENT_TEAM = UKY6HK6U6Y
 CODE_SIGN_STYLE = Manual
 PROVISIONING_PROFILE_SPECIFIER = $PROVISIONING_PROFILE
 CODE_SIGN_IDENTITY = $CODE_SIGN_IDENTITY
+APS_ENVIRONMENT = $APS_ENVIRONMENT
 BASE_URL =
 EOF
   echo "[xcconfig] $CONFIG_DIR/$ENV.xcconfig created. 값을 채운 후 빌드를 진행하세요."
@@ -58,12 +60,12 @@ EOF
 
 if [ ! -f "$CONFIG_DIR/Debug.xcconfig" ]; then
   echo "[xcconfig] Debug.xcconfig not found. Creating with defaults..."
-  create_xcconfig "Debug" "match Development com.yeonho.chungbazi" "Apple Development"
+  create_xcconfig "Debug" "match Development com.yeonho.chungbazi" "Apple Development" "development"
 fi
 
 if [ ! -f "$CONFIG_DIR/Release.xcconfig" ]; then
   echo "[xcconfig] Release.xcconfig not found. Creating with defaults..."
-  create_xcconfig "Release" "match AppStore com.yeonho.chungbazi" "Apple Distribution"
+  create_xcconfig "Release" "match AppStore com.yeonho.chungbazi" "Apple Distribution" "production"
 fi
 
 # 3. .mise.toml에 정의된 Tuist 버전 설치
