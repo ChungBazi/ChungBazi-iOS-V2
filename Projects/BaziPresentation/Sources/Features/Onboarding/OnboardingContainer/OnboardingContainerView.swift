@@ -75,6 +75,7 @@ extension OnboardingContainerView {
             BZButton("이전으로", type: .normal, size: .small) {
                 store.send(.didTapPreviousButton)
             }
+            .disabled(store.isSubmitting)
 
             BZButton("다음으로", type: .cta, size: .medium) {
                 store.send(.didTapNextButton)
