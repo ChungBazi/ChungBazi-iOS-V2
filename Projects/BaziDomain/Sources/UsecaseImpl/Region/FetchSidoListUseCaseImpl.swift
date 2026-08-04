@@ -11,7 +11,7 @@ public struct FetchSidoListUseCaseImpl: FetchSidoListUseCase {
     }
 
     /// 가나다순 Sorting
-    public func execute() async throws -> [RegionEntity] {
+    public func execute() async throws -> [RegionInfo] {
         let list = try await regionRepository.fetchSidoList()
         return list.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }

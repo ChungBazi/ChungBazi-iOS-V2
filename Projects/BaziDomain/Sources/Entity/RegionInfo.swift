@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct RegionEntity: Equatable, Sendable, Identifiable {
+public struct RegionInfo: Equatable, Sendable, Identifiable {
     public var id: String { code }
     public let code: String
     public let name: String
