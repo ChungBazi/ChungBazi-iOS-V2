@@ -1,7 +1,9 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import SwiftUI
+import UIKit
 
+import BaziDesign
 import ComposableArchitecture
 
 public struct MainView: View {
@@ -19,31 +21,67 @@ public struct MainView: View {
     // MARK: - Body
 
     public var body: some View {
-        content
+        Group {
+            if #available(iOS 18.0, *) {
+                modernTabView
+            } else {
+                legacyTabView
+            }
+        }
+        .tint(Color.grayBlack)
+        .onAppear {
+            Self.configureTabBarAppearance()
+            Self.configureLegacyTabBarLayoutIfNeeded()
+        }
     }
 }
 
-// MARK: - Subviews
+// MARK: - TabView
 
 extension MainView {
 
-    private var content: some View {
+    @available(iOS 18.0, *)
+    private var modernTabView: some View {
         TabView(selection: selectedTabBinding) {
+            ForEach(MainTab.allCases, id: \.self) { tab in
+                Tab(value: tab) {
+                    tabContent(for: tab)
+                } label: {
+                    tabLabel(for: tab)
+                }
+            }
+        }
+    }
+
+    private var legacyTabView: some View {
+        TabView(selection: selectedTabBinding) {
+            ForEach(MainTab.allCases, id: \.self) { tab in
+                tabContent(for: tab)
+                    .tabItem { tabLabel(for: tab) }
+                    .tag(tab)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabContent(for tab: MainTab) -> some View {
+        switch tab {
+        case .home:
             HomeView(store: store.scope(state: \.home, action: \.home))
-                .tabItem { Label("홈", systemImage: "house") }
-                .tag(MainTab.home)
-
+        case .search:
             SearchView(store: store.scope(state: \.search, action: \.search))
-                .tabItem { Label("검색", systemImage: "magnifyingglass") }
-                .tag(MainTab.search)
-
+        case .myPolicy:
             MyPolicyView(store: store.scope(state: \.myPolicy, action: \.myPolicy))
-                .tabItem { Label("내 정책", systemImage: "doc.text") }
-                .tag(MainTab.myPolicy)
-
+        case .profile:
             ProfileView(store: store.scope(state: \.profile, action: \.profile))
-                .tabItem { Label("프로필", systemImage: "person") }
-                .tag(MainTab.profile)
+        }
+    }
+
+    private func tabLabel(for tab: MainTab) -> some View {
+        let isSelected = tab == store.selectedTab
+        return Group {
+            Image.bazi(isSelected ? tab.item.selectedImage : tab.item.unselectedImage)
+            Text(tab.item.title)
         }
     }
 
@@ -52,6 +90,51 @@ extension MainView {
             get: { store.selectedTab },
             set: { store.send(.didSelectTab($0)) }
         )
+    }
+}
+
+// MARK: - Tab Bar Appearance
+
+extension MainView {
+
+    private static func configureTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Color.bazi(.bgWhite))
+        appearance.shadowColor = .clear
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor(Color.gray600)]
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
+    private static func configureLegacyTabBarLayoutIfNeeded() {
+        if #available(iOS 26.0, *) { return }
+
+        DispatchQueue.main.async {
+            guard
+                let window = UIApplication.shared.connectedScenes
+                    .compactMap({ $0 as? UIWindowScene })
+                    .flatMap(\.windows)
+                    .first(where: \.isKeyWindow),
+                let tabBar = findTabBar(in: window)
+            else { return }
+
+            tabBar.layer.cornerRadius = 16
+            tabBar.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            tabBar.clipsToBounds = true
+        }
+    }
+
+    private static func findTabBar(in view: UIView) -> UITabBar? {
+        if let tabBar = view as? UITabBar {
+            return tabBar
+        }
+        for subview in view.subviews {
+            if let found = findTabBar(in: subview) {
+                return found
+            }
+        }
+        return nil
     }
 }
 
