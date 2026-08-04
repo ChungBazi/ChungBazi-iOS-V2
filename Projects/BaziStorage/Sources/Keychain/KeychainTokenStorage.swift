@@ -25,8 +25,12 @@ public final class KeychainTokenStorage: TokenStorage, @unchecked Sendable {
     public var hasValidLocalSession: Bool { userDefaultsStorage.hasValidLocalSession }
 
     public func saveTokens(accessToken: String, refreshToken: String) {
-        save(key: .accessToken, value: accessToken)
-        save(key: .refreshToken, value: refreshToken)
+        let accessTokenSaved = save(key: .accessToken, value: accessToken)
+        let refreshTokenSaved = save(key: .refreshToken, value: refreshToken)
+        // 둘 중 하나라도 Keychain 저장에 실패하면 세션을 유효화하지 않는다 —
+        // 그렇지 않으면 accessToken은 있지만 refreshToken이 없는 상태에서
+        // hasValidLocalSession만 true가 되어, 이후 재발급 시점에 조용히 깨진다.
+        guard accessTokenSaved, refreshTokenSaved else { return }
         userDefaultsStorage.markSessionValid()
     }
 
@@ -37,26 +41,28 @@ public final class KeychainTokenStorage: TokenStorage, @unchecked Sendable {
     }
 
     // MARK: - Private, Keychain CRUD Low-level 메서드
-    private func save(key: Key, value: String) {
-        guard let data = value.data(using: .utf8) else { return }
-        
+    private func save(key: Key, value: String) -> Bool {
+        guard let data = value.data(using: .utf8) else { return false }
+
         // 기존에 값이 있는지 확인하기 위한 쿼리
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key.rawValue
         ]
-        
+
         // 기존에 값이 있다면 업데이트, 없다면 추가
-        let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-        
-        if status == errSecItemNotFound {
-            var newItem = query
-            newItem[kSecValueData as String] = data
-            // 첫 잠금 해제 후부터 재부팅 전까지 백그라운드에서도 접근 가능
-            newItem[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-            SecItemAdd(newItem as CFDictionary, nil)
+        let updateStatus = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if updateStatus == errSecSuccess {
+            return true
         }
+        guard updateStatus == errSecItemNotFound else { return false }
+
+        var newItem = query
+        newItem[kSecValueData as String] = data
+        // 첫 잠금 해제 후부터 재부팅 전까지 백그라운드에서도 접근 가능
+        newItem[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        return SecItemAdd(newItem as CFDictionary, nil) == errSecSuccess
     }
 
     private func read(key: Key) -> String? {

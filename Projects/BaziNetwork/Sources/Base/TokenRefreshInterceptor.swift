@@ -28,7 +28,7 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
     ) {
         var request = urlRequest
         let path = urlRequest.url?.path ?? ""
-        let isUnauthenticated = Self.unauthenticatedPaths.contains { path.contains($0) }
+        let isUnauthenticated = Self.unauthenticatedPaths.contains { path.hasSuffix($0) }
         if !isUnauthenticated, let token = tokenStorage.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
