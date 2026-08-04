@@ -53,10 +53,16 @@ extension BZSegmentControl {
 
     private func segmentItem(_ option: String) -> some View {
         let isSelected = selection == option
-        return Text(option)
-            .baziFont(isSelected ? .small14SB : .small14R)
-            .foregroundStyle(isSelected ? Color.grayBlack : Color.gray300)
-            .onTapGesture { selection = option }
+        return Button {
+            selection = option
+        } label: {
+            Text(option)
+                .baziFont(isSelected ? .small14SB : .small14R)
+                .foregroundStyle(isSelected ? Color.grayBlack : Color.gray300)
+                .frame(minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
