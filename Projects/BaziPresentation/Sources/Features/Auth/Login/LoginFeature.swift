@@ -22,7 +22,7 @@ public struct LoginFeature {
         case didTapAppleLoginButton(idToken: String, name: String?)
 
         // MARK: Internal
-        case loginResponse(Result<AuthSessionEntity, UseCaseError>)
+        case loginResponse(Result<AccountStatus, UseCaseError>)
 
         // MARK: Delegate
         case delegate(Delegate)

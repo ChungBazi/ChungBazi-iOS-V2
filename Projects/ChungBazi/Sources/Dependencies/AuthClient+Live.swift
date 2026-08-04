@@ -14,20 +14,21 @@ extension AuthClient: @retroactive DependencyKey {
         let tokenStorage: TokenStorage = KeychainTokenStorage()
         let sessionStateRepository: any SessionStateRepository = SessionStateRepositoryImpl(storage: UserDefaultsStorage())
 
-        let authRepository: any AuthRepository = AuthRepositoryImpl(networkProvider: AppDependencies.networkProvider)
+        let authRepository: any AuthRepository = AuthRepositoryImpl(
+            networkProvider: AppDependencies.networkProvider,
+            tokenStorage: tokenStorage
+        )
         let kakaoLoginService: any KakaoLoginService = KakaoLoginServiceImpl()
 
         let kakaoLoginUseCase: any KakaoLoginUseCase = KakaoLoginUseCaseImpl(
             kakaoLoginService: kakaoLoginService,
             authRepository: authRepository,
             pushTokenRepository: AppDependencies.pushTokenRepository,
-            tokenStorage: tokenStorage,
             sessionStateRepository: sessionStateRepository
         )
         let appleLoginUseCase: any AppleLoginUseCase = AppleLoginUseCaseImpl(
             authRepository: authRepository,
             pushTokenRepository: AppDependencies.pushTokenRepository,
-            tokenStorage: tokenStorage,
             sessionStateRepository: sessionStateRepository
         )
 

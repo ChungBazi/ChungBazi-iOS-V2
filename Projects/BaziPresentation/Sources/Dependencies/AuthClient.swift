@@ -6,8 +6,8 @@ import BaziDomain
 
 @DependencyClient
 public struct AuthClient: Sendable {
-    public var loginWithKakao: @Sendable () async throws -> AuthSessionEntity
-    public var loginWithApple: @Sendable (_ idToken: String, _ name: String?) async throws -> AuthSessionEntity
+    public var loginWithKakao: @Sendable () async throws -> AccountStatus
+    public var loginWithApple: @Sendable (_ idToken: String, _ name: String?) async throws -> AccountStatus
 }
 
 extension AuthClient: TestDependencyKey {
@@ -15,24 +15,10 @@ extension AuthClient: TestDependencyKey {
 
     public static let previewValue = AuthClient(
         loginWithKakao: {
-            AuthSessionEntity(
-                accessToken: "preview-access-token",
-                refreshToken: "preview-refresh-token",
-                email: "preview@chungbazi.com",
-                socialType: .kakao,
-                hasNickname: false,
-                hasCompletedOnboarding: false
-            )
+            AccountStatus(hasNickname: false, hasCompletedOnboarding: false)
         },
         loginWithApple: { _, _ in
-            AuthSessionEntity(
-                accessToken: "preview-access-token",
-                refreshToken: "preview-refresh-token",
-                email: "preview@chungbazi.com",
-                socialType: .apple,
-                hasNickname: false,
-                hasCompletedOnboarding: false
-            )
+            AccountStatus(hasNickname: false, hasCompletedOnboarding: false)
         }
     )
 }
