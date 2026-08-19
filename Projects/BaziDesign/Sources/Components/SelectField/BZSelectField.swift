@@ -14,8 +14,6 @@ public struct BZSelectField: View {
 
     @State private var isPresented = false
 
-    private let maxVisibleRows = 7
-
     // MARK: - Init
 
     public init(
@@ -46,8 +44,6 @@ public struct BZSelectField: View {
                 selection = option
                 isPresented = false
             }
-            .presentationDetents(sheetDetents)
-            .presentationDragIndicator(.visible)
         }
     }
 }
@@ -105,15 +101,6 @@ extension BZSelectField {
         if isDisabled { return Color.gray300 }
         else { return
             Color.gray700 }
-    }
-
-    private var sheetHeight: CGFloat {
-        BZBottomSheet.height(forRowCount: options.count, maxVisibleRows: maxVisibleRows)
-    }
-
-    /// 옵션이 maxVisibleRows를 넘어 스크롤이 필요할 때만 .large까지 끌 수 있게 한다.
-    private var sheetDetents: Set<PresentationDetent> {
-        options.count > maxVisibleRows ? [.height(sheetHeight), .large] : [.height(sheetHeight)]
     }
 }
 
