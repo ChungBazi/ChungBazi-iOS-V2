@@ -18,10 +18,3 @@ public struct NotificationItemDTO: Decodable {
     public let read: Bool
     public let elapsedTime: String
 }
-
-/// 알림 설정 조회 및 변경 Response DTO
-public struct NotificationSettingResponseDTO: Decodable {
-    public let allNotificationEnabled: Bool
-    public let policyNotificationEnabled: Bool
-    public let chungbaziNotificationEnabled: Bool
-}
