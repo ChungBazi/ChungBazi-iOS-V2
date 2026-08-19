@@ -26,4 +26,7 @@ public struct APIDomain {
     public static var recentSearchURL: URL { baseURL.appendingPathComponent("v1/recent-searches") }
     public static var policySearchURL: URL { baseURL.appendingPathComponent("v1/policies") }
     public static var homeURL: URL        { baseURL.appendingPathComponent("v1/home") }
+    public static var myPolicyURL: URL     { baseURL.appendingPathComponent("v1/my-policy") }
+    public static var policyURL: URL       { baseURL.appendingPathComponent("v1/policies") }
+    public static var notificationURL: URL { baseURL.appendingPathComponent("v1/notifications") }
 }
