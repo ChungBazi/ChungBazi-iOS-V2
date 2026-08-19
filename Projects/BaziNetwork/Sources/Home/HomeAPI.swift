@@ -10,6 +10,7 @@ public enum HomeAPI {
     case getPopularPolicies(category: String?, cursor: String?, size: Int)
     case getLatestPolicies(category: String?, cursor: String?, size: Int)
     case getDeadlinePolicies(category: String?, cursor: String?, size: Int)
+    case getPersonalizedPolicies(category: String)
 }
 
 extension HomeAPI: APITargetType {
@@ -23,6 +24,7 @@ extension HomeAPI: APITargetType {
         case .getPopularPolicies: return "/policies/popular"
         case .getLatestPolicies: return "/policies/latest"
         case .getDeadlinePolicies: return "/policies/deadline"
+        case .getPersonalizedPolicies: return "/policies/personalized"
         }
     }
     public var method: Moya.Method { .get }
@@ -51,6 +53,12 @@ extension HomeAPI: APITargetType {
             if let category { params["category"] = category }
             if let cursor { params["cursor"] = cursor }
             return .requestParameters(parameters: params, encoding: URLEncoding.queryString)
+
+        case .getPersonalizedPolicies(let category):
+            return .requestParameters(
+                parameters: ["category": category],
+                encoding: URLEncoding.queryString
+            )
         }
     }
 }
