@@ -11,6 +11,7 @@ struct DesignSystemSampleView: View {
 
     @State private var onboardingStep = 1
     @State private var nickname = ""
+    @State private var searchText = ""
     @State private var region: String?
     @State private var selectedChips: Set<String> = []
 
@@ -43,6 +44,7 @@ struct DesignSystemSampleView: View {
         case "Foundation":
             typographySection
             colorSection
+            searchFieldSection
 
         case "Button":
             buttonSection
@@ -70,6 +72,17 @@ struct DesignSystemSampleView: View {
 
         default:
             EmptyView()
+        }
+    }
+}
+
+// MARK: - BZSearchField
+
+extension DesignSystemSampleView {
+
+    private var searchFieldSection: some View {
+        sectionContainer(title: "BZSearchField") {
+            BZSearchField(text: $searchText)
         }
     }
 }
