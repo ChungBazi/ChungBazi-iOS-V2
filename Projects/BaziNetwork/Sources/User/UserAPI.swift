@@ -9,6 +9,7 @@ public enum UserAPI {
     case updatePolicyProfile(body: OnboardingRequestDTO)
     case updateName(body: NameRequestDTO)
     case getProfile
+    case withdraw(body: UserWithdrawalRequestDTO)
 }
 
 extension UserAPI: APITargetType {
@@ -19,7 +20,8 @@ extension UserAPI: APITargetType {
         case .getPolicyProfile,
              .updatePolicyProfile:           return "/policy-profile"
         case .updateName:                    return "/name"
-        case .getProfile:                    return "/me"
+        case .getProfile,
+             .withdraw:                      return "/me"
         }
     }
     public var method: Moya.Method {
@@ -28,6 +30,7 @@ extension UserAPI: APITargetType {
         case .getPolicyProfile:    return .get
         case .updatePolicyProfile, .updateName: return .patch
         case .getProfile:          return .get
+        case .withdraw:            return .delete
         }
     }
     public var task: Task {
@@ -35,6 +38,7 @@ extension UserAPI: APITargetType {
         case .onboarding(let body):          return .requestJSONEncodable(body)
         case .updatePolicyProfile(let body): return .requestJSONEncodable(body)
         case .updateName(let body):          return .requestJSONEncodable(body)
+        case .withdraw(let body):            return .requestJSONEncodable(body)
         case .getPolicyProfile, .getProfile: return .requestPlain
         }
     }
