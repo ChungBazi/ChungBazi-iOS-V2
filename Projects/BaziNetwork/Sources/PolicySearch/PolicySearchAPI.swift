@@ -9,7 +9,7 @@ public enum PolicySearchAPI {
 }
 
 extension PolicySearchAPI: APITargetType {
-    public var baseURL: URL { APIDomain.policySearchURL }
+    public var baseURL: URL { APIDomain.policyURL }
     
     public var path: String {
         switch self {
