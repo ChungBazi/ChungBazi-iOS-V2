@@ -4,7 +4,7 @@ import Foundation
 
 public struct RecentSearchResponseDTO: Decodable {
     public let autoSaveEnabled: Bool
-    public let keyword: [KeywordDTO]
+    public let keywords: [KeywordDTO]
     public let nextCursor: String
     public let hasNext: Bool
 }
