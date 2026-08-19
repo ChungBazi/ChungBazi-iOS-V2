@@ -30,3 +30,14 @@ public struct NameRequestDTO: Encodable {
         self.name = name
     }
 }
+
+/// 회원 탈퇴 Request DTO
+public struct UserWithdrawalRequestDTO: Encodable {
+    public let reasons: [String]
+    public let detail: String?
+
+    public init(reasons: [String], detail: String? = nil) {
+        self.reasons = reasons
+        self.detail = detail
+    }
+}
