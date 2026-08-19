@@ -26,7 +26,6 @@ public struct APIDomain {
     public static var recentSearchURL: URL { baseURL.appendingPathComponent("v1/recent-searches") }
     public static var homeURL: URL        { baseURL.appendingPathComponent("v1/home") }
     public static var myPolicyURL: URL     { baseURL.appendingPathComponent("v1/my-policy") }
-    // 정책 검색(Policy Search)과 상세(Policy Detail)가 공유하는 도메인
     public static var policyURL: URL       { baseURL.appendingPathComponent("v1/policies") }
     public static var notificationURL: URL { baseURL.appendingPathComponent("v1/notifications") }
 }
