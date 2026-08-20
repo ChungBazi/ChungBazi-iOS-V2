@@ -30,6 +30,12 @@ public enum BZCardSize: Equatable {
     }
 }
 
+/// `BZCard` 우측 상단 액세서리. 기본은 찜하기 별이고, `.memo`를 주면 같은 자리/크기에 메모 아이콘이 뜬다.
+public enum BZCardAccessory {
+    case bookmark
+    case memo(action: () -> Void)
+}
+
 public struct BZCard: View {
 
     // MARK: - Properties
@@ -41,6 +47,7 @@ public struct BZCard: View {
     private let title: String
     private let viewCount: Int
     private let image: Image?
+    private let accessory: BZCardAccessory
     @Binding private var isLiked: Bool
 
     // MARK: - Init
@@ -54,6 +61,7 @@ public struct BZCard: View {
         viewCount: Int,
         image: Image? = nil,
         isLiked: Binding<Bool>
+        accessory: BZCardAccessory = .bookmark
     ) {
         self.size = size
         self.badgeNumber = badgeNumber
@@ -63,6 +71,7 @@ public struct BZCard: View {
         self.viewCount = viewCount
         self.image = image
         self._isLiked = isLiked
+        self.accessory = accessory
     }
 
     // MARK: - Body
@@ -115,7 +124,25 @@ extension BZCard {
                     .foregroundStyle(Color.gray700)
             }
             Spacer(minLength: 8)
+            accessoryView
+        }
+    }
+
+    @ViewBuilder
+    private var accessoryView: some View {
+        switch accessory {
+        case .bookmark:
             BZLikeButton(isLiked: $isLiked)
+
+        case .memo(let action):
+            Button(action: action) {
+                Image.bazi(.memoIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("메모")
         }
     }
 

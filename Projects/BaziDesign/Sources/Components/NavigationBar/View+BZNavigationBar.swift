@@ -81,4 +81,20 @@ public extension View {
         )
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    /// Type=5 — 뒤로가기 + 중앙 타이틀 + 저장 버튼(활성 상태에 따라 색이 바뀜, 예: 메모 화면)
+    func baziNavigationBar_backWithTitleAndSaveButton(
+        _ title: String,
+        saveButtonTitle: String = "저장",
+        isSaveEnabled: Bool,
+        onBack: @escaping () -> Void,
+        onSave: @escaping () -> Void
+    ) -> some View {
+        baziNavigationBar(
+            leading: .back(action: onBack),
+            center: .title(title),
+            trailing: .saveButton(saveButtonTitle, isEnabled: isSaveEnabled, action: onSave)
+        )
+        .navigationBarTitleDisplayMode(.inline)
+    }
 }

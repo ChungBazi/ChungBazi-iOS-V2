@@ -25,6 +25,7 @@ public enum BaziImage {
 
     // MARK: Icon
     case bellIcon
+    case calendarIcon
     case checkIcon
     case eyeIcon
     case historyIcon
@@ -87,6 +88,7 @@ public enum BaziImage {
         case .endOnboardingBackground: return BaziDesignAsset.endOnboardingBackground.swiftUIImage
 
         case .bellIcon: return BaziDesignAsset.bellIcon.swiftUIImage
+        case .calendarIcon: return BaziDesignAsset.calendarIcon.swiftUIImage
         case .checkIcon: return BaziDesignAsset.checkIcon.swiftUIImage
         case .eyeIcon: return BaziDesignAsset.eyeIcon.swiftUIImage
         case .historyIcon: return BaziDesignAsset.historyIcon.swiftUIImage
