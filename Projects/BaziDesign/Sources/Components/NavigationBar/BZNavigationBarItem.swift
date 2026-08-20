@@ -7,6 +7,8 @@ public enum BZNavigationBarItem {
     case back(action: () -> Void)
     case title(String)
     case textButton(String, action: () -> Void)
+    /// 활성/비활성에 따라 색이 바뀌는 텍스트 버튼. (예: 메모 화면의 "저장")
+    case saveButton(String, isEnabled: Bool, action: () -> Void)
     case share(action: () -> Void)
     case bell(hasUnread: Bool, action: () -> Void)
     case logo
@@ -38,6 +40,14 @@ enum BZNavigationBarItemBuilder {
                     .baziFont(.small14R)
                     .foregroundStyle(Color.gray700)
             }
+
+        case .saveButton(let text, let isEnabled, let action):
+            Button(action: action) {
+                Text(text)
+                    .baziFont(.small14SB)
+                    .foregroundStyle(isEnabled ? Color.bazi(.primary) : Color.gray400)
+            }
+            .disabled(!isEnabled)
 
         case .share(let action):
             Button(action: action) {
