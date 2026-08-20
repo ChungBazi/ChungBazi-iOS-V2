@@ -12,6 +12,8 @@ public extension View {
     ) -> some View {
         self
             .navigationBarBackButtonHidden(true)
+            .toolbarBackground(Color.bazi(.bgWhite), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 if let leading {
                     ToolbarItem(placement: .topBarLeading) {
