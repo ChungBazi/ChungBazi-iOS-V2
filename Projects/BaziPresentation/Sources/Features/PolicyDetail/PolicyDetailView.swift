@@ -1,0 +1,226 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+import BaziDesign
+import ComposableArchitecture
+
+public struct PolicyDetailView: View {
+
+    // MARK: - Properties
+
+    @Bindable var store: StoreOf<PolicyDetailFeature>
+    @Environment(\.dismiss) private var dismiss
+
+    // MARK: - Init
+
+    public init(store: StoreOf<PolicyDetailFeature>) {
+        self.store = store
+    }
+
+    // MARK: - Body
+
+    public var body: some View {
+        Group {
+            if let detail = store.detail {
+                content(detail)
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task { store.send(.onAppear) }
+        .baziNavigationBar(
+            leading: .back(action: { dismiss() }),
+            trailing: .share(action: { store.send(.didTapShare) })
+        )
+    }
+}
+
+// MARK: - Subviews
+
+extension PolicyDetailView {
+
+    private func content(_ detail: PolicyDetail) -> some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    headerSection(detail)
+                    qnaSection(detail)
+                    recommendationSection(
+                        title: "민재님 이런 정책은 어때요?",
+                        background: Color.green100,
+                        policies: store.personalizedPolicies,
+                        section: .personalized
+                    )
+                    recommendationSection(
+                        title: "\(detail.category.rawValue) 분야의 가장 인기 있는 정책",
+                        background: Color.green50,
+                        policies: store.popularPolicies,
+                        section: .popular
+                    )
+                }
+            }
+            ctaButtons
+        }
+        .baziBackground(.bgWhite)
+    }
+
+    private func headerSection(_ detail: PolicyDetail) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                HStack(spacing: 8) {
+                    BZTag(detail.category.rawValue, type: .blue200)
+                    Text(detail.dDay)
+                        .baziFont(.small12SB)
+                        .foregroundStyle(Color.gray700)
+                }
+                Spacer()
+                bookmarkButton(isBookmarked: detail.isBookmarked)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(detail.title)
+                    .baziFont(.head24B)
+                    .foregroundStyle(Color.grayBlack)
+                Text(detail.summary)
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.grayBlack.opacity(0.8))
+            }
+
+            HStack(spacing: 4) {
+                Image.bazi(.eyeIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 14)
+                Text(detail.viewCount, format: .number)
+                    .baziFont(.small12R)
+            }
+            .foregroundStyle(Color.gray400)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.blue50)
+    }
+
+    private func bookmarkButton(isBookmarked: Bool) -> some View {
+        Button {
+            store.send(.didTapBookmark)
+        } label: {
+            Image.bazi(isBookmarked ? .filledStar : .unfilledStar)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("찜하기")
+    }
+
+    private func qnaSection(_ detail: PolicyDetail) -> some View {
+        VStack(alignment: .leading, spacing: 32) {
+            qnaRow(number: 1, question: "누가 신청할 수 있나요?", answer: detail.eligibilityDescription)
+            qnaRow(number: 2, question: "언제 신청할 수 있나요?", answer: detail.applyPeriod)
+            qnaRow(number: 3, question: "어떤 지원을 받을 수 있나요?", answer: detail.supportContent)
+            qnaRow(number: 4, question: "어떻게 신청하나요?", answer: detail.applicationMethod)
+            qnaRow(number: 5, question: "어떤 서류가 필요한가요?", answer: detail.submittedDocument)
+            if let url = detail.referenceURLs.first {
+                qnaRow(number: 6, question: "참고할 수 있는 링크예요", answer: url)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func qnaRow(number: Int, question: String, answer: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(number). \(question)")
+                .baziFont(.body15SB)
+                .foregroundStyle(Color.gray900)
+            Text(answer)
+                .baziFont(.small14R)
+                .foregroundStyle(Color.gray600)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func recommendationSection(
+        title: String,
+        background: Color,
+        policies: IdentifiedArrayOf<PolicySummary>,
+        section: PolicyDetailFeature.RecommendationSection
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(title)
+                .baziFont(.head18B)
+                .foregroundStyle(Color.gray900)
+                .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(policies) { policy in
+                        BZCard(
+                            size: .small,
+                            category: policy.category.rawValue,
+                            dDay: policy.dDay,
+                            title: policy.title,
+                            viewCount: policy.viewCount,
+                            isBookmarked: recommendationBookmarkBinding(section: section, id: policy.id)
+                        )
+                        .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(background)
+    }
+
+    private var ctaButtons: some View {
+        HStack(spacing: 10) {
+            BZButton("찜하기", type: .normal, size: .small) {
+                store.send(.didTapBookmark)
+            }
+            BZButton("바로 신청하러 가기", type: .cta, size: .medium) {
+                store.send(.didTapApply)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 36)
+        .baziBackground(.bgWhite)
+    }
+}
+
+// MARK: - Bindings
+
+extension PolicyDetailView {
+
+    private func recommendationBookmarkBinding(
+        section: PolicyDetailFeature.RecommendationSection,
+        id: Int
+    ) -> Binding<Bool> {
+        Binding(
+            get: {
+                switch section {
+                case .personalized: return store.personalizedPolicies[id: id]?.isBookmarked ?? false
+                case .popular: return store.popularPolicies[id: id]?.isBookmarked ?? false
+                }
+            },
+            set: { _ in store.send(.didToggleRecommendationBookmark(section: section, id: id)) }
+        )
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    NavigationStack {
+        PolicyDetailView(
+            store: Store(initialState: .init(policyId: 1)) {
+                PolicyDetailFeature()
+            }
+        )
+    }
+}
