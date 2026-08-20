@@ -53,6 +53,9 @@ public struct MainFeature {
                 state.selectedTab = tab
                 return .none
 
+            case .profile(.delegate(.didLogout)):
+                return .send(.delegate(.didLogout))
+
             case .home, .search, .myPolicy, .profile, .delegate:
                 return .none
             }
