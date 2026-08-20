@@ -5,6 +5,7 @@ import SwiftUI
 public enum BaziImage {
     case appLogo
     case imagePlaceholder
+    case personalizedEmptyIllustration
 
     // MARK: Background
     case loginBackground
@@ -55,6 +56,7 @@ public enum BaziImage {
         switch self {
         case .appLogo: return BaziDesignAsset.appLogo.swiftUIImage
         case .imagePlaceholder: return BaziDesignAsset.imagePlaceholder.swiftUIImage
+        case .personalizedEmptyIllustration: return BaziDesignAsset.personalizedEmptyIllustration.swiftUIImage
 
         case .loginBackground: return BaziDesignAsset.loginBackground.swiftUIImage
         case .startOnboardingBackground: return BaziDesignAsset.startOnboardingBackground.swiftUIImage
