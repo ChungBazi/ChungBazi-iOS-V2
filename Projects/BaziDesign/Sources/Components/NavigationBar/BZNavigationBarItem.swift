@@ -64,7 +64,7 @@ enum BZNavigationBarItemBuilder {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 61.5)
-                .tint(.bazi(.primary))
+                .foregroundStyle(Color.bazi(.primary))
         }
     }
 }
