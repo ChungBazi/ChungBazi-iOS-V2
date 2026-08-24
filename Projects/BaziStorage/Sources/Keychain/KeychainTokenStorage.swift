@@ -22,14 +22,14 @@ public final class KeychainTokenStorage: TokenStorage, @unchecked Sendable {
     public var accessToken: String? { read(key: .accessToken) }
     public var refreshToken: String? { read(key: .refreshToken) }
 
-    public var hasValidLocalSession: Bool { userDefaultsStorage.hasValidLocalSession }
+    public var hasSessionMarker: Bool { userDefaultsStorage.hasSessionMarker }
 
     public func saveTokens(accessToken: String, refreshToken: String) {
         let accessTokenSaved = save(key: .accessToken, value: accessToken)
         let refreshTokenSaved = save(key: .refreshToken, value: refreshToken)
-        // 둘 중 하나라도 Keychain 저장에 실패하면 세션을 유효화하지 않는다 —
+        // 둘 중 하나라도 Keychain 저장에 실패하면 세션 마커를 세우지 않는다 —
         // 그렇지 않으면 accessToken은 있지만 refreshToken이 없는 상태에서
-        // hasValidLocalSession만 true가 되어, 이후 재발급 시점에 조용히 깨진다.
+        // 세션 마커만 true가 되어, 이후 재발급 시점에 조용히 깨진다.
         guard accessTokenSaved, refreshTokenSaved else { return }
         userDefaultsStorage.markSessionValid()
     }

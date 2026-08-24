@@ -12,7 +12,7 @@ public struct PolicyProfileResponseDTO: Decodable {
     public let interestCategories: [String]
 }
 
-public struct UserInfoResponseDTO: Decodable {
+public struct UserInfoResponseDTO: Decodable, Sendable {
     public let name: String
     public let email: String
     public let socialType: String
