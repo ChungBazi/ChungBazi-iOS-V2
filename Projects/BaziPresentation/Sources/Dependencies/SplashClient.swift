@@ -4,7 +4,7 @@ import ComposableArchitecture
 
 @DependencyClient
 public struct SplashClient: Sendable {
-    public var checkSession: @Sendable () -> (hasValidToken: Bool, hasNickname: Bool, hasCompletedOnboarding: Bool) = {
+    public var checkSession: @Sendable () async -> (hasValidToken: Bool, hasNickname: Bool, hasCompletedOnboarding: Bool) = {
         (false, false, false)
     }
 }

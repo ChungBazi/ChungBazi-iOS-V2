@@ -10,11 +10,17 @@ import BaziStorage
 extension SplashClient: @retroactive DependencyKey {
 
     public static let liveValue: SplashClient = {
+        let tokenStorage = KeychainTokenStorage()
+        let authRepository: any AuthRepository = AuthRepositoryImpl(
+            networkProvider: AppDependencies.networkProvider,
+            tokenStorage: tokenStorage
+        )
         let checkSessionUseCase: any CheckSessionUseCase = CheckSessionUseCaseImpl(
-            tokenStorage: KeychainTokenStorage(),
-            sessionStateRepository: SessionStateRepositoryImpl(storage: UserDefaultsStorage())
+            tokenStorage: tokenStorage,
+            sessionStateRepository: SessionStateRepositoryImpl(storage: UserDefaultsStorage()),
+            authRepository: authRepository
         )
 
-        return SplashClient(checkSession: { checkSessionUseCase.execute() })
+        return SplashClient(checkSession: { await checkSessionUseCase.execute() })
     }()
 }

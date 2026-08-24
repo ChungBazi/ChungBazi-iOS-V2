@@ -10,7 +10,7 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         case fcmToken
         case hasSetNickname
         case hasCompletedOnboarding
-        case refreshTokenExpiryDate
+        case sessionMarker
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -37,30 +37,19 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         defaults.removeObject(forKey: Key.hasCompletedOnboarding.rawValue)
     }
 
-    // MARK: - Local Session Validity
+    // MARK: - Session Marker
 
-    /// refreshToken 만료 시각(서버 기준 7일)을 로컬에서 추적한 결과 아직 유효한지 여부.
-    /// 이 값은 UserDefaults에 저장되므로, 앱을 삭제 후 재설치하면 Keychain에 남아있는
-    /// 토큰과 무관하게 `false`가 되어 재로그인을 유도한다.
-    public var hasValidLocalSession: Bool {
-        guard let expiryDate = refreshTokenExpiryDate else { return false }
-        return Date() < expiryDate
+    /// 이 설치에서 로그인한 적 있는지. 로그인/재발급 시 true, 로그아웃 시 false.
+    /// 재설치하면 UserDefaults가 초기화되어 false → Keychain 토큰과 무관하게 재로그인 유도.
+    public var hasSessionMarker: Bool {
+        defaults.bool(forKey: Key.sessionMarker.rawValue)
     }
 
     public func markSessionValid() {
-        refreshTokenExpiryDate = Date().addingTimeInterval(Self.refreshTokenLifetime)
+        defaults.set(true, forKey: Key.sessionMarker.rawValue)
     }
 
     public func invalidateSession() {
-        refreshTokenExpiryDate = nil
-    }
-
-    // MARK: - Private
-
-    private static let refreshTokenLifetime: TimeInterval = 7 * 24 * 60 * 60
-
-    private var refreshTokenExpiryDate: Date? {
-        get { defaults.object(forKey: Key.refreshTokenExpiryDate.rawValue) as? Date }
-        set { defaults.set(newValue, forKey: Key.refreshTokenExpiryDate.rawValue) }
+        defaults.set(false, forKey: Key.sessionMarker.rawValue)
     }
 }

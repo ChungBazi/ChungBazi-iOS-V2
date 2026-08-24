@@ -71,7 +71,7 @@ public struct SplashFeature {
                         await send(.didFinishMinimumDuration)
                     },
                     .run { [splashClient] send in
-                        let session = splashClient.checkSession()
+                        let session = await splashClient.checkSession()
                         await send(.sessionChecked(
                             hasValidToken: session.hasValidToken,
                             hasNickname: session.hasNickname,

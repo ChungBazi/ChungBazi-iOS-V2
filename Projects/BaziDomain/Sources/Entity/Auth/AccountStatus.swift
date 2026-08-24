@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// 로그인(`kakaoLogin`/`appleLogin`)의 결과. 화면 분기용 계정 상태 플래그.
 public struct AccountStatus: Equatable, Sendable {
     public let hasNickname: Bool
     public let hasCompletedOnboarding: Bool
