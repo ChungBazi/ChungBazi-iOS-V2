@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct HomePolicySectionResponseDTO: Decodable {
+public struct HomePolicySectionResponseDTO: Decodable, Sendable {
     public let hasUnreadNotification: Bool
     public let personalizedPolicies: [PolicyItemDTO]
     public let recentViewedPolicies: [PolicyItemDTO]
@@ -12,19 +12,19 @@ public struct HomePolicySectionResponseDTO: Decodable {
 }
 
 /// 분야별 맞춤 정책 목록 Response DTO
-public struct PersonalizedPolicyResponseDTO: Decodable {
+public struct PersonalizedPolicyResponseDTO: Decodable, Sendable {
     public let policies: [PolicyItemDTO]
 }
 
 /// Home과 Search 결과 정책 리스트 Response를 담는 DTO
-public struct PolicyListResponseDTO: Decodable {
+public struct PolicyListResponseDTO: Decodable, Sendable {
     public let totalCount: Int
     public let policies: [PolicyItemDTO]
     public let nextCursor: String
     public let hasNext: Bool
 }
 
-public struct PolicyItemDTO: Decodable {
+public struct PolicyItemDTO: Decodable, Sendable {
     public let policyId: Int
     public let category: String
     public let categoryName: String
