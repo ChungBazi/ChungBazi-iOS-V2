@@ -19,6 +19,10 @@ public struct AppFeature {
     // MARK: - Action
 
     public enum Action {
+        // MARK: View
+        case task
+        case forceLoggedOut
+
         // MARK: Child
         case splash(SplashFeature.Action)
         case login(LoginFeature.Action)
@@ -26,6 +30,12 @@ public struct AppFeature {
         case onboarding(OnboardingStartFeature.Action)
         case main(MainFeature.Action)
     }
+
+    // MARK: - Dependencies
+
+    @Dependency(\.sessionClient) var sessionClient
+
+    private enum CancelID { case forceLogout }
 
     // MARK: - Init
 
@@ -36,6 +46,21 @@ public struct AppFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .task:
+                // 런타임 강제 로그아웃(.forceLogout) 구독
+                return .run { [sessionClient] send in
+                    for await _ in sessionClient.forceLogoutEvents() {
+                        await send(.forceLoggedOut)
+                    }
+                }
+                .cancellable(id: CancelID.forceLogout, cancelInFlight: true)
+
+            case .forceLoggedOut:
+                if case .login = state { return .none } // 이미 로그인 화면이면 무시(멱등)
+                sessionClient.resetSession()
+                state = .login(LoginFeature.State())
+                return .none
+
             case .splash(.delegate(.didFinishSplash(let hasValidToken, let hasNickname, let hasCompletedOnboarding))):
                 state = Self.resolveRoot(
                     hasValidToken: hasValidToken,

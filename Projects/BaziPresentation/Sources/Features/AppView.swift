@@ -20,6 +20,7 @@ public struct AppView: View {
 
     public var body: some View {
         content
+            .task { await store.send(.task).finish() }
     }
 }
 
