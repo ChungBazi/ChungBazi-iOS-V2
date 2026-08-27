@@ -115,6 +115,7 @@ extension HomeView {
             }
             .padding(.bottom, 20)
         }
+        .refreshable { await store.send(.pullToRefresh).finish() }
     }
 }
 
@@ -164,6 +165,7 @@ extension HomeView {
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
+                            image: policy.category.cardImage.image,
                             isBookmarked: bookmarkBinding(section: .personalized, id: policy.id)
                         )
                         .onTapGesture { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }

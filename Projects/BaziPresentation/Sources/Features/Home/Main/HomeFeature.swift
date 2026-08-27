@@ -48,6 +48,7 @@ public struct HomeFeature {
         // MARK: View
         case task
         case didTapRetry
+        case pullToRefresh
         case didTapBell
         case didTapCategory(PolicyCategory)
         case didTapPersonalizedMore
@@ -81,12 +82,26 @@ public struct HomeFeature {
             case .task, .didTapRetry:
                 return loadFeed(&state)
 
+            case .pullToRefresh:
+                // 당김 새로고침: .loading으로 바꾸지 않고 캐시를 우회해 다시 가져온다.
+                return .run { [homeClient] send in
+                    do {
+                        let feed = try await homeClient.fetchHomeFeed(true)
+                        await send(.feedResponse(.success(feed)))
+                    } catch {
+                        await send(.feedResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
             case let .feedResponse(.success(feed)):
                 state.feed = .loaded(feed)
                 return .none
 
             case let .feedResponse(.failure(error)):
-                state.feed = .failed(message(for: error))
+                // 새로고침 실패 시 기존 데이터는 유지, 데이터가 없을 때만 실패 화면.
+                if state.feed.value == nil {
+                    state.feed = .failed(message(for: error))
+                }
                 return .none
 
             case .didTapBell:
@@ -150,7 +165,7 @@ public struct HomeFeature {
         state.feed = .loading
         return .run { [homeClient] send in
             do {
-                let feed = try await homeClient.fetchHomeFeed()
+                let feed = try await homeClient.fetchHomeFeed(false)
                 await send(.feedResponse(.success(feed)))
             } catch {
                 await send(.feedResponse(.failure(UseCaseError.map(error))))
