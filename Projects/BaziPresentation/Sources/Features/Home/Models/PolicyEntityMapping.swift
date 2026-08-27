@@ -65,7 +65,6 @@ extension HomeFeedVO {
             IdentifiedArray(uniqueElements: list.map(PolicySummary.init))
         }
         self.init(
-            userName: entity.userName,
             hasUnreadNotification: entity.hasUnreadNotification,
             personalized: map(entity.personalized),
             recentViewed: map(entity.recentViewed),

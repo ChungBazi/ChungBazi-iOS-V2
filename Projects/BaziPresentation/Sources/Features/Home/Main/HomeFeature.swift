@@ -35,9 +35,8 @@ public struct HomeFeature {
     public struct State: Equatable {
         public var path = StackState<Path.State>()
         public var feed: LoadingState<HomeFeedVO> = .idle
-
-        /// 인사말·맞춤정책 타이틀에 쓰는 사용자 이름. 로드된 피드에서 파생한다.
-        public var userName: String { feed.value?.userName ?? "" }
+        /// 인사말·맞춤정책 타이틀용 사용자 이름. 세션(로컬 저장)에서 읽는다.
+        public var userName = ""
 
         public init() {}
     }
@@ -69,6 +68,7 @@ public struct HomeFeature {
     // MARK: - Dependencies
 
     @Dependency(\.homeClient) var homeClient
+    @Dependency(\.sessionClient) var sessionClient
 
     // MARK: - Init
 
@@ -79,7 +79,11 @@ public struct HomeFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task, .didTapRetry:
+            case .task:
+                state.userName = sessionClient.userName() ?? ""
+                return loadFeed(&state)
+
+            case .didTapRetry:
                 return loadFeed(&state)
 
             case .pullToRefresh:
@@ -100,7 +104,7 @@ public struct HomeFeature {
             case let .feedResponse(.failure(error)):
                 // 새로고침 실패 시 기존 데이터는 유지, 데이터가 없을 때만 실패 화면.
                 if state.feed.value == nil {
-                    state.feed = .failed(message(for: error))
+                    state.feed = .failed(error.loadFailureMessage)
                 }
                 return .none
 
@@ -183,13 +187,6 @@ public struct HomeFeature {
         case .newest: feed.newest[id: id]?.isBookmarked.toggle()
         }
         state.feed = .loaded(feed)
-    }
-
-    private func message(for error: UseCaseError) -> String {
-        switch error {
-        case .network: return "네트워크 연결을 확인해 주세요."
-        case .cancelled, .unknown: return "정책을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
-        }
     }
 }
 
