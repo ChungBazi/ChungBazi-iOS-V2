@@ -9,7 +9,11 @@ public struct OnboardingCompleteFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public init() {}
+        public let nickname: String
+
+        public init(nickname: String) {
+            self.nickname = nickname
+        }
     }
 
     // MARK: - Action

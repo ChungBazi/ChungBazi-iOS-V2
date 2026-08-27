@@ -58,8 +58,8 @@ public struct OnboardingStartFeature {
                 state.path.removeLast()
                 return .none
 
-            case .path(.element(id: _, action: .onboardingContainer(.delegate(.didCompleteAllSteps)))):
-                state.path.append(.onboardingComplete(OnboardingCompleteFeature.State()))
+            case let .path(.element(id: _, action: .onboardingContainer(.delegate(.didCompleteAllSteps(nickname))))):
+                state.path.append(.onboardingComplete(OnboardingCompleteFeature.State(nickname: nickname)))
                 return .none
 
             case .path(.element(id: _, action: .onboardingComplete(.delegate(.didTapConfirm)))):

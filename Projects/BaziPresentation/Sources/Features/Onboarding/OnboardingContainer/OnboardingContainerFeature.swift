@@ -99,7 +99,7 @@ public struct OnboardingContainerFeature {
         // MARK: Internal
         case sidoListResponse(Result<[RegionInfo], UseCaseError>)
         case sigunguListResponse(Result<[RegionInfo], UseCaseError>)
-        case didSubmitOnboarding
+        case didSubmitOnboarding(String)
         case didFailToSubmitOnboarding(UseCaseError)
 
         // MARK: Delegate
@@ -110,7 +110,7 @@ public struct OnboardingContainerFeature {
 
     public enum Delegate: Equatable {
         case didTapPrevious
-        case didCompleteAllSteps
+        case didCompleteAllSteps(String)
     }
 
     // MARK: - Dependencies
@@ -196,9 +196,9 @@ public struct OnboardingContainerFeature {
                 state.currentStep = nextStep
                 return .none
 
-            case .didSubmitOnboarding:
+            case .didSubmitOnboarding(let nickname):
                 state.isSubmitting = false
-                return .send(.delegate(.didCompleteAllSteps))
+                return .send(.delegate(.didCompleteAllSteps(nickname)))
 
             case .didFailToSubmitOnboarding:
                 state.isSubmitting = false
@@ -261,8 +261,8 @@ public struct OnboardingContainerFeature {
         state.isSubmitting = true
         return .run { [onboardingClient] send in
             do {
-                try await onboardingClient.submitOnboarding(info)
-                await send(.didSubmitOnboarding)
+                let nickname = try await onboardingClient.submitOnboarding(info)
+                await send(.didSubmitOnboarding(nickname))
             } catch {
                 await send(.didFailToSubmitOnboarding(UseCaseError.map(error)))
             }

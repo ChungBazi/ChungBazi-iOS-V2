@@ -17,3 +17,8 @@ public struct UserInfoResponseDTO: Decodable, Sendable {
     public let email: String
     public let socialType: String
 }
+
+/// 온보딩 제출 응답. 서버가 설정된 닉네임을 돌려준다.
+public struct OnboardingResponseDTO: Decodable, Sendable {
+    public let nickname: String
+}

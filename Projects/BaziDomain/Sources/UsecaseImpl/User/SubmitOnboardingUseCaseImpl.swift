@@ -12,8 +12,9 @@ public struct SubmitOnboardingUseCaseImpl: SubmitOnboardingUseCase {
         self.sessionStateRepository = sessionStateRepository
     }
 
-    public func execute(_ info: OnboardingInfo) async throws {
-        try await userRepository.submitOnboarding(info)
+    public func execute(_ info: OnboardingInfo) async throws -> String {
+        let nickname = try await userRepository.submitOnboarding(info)
         sessionStateRepository.setHasCompletedOnboarding(true)
+        return nickname
     }
 }

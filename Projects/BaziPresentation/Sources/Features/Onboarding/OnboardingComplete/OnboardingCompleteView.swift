@@ -29,10 +29,9 @@ public struct OnboardingCompleteView: View {
 extension OnboardingCompleteView {
 
     private var content: some View {
-        // TODO: 온보딩 정보 POST 응답으로 닉네임이 내려오면 "{닉네임}님에게 딱 맞는"으로 교체.
         OnboardingBackgroundLayout(
             background: .endOnboardingBackground,
-            title: "회원님에게 딱 맞는\n정책을 찾았어요!"
+            title: "\(store.nickname)님에게 딱 맞는\n정책을 찾았어요!"
         ) {
             confirmButton
         }
@@ -49,7 +48,7 @@ extension OnboardingCompleteView {
 
 #Preview {
     OnboardingCompleteView(
-        store: Store(initialState: .init()) {
+        store: Store(initialState: .init(nickname: "청바지")) {
             OnboardingCompleteFeature()
         }
     )

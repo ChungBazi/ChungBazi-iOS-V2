@@ -17,7 +17,8 @@ public struct UserRepositoryImpl: UserRepository {
         try await networkProvider.requestStatusCode(UserAPI.updateName(body: NameRequestDTO(name: name)))
     }
 
-    public func submitOnboarding(_ info: OnboardingInfo) async throws {
-        try await networkProvider.requestStatusCode(UserAPI.onboarding(body: info.toRequestDTO()))
+    public func submitOnboarding(_ info: OnboardingInfo) async throws -> String {
+        let dto: OnboardingResponseDTO = try await networkProvider.request(UserAPI.onboarding(body: info.toRequestDTO()))
+        return dto.nickname
     }
 }
