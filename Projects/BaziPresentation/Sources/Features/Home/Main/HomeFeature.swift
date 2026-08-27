@@ -2,6 +2,7 @@
 
 import Foundation
 
+import BaziDomain
 import ComposableArchitecture
 
 @Reducer
@@ -33,29 +34,20 @@ public struct HomeFeature {
     @ObservableState
     public struct State: Equatable {
         public var path = StackState<Path.State>()
+        public var feed: LoadingState<HomeFeedVO> = .idle
 
-        public var userName: String
-        public var personalizedPolicies: IdentifiedArrayOf<PolicySummary>
-        public var recentViewedPolicies: IdentifiedArrayOf<PolicySummary>
-        public var popularPolicies: IdentifiedArrayOf<PolicySummary>
-        public var deadlinePolicies: IdentifiedArrayOf<PolicySummary>
-        public var newPolicies: IdentifiedArrayOf<PolicySummary>
+        /// 인사말·맞춤정책 타이틀에 쓰는 사용자 이름. 로드된 피드에서 파생한다.
+        public var userName: String { feed.value?.userName ?? "" }
 
-        public init() {
-            self.userName = "민재"
-            self.personalizedPolicies = []
-            self.recentViewedPolicies = []
-            self.popularPolicies = []
-            self.deadlinePolicies = []
-            self.newPolicies = []
-        }
+        public init() {}
     }
 
     // MARK: - Action
 
     public enum Action {
         // MARK: View
-        case onAppear
+        case task
+        case didTapRetry
         case didTapBell
         case didTapCategory(PolicyCategory)
         case didTapPersonalizedMore
@@ -66,14 +58,16 @@ public struct HomeFeature {
         case didTapPolicy(section: PolicySection, id: Int)
         case didToggleBookmark(section: PolicySection, id: Int)
 
+        // MARK: Internal
+        case feedResponse(Result<HomeFeedVO, UseCaseError>)
+
         // MARK: Child
         case path(StackActionOf<Path>)
     }
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 정책 UseCase가 준비되면 추가
-    // @Dependency(\.policyClient) var policyClient
+    @Dependency(\.homeClient) var homeClient
 
     // MARK: - Init
 
@@ -84,13 +78,15 @@ public struct HomeFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                // TODO: policyClient가 준비되면 HomeAPI.getHomePolicySection 응답으로 교체한다.
-                state.personalizedPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2)))
-                state.recentViewedPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.suffix(2)))
-                state.popularPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2)))
-                state.deadlinePolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.dropFirst(2).prefix(2)))
-                state.newPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.dropFirst(4).prefix(2)))
+            case .task, .didTapRetry:
+                return loadFeed(&state)
+
+            case let .feedResponse(.success(feed)):
+                state.feed = .loaded(feed)
+                return .none
+
+            case let .feedResponse(.failure(error)):
+                state.feed = .failed(message(for: error))
                 return .none
 
             case .didTapBell:
@@ -148,13 +144,36 @@ public struct HomeFeature {
 
     // MARK: - Private
 
+    /// 홈 피드를 조회한다. 이미 로딩 중이거나 로드 완료면 재요청하지 않는다.
+    private func loadFeed(_ state: inout State) -> Effect<Action> {
+        if state.feed.isLoading || state.feed.value != nil { return .none }
+        state.feed = .loading
+        return .run { [homeClient] send in
+            do {
+                let feed = try await homeClient.fetchHomeFeed()
+                await send(.feedResponse(.success(feed)))
+            } catch {
+                await send(.feedResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+    }
+
     private func toggleBookmark(section: PolicySection, id: Int, state: inout State) {
+        guard var feed = state.feed.value else { return }
         switch section {
-        case .personalized: state.personalizedPolicies[id: id]?.isBookmarked.toggle()
-        case .recentViewed: state.recentViewedPolicies[id: id]?.isBookmarked.toggle()
-        case .popular: state.popularPolicies[id: id]?.isBookmarked.toggle()
-        case .deadline: state.deadlinePolicies[id: id]?.isBookmarked.toggle()
-        case .newest: state.newPolicies[id: id]?.isBookmarked.toggle()
+        case .personalized: feed.personalized[id: id]?.isBookmarked.toggle()
+        case .recentViewed: feed.recentViewed[id: id]?.isBookmarked.toggle()
+        case .popular: feed.popular[id: id]?.isBookmarked.toggle()
+        case .deadline: feed.deadline[id: id]?.isBookmarked.toggle()
+        case .newest: feed.newest[id: id]?.isBookmarked.toggle()
+        }
+        state.feed = .loaded(feed)
+    }
+
+    private func message(for error: UseCaseError) -> String {
+        switch error {
+        case .network: return "네트워크 연결을 확인해 주세요."
+        case .cancelled, .unknown: return "정책을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
         }
     }
 }

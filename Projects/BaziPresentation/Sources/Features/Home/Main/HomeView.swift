@@ -24,8 +24,10 @@ public struct HomeView: View {
             path: $store.scope(state: \.path, action: \.path)
         ) {
             content
-                .task { store.send(.onAppear) }
-                .baziNavigationBar_home {
+                .task { store.send(.task) }
+                .baziNavigationBar_home(
+                    hasUnread: store.feed.value?.hasUnreadNotification ?? false
+                ) {
                     store.send(.didTapBell)
                 }
         } destination: { store in
@@ -43,46 +45,76 @@ public struct HomeView: View {
     }
 }
 
-// MARK: - Subviews
+// MARK: - Content (LoadingState 분기)
 
 extension HomeView {
 
     private var content: some View {
+        Group {
+            switch store.feed {
+            case .idle, .loading:
+                loadingView
+            case let .loaded(feed):
+                loadedContent(feed)
+            case .failed:
+                retryView
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .baziBackground(.bgGray)
+    }
+
+    private var loadingView: some View {
+        BZLoadingView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var retryView: some View {
+        // .failed의 연관 메시지는 로깅용이며, 화면엔 BZRetryView의 고정 문구를 쓴다.
+        BZRetryView {
+            store.send(.didTapRetry)
+        }
+    }
+
+    private func loadedContent(_ feed: HomeFeedVO) -> some View {
         ScrollView {
             VStack(spacing: 0) {
-                personalizedSection
+                personalizedSection(feed)
                 categorySection
                 cardRowSection(
                     title: "최근 본 정책",
                     subtitle: "내가 관심 있게 살펴본 정책이에요!",
-                    policies: store.recentViewedPolicies,
+                    emptyMessage: "관심 가는 정책을 눌러보세요",
+                    policies: feed.recentViewed,
                     section: .recentViewed
                 )
                 cardRowSection(
                     title: "인기 정책",
                     subtitle: "가장 인기 있는 정책을 모아봤어요!",
-                    policies: store.popularPolicies,
+                    emptyMessage: "지금은 인기 정책이 없어요",
+                    policies: feed.popular,
                     section: .popular,
                     moreAction: { store.send(.didTapPopularMore) }
                 )
                 cardRowSection(
                     title: "마감임박 정책",
                     subtitle: "곧 마감되는 정책을 놓치지 마세요!",
-                    policies: store.deadlinePolicies,
+                    emptyMessage: "마감이 임박한 정책이 없어요",
+                    policies: feed.deadline,
                     section: .deadline,
                     moreAction: { store.send(.didTapDeadlineMore) }
                 )
                 cardRowSection(
                     title: "새로 뜬 정책",
                     subtitle: "따끈하게 새로 올라온 정책을 먼저 확인해봐요!",
-                    policies: store.newPolicies,
+                    emptyMessage: "새로 올라온 정책이 없어요",
+                    policies: feed.newest,
                     section: .newest,
                     moreAction: { store.send(.didTapNewMore) }
                 )
             }
             .padding(.bottom, 20)
         }
-        .baziBackground(.bgGray)
     }
 }
 
@@ -90,12 +122,12 @@ extension HomeView {
 
 extension HomeView {
 
-    private var personalizedSection: some View {
+    private func personalizedSection(_ feed: HomeFeedVO) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            if store.personalizedPolicies.isEmpty {
+            if feed.personalized.isEmpty {
                 personalizedEmptyState
             } else {
-                personalizedContent
+                personalizedContent(feed.personalized)
             }
         }
         .padding(.vertical, 18)
@@ -103,7 +135,7 @@ extension HomeView {
         .background(Color.blue100)
     }
 
-    private var personalizedContent: some View {
+    private func personalizedContent(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -125,7 +157,7 @@ extension HomeView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
-                    ForEach(store.personalizedPolicies) { policy in
+                    ForEach(policies) { policy in
                         BZCard(
                             size: .large,
                             category: policy.category.rawValue,
@@ -236,6 +268,7 @@ extension HomeView {
     private func cardRowSection(
         title: String,
         subtitle: String,
+        emptyMessage: String,
         policies: IdentifiedArrayOf<PolicySummary>,
         section: HomeFeature.PolicySection,
         moreAction: (() -> Void)? = nil
@@ -251,7 +284,7 @@ extension HomeView {
                         .foregroundStyle(Color.gray500)
                 }
                 Spacer()
-                if let moreAction {
+                if let moreAction, !policies.isEmpty {
                     Button("더보기", action: moreAction)
                         .baziFont(.small12R)
                         .foregroundStyle(Color.gray400)
@@ -259,21 +292,30 @@ extension HomeView {
             }
             .padding(.horizontal, 20)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 12) {
-                    ForEach(policies) { policy in
-                        BZCard(
-                            size: .small,
-                            category: policy.category.rawValue,
-                            dDay: policy.dDay,
-                            title: policy.title,
-                            viewCount: policy.viewCount,
-                            isBookmarked: bookmarkBinding(section: section, id: policy.id)
-                        )
-                        .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
+            if policies.isEmpty {
+                Text(emptyMessage)
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray400)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 12) {
+                        ForEach(policies) { policy in
+                            BZCard(
+                                size: .small,
+                                category: policy.category.rawValue,
+                                dDay: policy.dDay,
+                                title: policy.title,
+                                viewCount: policy.viewCount,
+                                isBookmarked: bookmarkBinding(section: section, id: policy.id)
+                            )
+                            .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
+                        }
                     }
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
             }
         }
         .padding(.top, 44)
@@ -287,12 +329,13 @@ extension HomeView {
     private func bookmarkBinding(section: HomeFeature.PolicySection, id: Int) -> Binding<Bool> {
         Binding(
             get: {
+                guard let feed = store.feed.value else { return false }
                 switch section {
-                case .personalized: return store.personalizedPolicies[id: id]?.isBookmarked ?? false
-                case .recentViewed: return store.recentViewedPolicies[id: id]?.isBookmarked ?? false
-                case .popular: return store.popularPolicies[id: id]?.isBookmarked ?? false
-                case .deadline: return store.deadlinePolicies[id: id]?.isBookmarked ?? false
-                case .newest: return store.newPolicies[id: id]?.isBookmarked ?? false
+                case .personalized: return feed.personalized[id: id]?.isBookmarked ?? false
+                case .recentViewed: return feed.recentViewed[id: id]?.isBookmarked ?? false
+                case .popular: return feed.popular[id: id]?.isBookmarked ?? false
+                case .deadline: return feed.deadline[id: id]?.isBookmarked ?? false
+                case .newest: return feed.newest[id: id]?.isBookmarked ?? false
                 }
             },
             set: { _ in store.send(.didToggleBookmark(section: section, id: id)) }
@@ -303,24 +346,23 @@ extension HomeView {
 // MARK: - Preview
 
 #Preview("맞춤정책 있음") {
-    HomeView(
-        store: Store(initialState: .init()) {
+    var state = HomeFeature.State()
+    state.feed = .loaded(.mock)
+    return HomeView(
+        store: Store(initialState: state) {
             HomeFeature()
         }
     )
 }
 
 #Preview("맞춤정책 없음") {
-    var emptyPersonalizedState = HomeFeature.State()
-    emptyPersonalizedState.personalizedPolicies = []
-    emptyPersonalizedState.recentViewedPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.suffix(2)))
-    emptyPersonalizedState.popularPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2)))
-    emptyPersonalizedState.deadlinePolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.dropFirst(2).prefix(2)))
-    emptyPersonalizedState.newPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.dropFirst(4).prefix(2)))
-
+    var emptyFeed = HomeFeedVO.mock
+    emptyFeed.personalized = []
+    var state = HomeFeature.State()
+    state.feed = .loaded(emptyFeed)
     return HomeView(
-        store: Store(initialState: emptyPersonalizedState) {
-            EmptyReducer()
+        store: Store(initialState: state) {
+            HomeFeature()
         }
     )
 }

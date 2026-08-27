@@ -19,4 +19,12 @@ import BaziStorage
 enum AppDependencies {
     static let networkProvider = NetworkProvider(tokenStorage: KeychainTokenStorage())
     static let pushTokenRepository: any PushTokenRepository = PushTokenRepositoryImpl(storage: UserDefaultsStorage())
+
+    /// 홈 aggregate 인메모리 캐시(5분 TTL)와 그것을 공유하는 HomeRepository.
+    /// 홈 플로우의 여러 Client(홈/분야별/랭킹/맞춤)가 같은 Repository·캐시를 쓰도록 여기서 한 번만 조립한다.
+    static let policyCache = PolicyCache()
+    static let homeRepository: any HomeRepository = HomeRepositoryImpl(
+        networkProvider: networkProvider,
+        cache: policyCache
+    )
 }
