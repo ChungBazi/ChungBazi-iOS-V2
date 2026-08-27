@@ -14,7 +14,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
-            $0.homeClient.fetchHomeFeed = { .mock }
+            $0.homeClient.fetchHomeFeed = { _ in .mock }
         }
 
         await store.send(.task) {
@@ -30,7 +30,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
-            $0.homeClient.fetchHomeFeed = { throw UseCaseError.network }
+            $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.network }
         }
 
         await store.send(.task) {

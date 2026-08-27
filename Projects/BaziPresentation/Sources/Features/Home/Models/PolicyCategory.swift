@@ -21,4 +21,15 @@ public enum PolicyCategory: String, CaseIterable, Equatable, Identifiable, Senda
         case .activity: return .activityIcon
         }
     }
+
+    /// Large, Flip 카드 썸네일용 분야별 이미지.
+    public var cardImage: BaziImage {
+        switch self {
+        case .job: return .jobCard
+        case .dwelling: return .housingCard
+        case .study: return .growthCard
+        case .livingSupport: return .lifesupportCard
+        case .activity: return .activityCard
+        }
+    }
 }

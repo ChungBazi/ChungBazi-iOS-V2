@@ -5,14 +5,14 @@ import ComposableArchitecture
 /// 홈 메인 화면 전용 Client. 홈 aggregate 피드 조회만 담당한다.
 @DependencyClient
 public struct HomeClient: Sendable {
-    public var fetchHomeFeed: @Sendable () async throws -> HomeFeedVO
+    public var fetchHomeFeed: @Sendable (_ forceRefresh: Bool) async throws -> HomeFeedVO
 }
 
 extension HomeClient: TestDependencyKey {
     public static let testValue = HomeClient()
 
     public static let previewValue = HomeClient(
-        fetchHomeFeed: { .mock }
+        fetchHomeFeed: { _ in .mock }
     )
 }
 

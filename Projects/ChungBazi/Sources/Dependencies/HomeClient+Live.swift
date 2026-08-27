@@ -16,8 +16,8 @@ extension HomeClient: @retroactive DependencyKey {
         let saveUserNameUseCase: any SaveUserNameUseCase = SaveUserNameUseCaseImpl(sessionStateRepository: sessionStateRepository)
 
         return HomeClient(
-            fetchHomeFeed: {
-                let feed = try await fetchHomeFeedUseCase.execute(forceRefresh: false)
+            fetchHomeFeed: { forceRefresh in
+                let feed = try await fetchHomeFeedUseCase.execute(forceRefresh: forceRefresh)
                 // 응답에 담긴 닉네임을 로컬에 저장해 로그아웃/탈퇴 전까지 재사용한다.
                 saveUserNameUseCase.execute(name: feed.userName)
                 return HomeFeedVO(feed)
