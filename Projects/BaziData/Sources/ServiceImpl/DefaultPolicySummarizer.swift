@@ -61,10 +61,21 @@ extension DefaultPolicySummarizer {
         let session = LanguageModelSession(instructions: instructions)
         do {
             let response = try await session.respond(to: "다음 지원 내용을 요약해줘.\n\n\(text)")
-            return response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            let cleaned = Self.stripMarkdownEscapes(response.content)
+            return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
         } catch {
             return nil
         }
+    }
+
+    /// 모델이 마크다운 특수문자를 이스케이프(\~, \*, \. 등)해 내보내는 것을 평문으로 되돌린다.
+    /// (요약을 마크다운이 아닌 평문 Text로 렌더링하므로 백슬래시가 그대로 보이는 문제 방지)
+    static func stripMarkdownEscapes(_ text: String) -> String {
+        text.replacingOccurrences(
+            of: #"\\([^A-Za-z0-9\s])"#,
+            with: "$1",
+            options: .regularExpression
+        )
     }
 }
 #endif
