@@ -48,7 +48,6 @@ extension BZSegmentControl {
             .padding(.horizontal, 20)
         }
         .frame(height: 44)
-        .baziBackground(.bgWhite)
     }
 
     private func segmentItem(_ option: String) -> some View {
