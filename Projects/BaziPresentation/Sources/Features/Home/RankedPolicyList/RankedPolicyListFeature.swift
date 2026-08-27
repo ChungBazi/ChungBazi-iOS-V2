@@ -45,10 +45,7 @@ public struct RankedPolicyListFeature {
         public var list: LoadingState<IdentifiedArrayOf<PolicySummary>> = .idle
 
         // 페이지네이션
-        public var nextCursor: String?
-        public var hasNext = false
-        public var isLoadingNext = false
-        public var totalCount = 0
+        public var pagination = PaginationState()
 
         public init(kind: Kind, selectedCategory: PolicyCategory = .job) {
             self.kind = kind
@@ -116,8 +113,8 @@ public struct RankedPolicyListFeature {
                 return reloadFirstPage(&state)
 
             case .didReachListEnd:
-                guard state.hasNext, !state.isLoadingNext, state.list.value != nil else { return .none }
-                state.isLoadingNext = true
+                guard state.pagination.canLoadNext, state.list.value != nil else { return .none }
+                state.pagination.isLoadingNext = true
                 return fetchPage(state: state, isFirstPage: false)
 
             case let .pageResponse(.success(page), isFirstPage):
@@ -130,7 +127,7 @@ public struct RankedPolicyListFeature {
                         state.list = .failed(error.loadFailureMessage)
                     }
                 } else {
-                    state.isLoadingNext = false
+                    state.pagination.isLoadingNext = false
                 }
                 return .none
 
@@ -203,16 +200,14 @@ public struct RankedPolicyListFeature {
 
     private func reloadFirstPage(_ state: inout State) -> Effect<Action> {
         state.list = .loading
-        state.nextCursor = nil
-        state.hasNext = false
-        state.isLoadingNext = false
+        state.pagination.reset()
         return fetchPage(state: state, isFirstPage: true)
     }
 
     private func fetchPage(state: State, isFirstPage: Bool) -> Effect<Action> {
         let fetch = fetchClosure(for: state.kind)
         let category = state.selectedCategory
-        let cursor = isFirstPage ? nil : state.nextCursor
+        let cursor = isFirstPage ? nil : state.pagination.nextCursor
         return .run { send in
             do {
                 let page = try await fetch(category, cursor, Self.pageSize)
@@ -237,10 +232,7 @@ public struct RankedPolicyListFeature {
     }
 
     private func handlePage(_ page: PolicyPageVO, isFirstPage: Bool, state: inout State) {
-        state.nextCursor = page.nextCursor
-        state.hasNext = page.hasNext
-        state.totalCount = page.totalCount
-        state.isLoadingNext = false
+        state.pagination.apply(page)
         if isFirstPage {
             state.list = .loaded(page.policies)
         } else {
