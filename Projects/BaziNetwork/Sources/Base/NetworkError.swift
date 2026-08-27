@@ -30,8 +30,17 @@ extension NetworkError {
             return networkError
         }
         
-        // 2) MoyaError는 underlying을 재귀적으로 풀어서 원본 에러를 보존
+        // 2) MoyaError: 검증 실패(비-2xx) 응답이면 바디의 서버 code/message를 살린다.
         if let moyaError = error as? MoyaError {
+            if let response = moyaError.response {
+                // 401(= 재발급까지 실패)은 인증 만료로 확정 → 상위에서 재로그인 유도
+                if response.statusCode == 401 {
+                    return .unauthorized
+                }
+                if let envelope = try? JSONDecoder().decode(ErrorEnvelope.self, from: response.data) {
+                    return .serverError(code: envelope.code, message: envelope.message)
+                }
+            }
             switch moyaError {
             case .underlying(let underlyingError, _):
                 return from(underlyingError)
@@ -51,4 +60,10 @@ extension NetworkError {
             return .unknown(error)
         }
     }
+}
+
+// 비-2xx 응답 바디에서 서버 code/message만 추출한다(result 형태와 무관하게 디코딩).
+private struct ErrorEnvelope: Decodable {
+    let code: String
+    let message: String
 }
