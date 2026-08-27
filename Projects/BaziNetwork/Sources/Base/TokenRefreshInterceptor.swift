@@ -100,6 +100,9 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue("Bearer \(refreshToken)", forHTTPHeaderField: "Authorization")
+        // 서버 계약(ReissueRequestDTO / AuthAPI.reissue)은 refreshToken을 body로 받는다.
+        // 헤더는 서버가 헤더 기반일 경우까지 커버하려고 함께 둔다.
+        urlRequest.httpBody = try JSONEncoder().encode(ReissueRequestDTO(refreshToken: refreshToken))
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
         guard let httpResponse = response as? HTTPURLResponse,
