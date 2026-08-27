@@ -43,10 +43,13 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
         dueTo error: Error,
         completion: @escaping (RetryResult) -> Void
     ) {
+        let path = request.request?.url?.path ?? ""
+        let isUnauthenticated = Self.unauthenticatedPaths.contains { path.hasSuffix($0) }
         guard let response = request.task?.response as? HTTPURLResponse,
               response.statusCode == 401,
-              // reissue 자체가 401이면 재시도하지 않음 → 무한루프 방지
-              !(request.request?.url?.path.contains("/auth/reissue") ?? false) else {
+              // 로그인/재발급 요청의 401은 토큰 재발급 대상이 아니다.
+              // (reissue는 무한루프 방지, 로그인은 세션이 없어 재발급이 무의미 + 불필요한 forceLogout 방지)
+              !isUnauthenticated else {
             return completion(.doNotRetry)
         }
 
