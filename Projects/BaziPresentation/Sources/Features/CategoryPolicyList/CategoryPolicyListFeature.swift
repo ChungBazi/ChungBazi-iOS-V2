@@ -52,7 +52,7 @@ public struct CategoryPolicyListFeature {
 
     public enum Delegate: Equatable {
         case didSelectPolicy(id: Int)
-        case didTapPersonalizedMore
+        case didTapPersonalizedMore(PolicyCategory)
     }
 
     // MARK: - Dependencies
@@ -85,7 +85,7 @@ public struct CategoryPolicyListFeature {
                 return .none
 
             case .didTapPersonalizedMore:
-                return .send(.delegate(.didTapPersonalizedMore))
+                return .send(.delegate(.didTapPersonalizedMore(state.selectedCategory)))
 
             case .didToggleTeaserBookmark(let id):
                 state.personalizedTeaser[id: id]?.isBookmarked.toggle()

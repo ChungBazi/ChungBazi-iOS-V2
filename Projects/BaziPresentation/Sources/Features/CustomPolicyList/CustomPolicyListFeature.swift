@@ -28,11 +28,14 @@ public struct CustomPolicyListFeature {
     @ObservableState
     public struct State: Equatable {
         public var userName: String
+        /// 분야별에서 진입 시 해당 분야. 홈 맞춤정책에서 진입하면 nil.
+        public var category: PolicyCategory?
         public var policies: IdentifiedArrayOf<PersonalizedPolicy>
         public var guideStep: GuideStep?
 
-        public init(userName: String = "민재") {
+        public init(userName: String = "민재", category: PolicyCategory? = nil) {
             self.userName = userName
+            self.category = category
             self.policies = []
             self.guideStep = .swipeHint
         }
