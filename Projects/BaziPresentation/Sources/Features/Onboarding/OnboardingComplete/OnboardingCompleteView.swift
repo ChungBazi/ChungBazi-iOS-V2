@@ -48,7 +48,7 @@ extension OnboardingCompleteView {
 
 #Preview {
     OnboardingCompleteView(
-        store: Store(initialState: .init(nickname: "청바지")) {
+        store: Store(initialState: .init(nickname: "바지")) {
             OnboardingCompleteFeature()
         }
     )
