@@ -373,6 +373,7 @@ extension DesignSystemSampleView {
                 description: "서울 청년취업사관학교는 청년들의 실무 역량을 키우고 취업까지 이어질 수 있도록 돕는 교육 프로그램이에요. 디지털·IT 분야를 중심으로 현장에서 활용할 수 있는 실무 교육과 프로젝트 기반 수업을 제공해요.",
                 isBookmarked: $isFlipCardBookmarked
             )
+            .padding(.horizontal, 36)
         }
     }
 }

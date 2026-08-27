@@ -39,9 +39,7 @@ extension CustomPolicyListView {
     private var content: some View {
         ZStack {
             VStack(spacing: 0) {
-                Spacer()
                 cardCarousel
-                Spacer()
                 ctaButtons
             }
 
@@ -60,22 +58,38 @@ extension CustomPolicyListView {
     }
 
     private var cardCarousel: some View {
-        TabView(selection: $selectedPolicyID) {
-            ForEach(store.policies) { policy in
-                BZFlipCard(
-                    category: policy.category.rawValue,
-                    dDay: policy.dDay,
-                    title: policy.title,
-                    subtitle: policy.subtitle,
-                    applyPeriod: policy.applyPeriod,
-                    description: policy.description,
-                    isBookmarked: bookmarkBinding(id: policy.id)
-                )
-                .tag(Optional(policy.id))
+        GeometryReader { geo in
+            let neighborPeek: CGFloat = 15 // 이웃 카드 노출 폭
+            let cardSpacing: CGFloat = 20
+            let inset = neighborPeek + cardSpacing
+            let cardWidth = geo.size.width - inset * 2
+
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: cardSpacing) {
+                    ForEach(store.policies) { policy in
+                        BZFlipCard(
+                            category: policy.category.rawValue,
+                            dDay: policy.dDay,
+                            title: policy.title,
+                            subtitle: policy.subtitle,
+                            applyPeriod: policy.applyPeriod,
+                            description: policy.description,
+                            isBookmarked: bookmarkBinding(id: policy.id)
+                        )
+                        .frame(width: cardWidth)
+                        .id(policy.id)
+                    }
+                }
+                .scrollTargetLayout()
             }
+            .contentMargins(.horizontal, inset, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $selectedPolicyID)
+            .scrollIndicators(.hidden)
+            .scrollClipDisabled()
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxHeight: .infinity)
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .frame(height: 456)
         .onAppear { selectedPolicyID = store.policies.first?.id }
     }
 
@@ -88,9 +102,7 @@ extension CustomPolicyListView {
                 store.send(.didTapDetail(id: selectedPolicyID))
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .padding(.bottom, 36)
+        .padding(20)
     }
 
     private func guideOverlay(_ step: CustomPolicyListFeature.GuideStep) -> some View {
@@ -99,8 +111,10 @@ extension CustomPolicyListView {
 
             VStack(spacing: 44) {
                 VStack(spacing: 20) {
-                    Image(systemName: step.illustration)
-                        .font(.system(size: 56))
+                    Image.bazi(step.illustration)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 119)
                         .foregroundStyle(Color.grayWhite)
                     Text(step.message)
                         .baziFont(.head18B)

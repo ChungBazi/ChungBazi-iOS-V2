@@ -10,7 +10,6 @@ public struct BZFlipCard: View {
 
     private static let cardAspectRatio: CGFloat = 302.0 / 456.0
     private static let thumbnailAspectRatio: CGFloat = 270.0 / 139.0
-    private static let horizontalMargin: CGFloat = 36
 
     // MARK: - Properties
 
@@ -61,7 +60,6 @@ public struct BZFlipCard: View {
                 .rotation3DEffect(.degrees(isFlipped ? 0 : -180), axis: (x: 0, y: 1, z: 0))
         }
         .aspectRatio(Self.cardAspectRatio, contentMode: .fit)
-        .padding(.horizontal, Self.horizontalMargin)
         .shadow(color: Color.grayBlack.opacity(0.11), radius: 5.67, x: 0, y: 1.89)
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.4)) {
@@ -194,6 +192,7 @@ private struct BZFlipCardPreview: View {
             description: "서울 청년취업사관학교는 청년들의 실무 역량을 키우고 취업까지 이어질 수 있도록 돕는 교육 프로그램이에요. 디지털·IT 분야를 중심으로 현장에서 활용할 수 있는 실무 교육과 프로젝트 기반 수업을 제공해요.",
             isBookmarked: $isBookmarked
         )
+        .padding(.horizontal, 36)
     }
 }
 

@@ -1,5 +1,6 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import BaziDesign
 import ComposableArchitecture
 
 /// 홈 "맞춤정책 더보기" 화면 (12-4). 뒤집기 카드 캐러셀 + 최초 진입 시 2단계 가이드 오버레이로 구성된다.
@@ -13,7 +14,7 @@ public struct CustomPolicyListFeature {
         case tapHint
 
         var next: GuideStep? { self == .swipeHint ? .tapHint : nil }
-        var illustration: String { self == .swipeHint ? "arrow.left.and.right" : "hand.tap" }
+        var illustration: BaziImage { self == .swipeHint ? .dimSwipeIcon : .dimSimpleIcon }
         var message: String {
             self == .swipeHint
                 ? "카드를 좌우로 넘기며\n맞춤 정책을 살펴보세요!"
