@@ -101,6 +101,10 @@ public struct HomeFeature {
 
             case let .feedResponse(.success(feed)):
                 state.feed = .loaded(feed)
+                // 홈 피드 조회 시 서버 닉네임이 세션에 저장되므로, 재로그인 등으로 비어 있던 인사말 이름을 갱신한다.
+                if let name = sessionClient.userName() {
+                    state.userName = name
+                }
                 return .none
 
             case let .feedResponse(.failure(error)):
