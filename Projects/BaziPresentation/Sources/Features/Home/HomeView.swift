@@ -95,90 +95,88 @@ extension HomeView {
             if store.personalizedPolicies.isEmpty {
                 personalizedEmptyState
             } else {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(store.userName)님을 기다리는 정책")
-                            .baziFont(.head20B)
-                            .foregroundStyle(Color.gray900)
-                        Text("\(store.userName)님에게 딱 맞는 정책이에요!")
-                            .baziFont(.small14R)
-                            .foregroundStyle(Color.gray500)
-                    }
-                    Spacer()
-                    Button("더 보기") {
-                        store.send(.didTapPersonalizedMore)
-                    }
-                    .baziFont(.small12R)
-                    .foregroundStyle(Color.gray600)
-                }
-                .padding(.horizontal, 20)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(store.personalizedPolicies) { policy in
-                            BZCard(
-                                size: .large,
-                                category: policy.category.rawValue,
-                                dDay: policy.dDay,
-                                title: policy.title,
-                                viewCount: policy.viewCount,
-                                isBookmarked: bookmarkBinding(section: .personalized, id: policy.id)
-                            )
-                            .onTapGesture { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
+                personalizedContent
             }
         }
-        .padding(.vertical, 20)
+        .padding(.vertical, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.blue100)
     }
 
-    private var personalizedEmptyState: some View {
-        VStack(spacing: 12) {
+    private var personalizedContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
-                Text("\(store.userName)님 조건에 딱 맞는 정책이\n아직 없어요")
-                    .baziFont(.head20B)
-                    .foregroundStyle(Color.gray900)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(store.userName)님을 기다리는 정책")
+                        .baziFont(.head20B)
+                        .foregroundStyle(Color.gray900)
+                    Text("\(store.userName)님에게 딱 맞는 정책이에요!")
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray500)
+                }
                 Spacer()
-                Image.bazi(.glassBaro)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 75)
+                Button("더 보기") {
+                    store.send(.didTapPersonalizedMore)
+                }
+                .baziFont(.small12R)
+                .foregroundStyle(Color.gray600)
             }
+            .padding(.horizontal, 20)
 
-            Button {
-                store.send(.didTapPersonalizedEmptyCTA)
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("맞춤 조건 다시 설정하기")
-                            .baziFont(.body16B)
-                            .foregroundStyle(Color.bazi(.primary))
-                        Text("관심 분야를 추가하면\n더 많은 정책을 만날 수 있어요!")
-                            .baziFont(.small14R)
-                            .foregroundStyle(Color.gray600)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 10) {
+                    ForEach(store.personalizedPolicies) { policy in
+                        BZCard(
+                            size: .large,
+                            category: policy.category.rawValue,
+                            dDay: policy.dDay,
+                            title: policy.title,
+                            viewCount: policy.viewCount,
+                            isBookmarked: bookmarkBinding(section: .personalized, id: policy.id)
+                        )
+                        .onTapGesture { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
                     }
-                    Spacer()
-                    Circle()
-                        .strokeBorder(Color.gray200, lineWidth: 0.8)
-                        .frame(width: 38, height: 38)
-                        .overlay {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(Color.gray700)
-                        }
                 }
                 .padding(.horizontal, 20)
-                .frame(height: 100)
-                .frame(maxWidth: .infinity)
-                .baziBackground(.bgWhite)
-                .baziRadius(.medium)
             }
-            .buttonStyle(.plain)
+        }
+    }
+
+    private var personalizedEmptyState: some View {
+        VStack(spacing: 12) {
+            Text("\(store.userName)님 조건에 딱 맞는 정책이\n아직 없어요")
+                .baziFont(.head20B)
+                .foregroundStyle(Color.gray900)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 75) // glassBaro 자리 확보
+
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("맞춤 조건 다시 설정하기")
+                        .baziFont(.body16B)
+                        .foregroundStyle(Color.bazi(.primary))
+                    Text("관심 분야를 추가하면\n더 많은 정책을 만날 수 있어요!")
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray600)
+                }
+                Spacer()
+                BZCircleButton {
+                    store.send(.didTapPersonalizedEmptyCTA)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 15)
+            .frame(maxWidth: .infinity)
+            .baziBackground(.bgWhite)
+            .baziRadius(.medium)
+        }
+        .background(alignment: .topTrailing) {
+            Image.bazi(.glassBaro)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 75)
+                .padding(.trailing, 15)
+                .padding(.top, 5)
         }
         .padding(.horizontal, 20)
     }
@@ -259,9 +257,10 @@ extension HomeView {
                         .foregroundStyle(Color.gray400)
                 }
             }
+            .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                LazyHStack(spacing: 12) {
                     ForEach(policies) { policy in
                         BZCard(
                             size: .small,
@@ -274,9 +273,9 @@ extension HomeView {
                         .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
                     }
                 }
+                .padding(.horizontal, 20)
             }
         }
-        .padding(.horizontal, 20)
         .padding(.top, 44)
     }
 }
