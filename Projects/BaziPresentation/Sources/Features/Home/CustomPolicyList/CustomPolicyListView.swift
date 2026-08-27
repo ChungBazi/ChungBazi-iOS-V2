@@ -11,6 +11,7 @@ public struct CustomPolicyListView: View {
 
     @Bindable var store: StoreOf<CustomPolicyListFeature>
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var selectedPolicyID: Int?
 
     // MARK: - Init
@@ -125,14 +126,25 @@ extension CustomPolicyListView {
 
     private var ctaButtons: some View {
         VStack(spacing: 12) {
-            // TODO: 신청 외부 링크(ModalRoute.webView)가 준비되면 선택된 카드의 applyUrl로 연결한다.
-            BZButton("바로 신청하러 가기", type: .cta) {}
+            BZButton("바로 신청하러 가기", type: .cta) {
+                if let applyURL { openURL(applyURL) }
+            }
+            .disabled(applyURL == nil)
             BZButton("자세한 정보 더 보기", type: .normal) {
                 guard let selectedPolicyID else { return }
                 store.send(.didTapDetail(id: selectedPolicyID))
             }
         }
         .padding(20)
+    }
+
+    /// 현재 선택된 카드의 신청 링크. 값이 없거나 URL로 변환 불가하면 nil(버튼 비활성).
+    private var applyURL: URL? {
+        guard
+            let selectedPolicyID,
+            let urlString = store.cards.value?[id: selectedPolicyID]?.applyUrl
+        else { return nil }
+        return URL(string: urlString)
     }
 
     private var emptyView: some View {
