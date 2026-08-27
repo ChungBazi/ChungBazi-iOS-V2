@@ -13,9 +13,13 @@ import BaziStorage
 extension SessionClient: @retroactive DependencyKey {
 
     public static let liveValue: SessionClient = {
+        let sessionStateRepository: any SessionStateRepository = SessionStateRepositoryImpl(storage: UserDefaultsStorage())
         let resetSessionUseCase: any ResetSessionUseCase = ResetSessionUseCaseImpl(
             tokenStorage: KeychainTokenStorage(),
-            sessionStateRepository: SessionStateRepositoryImpl(storage: UserDefaultsStorage())
+            sessionStateRepository: sessionStateRepository
+        )
+        let getUserNameUseCase: any GetUserNameUseCase = GetUserNameUseCaseImpl(
+            sessionStateRepository: sessionStateRepository
         )
 
         return SessionClient(
@@ -34,7 +38,8 @@ extension SessionClient: @retroactive DependencyKey {
                     }
                 }
             },
-            resetSession: { resetSessionUseCase.execute() }
+            resetSession: { resetSessionUseCase.execute() },
+            userName: { getUserNameUseCase.execute() }
         )
     }()
 }

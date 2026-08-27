@@ -20,11 +20,27 @@ extension PolicyCategory {
     }
 }
 
+// MARK: - PolicyCategory (Presentation → Domain)
+
+extension PolicyCategory {
+
+    /// UI 카테고리 → 서버 카테고리 코드(요청 파라미터용).
+    public func toDomain() -> BaziDomain.PolicyCategory {
+        switch self {
+        case .job:           return .jobStartup
+        case .dwelling:      return .housing
+        case .study:         return .growth
+        case .livingSupport: return .lifeSupport
+        case .activity:      return .activity
+        }
+    }
+}
+
 // MARK: - PolicySummary (Domain → Presentation VO)
 
 extension PolicySummary {
 
-    init(_ entity: BaziDomain.PolicySummary) {
+    public init(_ entity: BaziDomain.PolicySummary) {
         // 서버 코드 → UI enum. 코드가 비어 있으면(방어적) categoryName 라벨로 복구를 시도한다.
         let category = entity.category.map(PolicyCategory.init(domain:))
             ?? PolicyCategory(rawValue: entity.categoryName)
