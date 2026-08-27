@@ -73,10 +73,6 @@ extension CategoryPolicyListView {
                 } else {
                     resultsToolbar
                     policyList(policies)
-                    if store.isLoadingNext {
-                        BZLoadingView(size: 28)
-                            .padding(.vertical, 16)
-                    }
                 }
             }
         }
@@ -162,7 +158,7 @@ extension CategoryPolicyListView {
     }
 
     private var emptyText: some View {
-        Text("표시할 정책이 없어요")
+        Text("조건에 맞는 정책이 없어요")
             .baziFont(.small14R)
             .foregroundStyle(Color.gray400)
             .frame(maxWidth: .infinity)
