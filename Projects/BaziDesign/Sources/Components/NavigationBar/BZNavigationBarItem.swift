@@ -8,7 +8,7 @@ public enum BZNavigationBarItem {
     case title(String)
     case textButton(String, action: () -> Void)
     case share(action: () -> Void)
-    case bell(action: () -> Void)
+    case bell(hasUnread: Bool, action: () -> Void)
     case logo
 }
 
@@ -49,15 +49,23 @@ enum BZNavigationBarItemBuilder {
             .tint(Color.gray900)
             .accessibilityLabel("공유")
 
-        case .bell(let action):
+        case .bell(let hasUnread, let action):
             Button(action: action) {
                 Image.bazi(.bellIcon)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 24)
+                    .overlay(alignment: .topTrailing) {
+                        if hasUnread {
+                            Circle()
+                                .fill(Color.bazi(.accent))
+                                .frame(width: 7, height: 7)
+                                .offset(x: 1, y: -1)
+                        }
+                    }
             }
             .tint(Color.gray900)
-            .accessibilityLabel("알림")
+            .accessibilityLabel(hasUnread ? "알림, 읽지 않은 알림 있음" : "알림")
 
         case .logo:
             Image.bazi(.appLogo)

@@ -45,11 +45,14 @@ public extension View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// Type=2 — 로고(좌) + 알림벨(우), 탭 루트용
-    func baziNavigationBar_home(onBellTap: @escaping () -> Void) -> some View {
+    /// Type=2 — 로고(좌) + 알림벨(우), 탭 루트용. `hasUnread`면 벨에 읽지 않음 배지를 표시한다.
+    func baziNavigationBar_home(
+        hasUnread: Bool = false,
+        onBellTap: @escaping () -> Void
+    ) -> some View {
         baziNavigationBar(
             leading: .logo,
-            trailing: .bell(action: onBellTap)
+            trailing: .bell(hasUnread: hasUnread, action: onBellTap)
         )
     }
 
