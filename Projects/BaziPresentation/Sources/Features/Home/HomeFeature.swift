@@ -135,8 +135,8 @@ public struct HomeFeature {
                 state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
                 return .none
 
-            case .path(.element(_, .categoryPolicyList(.delegate(.didTapPersonalizedMore)))):
-                state.path.append(.customPolicyList(CustomPolicyListFeature.State(userName: state.userName)))
+            case let .path(.element(_, .categoryPolicyList(.delegate(.didTapPersonalizedMore(category))))):
+                state.path.append(.customPolicyList(CustomPolicyListFeature.State(userName: state.userName, category: category)))
                 return .none
 
             case .path:

@@ -24,11 +24,18 @@ public struct CustomPolicyListView: View {
     public var body: some View {
         content
             .task { store.send(.onAppear) }
-            .baziNavigationBar_backWithTitle("\(store.userName)님의 맞춤 정책") {
+            .baziNavigationBar_backWithTitle(navigationTitle) {
                 dismiss()
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar(.hidden, for: .tabBar)
+    }
+
+    private var navigationTitle: String {
+        if let category = store.category {
+            return "\(store.userName)님의 \(category.rawValue) 맞춤 정책"
+        }
+        return "\(store.userName)님의 맞춤 정책"
     }
 }
 
