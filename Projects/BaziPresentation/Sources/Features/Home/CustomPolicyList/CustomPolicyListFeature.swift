@@ -36,6 +36,10 @@ public struct CustomPolicyListFeature {
         public var cards: LoadingState<IdentifiedArrayOf<PolicyCardVO>> = .idle
         /// 최초 진입 시에만 노출. `.task`에서 hasSeenGuide로 결정한다.
         public var guideStep: GuideStep?
+        /// 요약 진행 중인 카드 id(뒷면 로딩 표시용).
+        public var summarizingIds: Set<Int> = []
+        /// 이미 요약을 요청한 카드 id(중복 요청 방지).
+        public var requestedSummaries: Set<Int> = []
 
         public init(category: PolicyCategory? = nil, policyIds: [Int] = []) {
             self.category = category
@@ -51,10 +55,12 @@ public struct CustomPolicyListFeature {
         case didTapRetry
         case didToggleBookmark(id: Int)
         case didTapDetail(id: Int)
+        case didShowCard(id: Int)
         case didTapGuideNext
 
         // MARK: Internal
         case cardsResponse(Result<[PolicyCardVO], UseCaseError>)
+        case summaryResponse(id: Int, summary: String?)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -98,6 +104,31 @@ public struct CustomPolicyListFeature {
             case let .cardsResponse(.failure(error)):
                 if state.cards.value == nil {
                     state.cards = .failed(error.loadFailureMessage)
+                }
+                return .none
+
+            case .didShowCard(let id):
+                // 지원 기기면 현재 보이는 카드를 미리 요약(뒤집기 전에 준비). 1회만.
+                guard
+                    customPolicyClient.isAISummaryAvailable(),
+                    let card = state.cards.value?[id: id],
+                    card.aiSummary == nil,
+                    !state.requestedSummaries.contains(id)
+                else { return .none }
+                state.requestedSummaries.insert(id)
+                state.summarizingIds.insert(id)
+                let content = card.supportContent
+                return .run { [customPolicyClient] send in
+                    let summary = await customPolicyClient.summarize(content)
+                    await send(.summaryResponse(id: id, summary: summary))
+                }
+
+            case let .summaryResponse(id, summary):
+                state.summarizingIds.remove(id)
+                if let summary {
+                    guard var cards = state.cards.value else { return .none }
+                    cards[id: id]?.aiSummary = summary
+                    state.cards = .loaded(cards)
                 }
                 return .none
 

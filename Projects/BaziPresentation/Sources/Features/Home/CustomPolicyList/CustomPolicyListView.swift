@@ -99,7 +99,8 @@ extension CustomPolicyListView {
                             title: card.title,
                             subtitle: card.summary,
                             applyPeriod: card.applyPeriod,
-                            description: card.supportContent,
+                            description: card.aiSummary ?? card.supportContent,
+                            isSummarizing: store.summarizingIds.contains(card.id),
                             isBookmarked: bookmarkBinding(id: card.id)
                         )
                         .frame(width: cardWidth)
@@ -117,6 +118,9 @@ extension CustomPolicyListView {
             .frame(maxHeight: .infinity)
         }
         .onAppear { selectedPolicyID = cards.first?.id }
+        .onChange(of: selectedPolicyID) { _, newID in
+            if let newID { store.send(.didShowCard(id: newID)) }
+        }
     }
 
     private var ctaButtons: some View {
