@@ -3,9 +3,8 @@
 import ComposableArchitecture
 
 /// 홈 메인 화면이 한 번에 그리는 섹션별 정책 묶음(Presentation VO).
-/// 서버의 홈 aggregate 응답(`HomeFeed` 엔티티)을 화면 표현에 맞게 변환한 값이다.
+/// userName은 세션 상태이므로 여기 담지 않고 SessionClient에서 읽는다.
 public struct HomeFeedVO: Equatable, Sendable {
-    public var userName: String
     public var hasUnreadNotification: Bool
     public var personalized: IdentifiedArrayOf<PolicySummary>
     public var recentViewed: IdentifiedArrayOf<PolicySummary>
@@ -14,7 +13,6 @@ public struct HomeFeedVO: Equatable, Sendable {
     public var newest: IdentifiedArrayOf<PolicySummary>
 
     public init(
-        userName: String,
         hasUnreadNotification: Bool,
         personalized: IdentifiedArrayOf<PolicySummary>,
         recentViewed: IdentifiedArrayOf<PolicySummary>,
@@ -22,7 +20,6 @@ public struct HomeFeedVO: Equatable, Sendable {
         deadline: IdentifiedArrayOf<PolicySummary>,
         newest: IdentifiedArrayOf<PolicySummary>
     ) {
-        self.userName = userName
         self.hasUnreadNotification = hasUnreadNotification
         self.personalized = personalized
         self.recentViewed = recentViewed
@@ -38,7 +35,6 @@ extension HomeFeedVO {
 
     // TestStore·Preview용. 실제 데이터는 HomeClient.fetchHomeFeed로 대체된다.
     public static let mock = HomeFeedVO(
-        userName: "민재",
         hasUnreadNotification: true,
         personalized: IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2))),
         recentViewed: IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.suffix(2))),

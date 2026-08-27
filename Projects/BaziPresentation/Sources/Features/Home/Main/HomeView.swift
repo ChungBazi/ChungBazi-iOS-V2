@@ -349,6 +349,7 @@ extension HomeView {
 
 #Preview("맞춤정책 있음") {
     var state = HomeFeature.State()
+    state.userName = "바지"
     state.feed = .loaded(.mock)
     return HomeView(
         store: Store(initialState: state) {
@@ -361,6 +362,7 @@ extension HomeView {
     var emptyFeed = HomeFeedVO.mock
     emptyFeed.personalized = []
     var state = HomeFeature.State()
+    state.userName = "바지"
     state.feed = .loaded(emptyFeed)
     return HomeView(
         store: Store(initialState: state) {

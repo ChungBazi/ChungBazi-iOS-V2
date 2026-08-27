@@ -126,7 +126,7 @@ public struct CategoryPolicyListFeature {
                 if isFirstPage {
                     // 새로고침 실패 시 기존 데이터는 유지, 데이터가 없을 때만 실패 화면.
                     if state.list.value == nil {
-                        state.list = .failed(message(for: error))
+                        state.list = .failed(error.loadFailureMessage)
                     }
                 } else {
                     state.isLoadingNext = false
@@ -213,13 +213,6 @@ public struct CategoryPolicyListFeature {
             var current = state.list.value ?? []
             current.append(contentsOf: page.policies)
             state.list = .loaded(current)
-        }
-    }
-
-    private func message(for error: UseCaseError) -> String {
-        switch error {
-        case .network: return "네트워크 연결을 확인해 주세요."
-        case .cancelled, .unknown: return "정책을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
         }
     }
 }
