@@ -29,7 +29,7 @@ public struct CustomPolicyListFeature {
     @ObservableState
     public struct State: Equatable {
         /// 분야별에서 진입 시 해당 분야. 홈 맞춤정책에서 진입하면 nil.
-        public var category: PolicyCategory?
+        public var category: PolicyCategoryUI?
         /// 카드로 보여줄 맞춤 정책 id 목록(진입 측에서 전달).
         public var policyIds: [Int]
         public var userName = ""
@@ -37,7 +37,7 @@ public struct CustomPolicyListFeature {
         /// 최초 진입 시에만 노출. `.task`에서 hasSeenGuide로 결정한다.
         public var guideStep: GuideStep?
 
-        public init(category: PolicyCategory? = nil, policyIds: [Int] = []) {
+        public init(category: PolicyCategoryUI? = nil, policyIds: [Int] = []) {
             self.category = category
             self.policyIds = policyIds
         }

@@ -23,17 +23,17 @@ public struct CategoryPolicyListFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public var selectedCategory: PolicyCategory
+        public var selectedCategory: PolicyCategoryUI
         public var userName = ""
         public var sortOrder: SortOrder = .deadline
 
-        public var teaser: IdentifiedArrayOf<PolicySummary> = []
-        public var list: LoadingState<IdentifiedArrayOf<PolicySummary>> = .idle
+        public var teaser: IdentifiedArrayOf<PolicySummaryVO> = []
+        public var list: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
 
         // 페이지네이션
         public var pagination = PaginationState()
 
-        public init(selectedCategory: PolicyCategory) {
+        public init(selectedCategory: PolicyCategoryUI) {
             self.selectedCategory = selectedCategory
         }
     }
@@ -45,7 +45,7 @@ public struct CategoryPolicyListFeature {
         case task
         case didTapRetry
         case pullToRefresh
-        case didSelectCategory(PolicyCategory)
+        case didSelectCategory(PolicyCategoryUI)
         case didTapSortOrder
         case didTapPersonalizedMore
         case didReachListEnd
@@ -55,7 +55,7 @@ public struct CategoryPolicyListFeature {
 
         // MARK: Internal
         case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
-        case teaserResponse(Result<[PolicySummary], UseCaseError>)
+        case teaserResponse(Result<[PolicySummaryVO], UseCaseError>)
         case likeFailed(id: Int, liked: Bool)
 
         // MARK: Delegate
@@ -66,7 +66,7 @@ public struct CategoryPolicyListFeature {
 
     public enum Delegate: Equatable {
         case didSelectPolicy(id: Int)
-        case didTapPersonalizedMore(category: PolicyCategory, policyIds: [Int])
+        case didTapPersonalizedMore(category: PolicyCategoryUI, policyIds: [Int])
     }
 
     // MARK: - Dependencies

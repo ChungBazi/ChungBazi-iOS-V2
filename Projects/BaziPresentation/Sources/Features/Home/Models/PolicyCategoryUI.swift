@@ -3,7 +3,7 @@
 import BaziDesign
 
 /// 정책 분야. 홈 "분야별 정책" 아이콘 목록과 분야 필터에서 공유한다.
-public enum PolicyCategory: String, CaseIterable, Equatable, Identifiable, Sendable {
+public enum PolicyCategoryUI: String, CaseIterable, Equatable, Identifiable, Sendable {
     case job = "취업·창업"
     case dwelling = "월세·주거"
     case study = "공부·성장"

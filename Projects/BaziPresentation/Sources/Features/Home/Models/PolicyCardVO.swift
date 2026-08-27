@@ -5,7 +5,7 @@ import BaziDomain
 /// "맞춤정책 더보기" 플립카드(BZFlipCard)가 쓰는 카드뉴스 VO.
 public struct PolicyCardVO: Equatable, Identifiable, Sendable {
     public let id: Int
-    public let category: PolicyCategory
+    public let category: PolicyCategoryUI
     public let dDay: String
     public let title: String
     /// 앞면 부제(한 줄 소개).
@@ -20,7 +20,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
 
     public init(
         id: Int,
-        category: PolicyCategory,
+        category: PolicyCategoryUI,
         dDay: String,
         title: String,
         summary: String,
@@ -66,8 +66,8 @@ public enum CardSummaryState: Equatable, Sendable {
 extension PolicyCardVO {
     public init(_ entity: PolicyCard) {
         // 서버 코드 → UI enum. 코드가 비어 있으면 categoryName 라벨로 복구를 시도한다.
-        let category = entity.category.map(PolicyCategory.init(domain:))
-            ?? PolicyCategory(rawValue: entity.categoryName)
+        let category = entity.category.map(PolicyCategoryUI.init(domain:))
+            ?? PolicyCategoryUI(rawValue: entity.categoryName)
             ?? .job
         self.init(
             id: entity.id,

@@ -25,7 +25,7 @@ extension CategoryPolicyClient: @retroactive DependencyKey {
             },
             fetchPersonalized: { category in
                 let policies = try await fetchPersonalizedUseCase.execute(category: category.toDomain())
-                return policies.map(BaziPresentation.PolicySummary.init)
+                return policies.map(BaziPresentation.PolicySummaryVO.init)
             }
         )
     }()

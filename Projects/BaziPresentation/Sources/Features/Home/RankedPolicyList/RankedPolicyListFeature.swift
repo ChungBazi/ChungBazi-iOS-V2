@@ -40,14 +40,14 @@ public struct RankedPolicyListFeature {
     @ObservableState
     public struct State: Equatable {
         public let kind: Kind
-        public var selectedCategory: PolicyCategory
-        public var teaser: IdentifiedArrayOf<PolicySummary> = []
-        public var list: LoadingState<IdentifiedArrayOf<PolicySummary>> = .idle
+        public var selectedCategory: PolicyCategoryUI
+        public var teaser: IdentifiedArrayOf<PolicySummaryVO> = []
+        public var list: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
 
         // 페이지네이션
         public var pagination = PaginationState()
 
-        public init(kind: Kind, selectedCategory: PolicyCategory = .job) {
+        public init(kind: Kind, selectedCategory: PolicyCategoryUI = .job) {
             self.kind = kind
             self.selectedCategory = selectedCategory
         }
@@ -60,7 +60,7 @@ public struct RankedPolicyListFeature {
         case task
         case didTapRetry
         case pullToRefresh
-        case didSelectCategory(PolicyCategory)
+        case didSelectCategory(PolicyCategoryUI)
         case didReachListEnd
         case didToggleTeaserBookmark(id: Int)
         case didToggleBookmark(id: Int)
@@ -68,7 +68,7 @@ public struct RankedPolicyListFeature {
 
         // MARK: Internal
         case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
-        case teaserResponse(Result<[PolicySummary], UseCaseError>)
+        case teaserResponse(Result<[PolicySummaryVO], UseCaseError>)
         case likeFailed(id: Int, liked: Bool)
 
         // MARK: Delegate
@@ -190,7 +190,7 @@ public struct RankedPolicyListFeature {
     }
 
     /// kind에 해당하는 조회 클로저.
-    private func fetchClosure(for kind: Kind) -> @Sendable (PolicyCategory?, String?, Int) async throws -> PolicyPageVO {
+    private func fetchClosure(for kind: Kind) -> @Sendable (PolicyCategoryUI?, String?, Int) async throws -> PolicyPageVO {
         switch kind {
         case .popular: return rankedPolicyClient.fetchPopular
         case .deadline: return rankedPolicyClient.fetchDeadline
