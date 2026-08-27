@@ -344,7 +344,7 @@ extension DesignSystemSampleView {
             List {
                 BZAlarmCard(
                     title: "찜한 정책 신청 마감이 하루 남았어요",
-                    message: "민재님이 찜한 정책인 '청년 월세 특별지원 사업' 신청이 내일 마감돼요!",
+                    message: "바지님이 찜한 정책인 '청년 월세 특별지원 사업' 신청이 내일 마감돼요!",
                     timeAgo: "17분전"
                 )
                 .listRowInsets(EdgeInsets())

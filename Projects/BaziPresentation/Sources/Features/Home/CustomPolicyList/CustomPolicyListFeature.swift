@@ -33,7 +33,7 @@ public struct CustomPolicyListFeature {
         public var policies: IdentifiedArrayOf<PersonalizedPolicy>
         public var guideStep: GuideStep?
 
-        public init(userName: String = "민재", category: PolicyCategory? = nil) {
+        public init(userName: String = "바지", category: PolicyCategory? = nil) {
             self.userName = userName
             self.category = category
             self.policies = []

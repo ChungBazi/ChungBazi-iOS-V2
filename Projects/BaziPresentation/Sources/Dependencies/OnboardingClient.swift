@@ -17,7 +17,7 @@ extension OnboardingClient: TestDependencyKey {
     public static let previewValue = OnboardingClient(
         fetchSidoList: { [RegionInfo(code: "11", name: "서울특별시"), RegionInfo(code: "26", name: "부산광역시")] },
         fetchSigunguList: { _ in [RegionInfo(code: "11010", name: "종로구")] },
-        submitOnboarding: { _ in "청바지" }
+        submitOnboarding: { _ in "바지" }
     )
 }
 
