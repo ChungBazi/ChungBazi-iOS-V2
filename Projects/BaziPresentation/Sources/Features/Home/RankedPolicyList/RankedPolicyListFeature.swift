@@ -1,9 +1,10 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import BaziDomain
 import ComposableArchitecture
 
-/// 홈 "인기/마감임박/새로 뜬 정책"의 더보기 화면. 세 섹션이 레이아웃을 공유하므로
-/// `Kind`로만 문구·정렬 기준을 구분한다 (14/15/16번 화면).
+/// 홈 "인기/마감임박/새로 뜬 정책"의 더보기 화면. 세 화면이 레이아웃을 공유하므로
+/// `Kind`로 문구·조회 기준을 구분한다
 @Reducer
 public struct RankedPolicyListFeature {
 
@@ -39,15 +40,19 @@ public struct RankedPolicyListFeature {
     @ObservableState
     public struct State: Equatable {
         public let kind: Kind
-        public var teaserPolicies: IdentifiedArrayOf<PolicySummary>
         public var selectedCategory: PolicyCategory
-        public var policies: IdentifiedArrayOf<PolicySummary>
+        public var teaser: IdentifiedArrayOf<PolicySummary> = []
+        public var list: LoadingState<IdentifiedArrayOf<PolicySummary>> = .idle
+
+        // 페이지네이션
+        public var nextCursor: String?
+        public var hasNext = false
+        public var isLoadingNext = false
+        public var totalCount = 0
 
         public init(kind: Kind, selectedCategory: PolicyCategory = .job) {
             self.kind = kind
-            self.teaserPolicies = []
             self.selectedCategory = selectedCategory
-            self.policies = []
         }
     }
 
@@ -55,11 +60,18 @@ public struct RankedPolicyListFeature {
 
     public enum Action {
         // MARK: View
-        case onAppear
+        case task
+        case didTapRetry
+        case pullToRefresh
         case didSelectCategory(PolicyCategory)
+        case didReachListEnd
         case didToggleTeaserBookmark(id: Int)
         case didToggleBookmark(id: Int)
         case didTapPolicy(id: Int)
+
+        // MARK: Internal
+        case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
+        case teaserResponse(Result<[PolicySummary], UseCaseError>)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -73,8 +85,7 @@ public struct RankedPolicyListFeature {
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 정책 UseCase가 준비되면 추가
-    // @Dependency(\.policyClient) var policyClient
+    @Dependency(\.rankedPolicyClient) var rankedPolicyClient
 
     // MARK: - Init
 
@@ -85,22 +96,58 @@ public struct RankedPolicyListFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                state.teaserPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2)))
-                state.policies = policies(for: state.selectedCategory)
-                return .none
+            case .task:
+                guard state.list.value == nil, !state.list.isLoading else { return .none }
+                return .merge(reloadFirstPage(&state), loadTeaser(state))
+
+            case .didTapRetry:
+                return reloadFirstPage(&state)
+
+            case .pullToRefresh:
+                // 당김 새로고침: .loading으로 바꾸지 않고 1페이지 + teaser만 다시 가져온다.
+                return .merge(fetchPage(state: state, isFirstPage: true), loadTeaser(state))
 
             case .didSelectCategory(let category):
+                guard category != state.selectedCategory else { return .none }
                 state.selectedCategory = category
-                state.policies = policies(for: category)
+                // teaser는 분야 무관(전체 상위) 고정이므로 목록만 재조회한다.
+                return reloadFirstPage(&state)
+
+            case .didReachListEnd:
+                guard state.hasNext, !state.isLoadingNext, state.list.value != nil else { return .none }
+                state.isLoadingNext = true
+                return fetchPage(state: state, isFirstPage: false)
+
+            case let .pageResponse(.success(page), isFirstPage):
+                handlePage(page, isFirstPage: isFirstPage, state: &state)
+                return .none
+
+            case let .pageResponse(.failure(error), isFirstPage):
+                if isFirstPage {
+                    if state.list.value == nil {
+                        state.list = .failed(error.loadFailureMessage)
+                    }
+                } else {
+                    state.isLoadingNext = false
+                }
+                return .none
+
+            case .teaserResponse(.success(let policies)):
+                state.teaser = IdentifiedArray(uniqueElements: policies)
+                return .none
+
+            case .teaserResponse(.failure):
+                state.teaser = []
                 return .none
 
             case .didToggleTeaserBookmark(let id):
-                state.teaserPolicies[id: id]?.isBookmarked.toggle()
+                state.teaser[id: id]?.isBookmarked.toggle()
                 return .none
 
             case .didToggleBookmark(let id):
-                state.policies[id: id]?.isBookmarked.toggle()
+                guard var policies = state.list.value else { return .none }
+                policies[id: id]?.isBookmarked.toggle()
+                state.list = .loaded(policies)
                 return .none
 
             case .didTapPolicy(let id):
@@ -114,7 +161,66 @@ public struct RankedPolicyListFeature {
 
     // MARK: - Private
 
-    private func policies(for category: PolicyCategory) -> IdentifiedArrayOf<PolicySummary> {
-        IdentifiedArray(uniqueElements: PolicySummary.mockList.filter { $0.category == category })
+    private enum CancelID { case list }
+
+    private static let pageSize = 20
+    private static let teaserSize = 10
+
+    /// kind에 해당하는 조회 클로저.
+    private func fetchClosure(for kind: Kind) -> @Sendable (PolicyCategory?, String?, Int) async throws -> PolicyPageVO {
+        switch kind {
+        case .popular: return rankedPolicyClient.fetchPopular
+        case .deadline: return rankedPolicyClient.fetchDeadline
+        case .latest: return rankedPolicyClient.fetchLatest
+        }
+    }
+
+    private func reloadFirstPage(_ state: inout State) -> Effect<Action> {
+        state.list = .loading
+        state.nextCursor = nil
+        state.hasNext = false
+        state.isLoadingNext = false
+        return fetchPage(state: state, isFirstPage: true)
+    }
+
+    private func fetchPage(state: State, isFirstPage: Bool) -> Effect<Action> {
+        let fetch = fetchClosure(for: state.kind)
+        let category = state.selectedCategory
+        let cursor = isFirstPage ? nil : state.nextCursor
+        return .run { send in
+            do {
+                let page = try await fetch(category, cursor, Self.pageSize)
+                await send(.pageResponse(.success(page), isFirstPage: isFirstPage))
+            } catch {
+                await send(.pageResponse(.failure(UseCaseError.map(error)), isFirstPage: isFirstPage))
+            }
+        }
+        .cancellable(id: CancelID.list, cancelInFlight: true)
+    }
+
+    private func loadTeaser(_ state: State) -> Effect<Action> {
+        let fetch = fetchClosure(for: state.kind)
+        return .run { send in
+            do {
+                let page = try await fetch(nil, nil, Self.teaserSize)
+                await send(.teaserResponse(.success(Array(page.policies))))
+            } catch {
+                await send(.teaserResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+    }
+
+    private func handlePage(_ page: PolicyPageVO, isFirstPage: Bool, state: inout State) {
+        state.nextCursor = page.nextCursor
+        state.hasNext = page.hasNext
+        state.totalCount = page.totalCount
+        state.isLoadingNext = false
+        if isFirstPage {
+            state.list = .loaded(page.policies)
+        } else {
+            var current = state.list.value ?? []
+            current.append(contentsOf: page.policies)
+            state.list = .loaded(current)
+        }
     }
 }

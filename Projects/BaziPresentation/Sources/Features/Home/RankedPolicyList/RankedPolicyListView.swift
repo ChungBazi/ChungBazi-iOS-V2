@@ -22,7 +22,7 @@ public struct RankedPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.onAppear) }
+            .task { store.send(.task) }
             .baziNavigationBar_backWithTitle(store.kind.navigationTitle) {
                 dismiss()
             }
@@ -36,16 +36,19 @@ extension RankedPolicyListView {
     private var content: some View {
         ScrollView {
             VStack(spacing: 0) {
-                teaserBanner
+                if !store.teaser.isEmpty {
+                    teaserBanner
+                }
                 BZSegmentControl(
                     options: PolicyCategory.allCases.map(\.rawValue),
                     selection: categorySelection
-                ) { _ in
-                    policyList
-                }
+                ) { _ in EmptyView() }
+
+                listSection
             }
         }
         .baziBackground(.bgGray)
+        .refreshable { await store.send(.pullToRefresh).finish() }
     }
 
     private var teaserBanner: some View {
@@ -57,14 +60,14 @@ extension RankedPolicyListView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 12) {
-                    ForEach(store.teaserPolicies) { policy in
+                    ForEach(store.teaser) { policy in
                         BZCard(
                             size: .small,
                             category: policy.category.rawValue,
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
-                            isBookmarked: bookmarkBinding(teaserID: policy.id)
+                            isBookmarked: teaserBookmarkBinding(id: policy.id)
                         )
                     }
                 }
@@ -76,9 +79,30 @@ extension RankedPolicyListView {
         .background(Color.blue100)
     }
 
-    private var policyList: some View {
+    @ViewBuilder
+    private var listSection: some View {
+        switch store.list {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity)
+                .frame(height: 240)
+
+        case .failed:
+            BZRetryView { store.send(.didTapRetry) }
+                .frame(height: 240)
+
+        case .loaded(let policies):
+            if policies.isEmpty {
+                emptyText
+            } else {
+                policyList(policies)
+            }
+        }
+    }
+
+    private func policyList(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
         LazyVStack(spacing: 12) {
-            ForEach(Array(store.policies.enumerated()), id: \.element.id) { index, policy in
+            ForEach(Array(policies.enumerated()), id: \.element.id) { index, policy in
                 BZCard(
                     size: .medium2,
                     badgeNumber: store.kind.showsRankBadge ? index + 1 : nil,
@@ -89,9 +113,22 @@ extension RankedPolicyListView {
                     isBookmarked: bookmarkBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                .onAppear {
+                    if policy.id == policies.last?.id {
+                        store.send(.didReachListEnd)
+                    }
+                }
             }
         }
         .padding([.horizontal, .bottom], 20)
+    }
+
+    private var emptyText: some View {
+        Text("조건에 맞는 정책이 없어요")
+            .baziFont(.small14R)
+            .foregroundStyle(Color.gray400)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 60)
     }
 }
 
@@ -111,14 +148,14 @@ extension RankedPolicyListView {
 
     private func bookmarkBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.policies[id: id]?.isBookmarked ?? false },
+            get: { store.list.value?[id: id]?.isBookmarked ?? false },
             set: { _ in store.send(.didToggleBookmark(id: id)) }
         )
     }
 
-    private func bookmarkBinding(teaserID id: Int) -> Binding<Bool> {
+    private func teaserBookmarkBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.teaserPolicies[id: id]?.isBookmarked ?? false },
+            get: { store.teaser[id: id]?.isBookmarked ?? false },
             set: { _ in store.send(.didToggleTeaserBookmark(id: id)) }
         )
     }
