@@ -1,9 +1,10 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import BaziDesign
+import BaziDomain
 import ComposableArchitecture
 
-/// 홈 "맞춤정책 더보기" 화면 (12-4). 뒤집기 카드 캐러셀 + 최초 진입 시 2단계 가이드 오버레이로 구성된다.
+/// 진입한 쪽(홈/분야별)이 넘겨준 맞춤 정책 id들의 카드(getPolicyCard)를 병렬로 조회한다.
 @Reducer
 public struct CustomPolicyListFeature {
 
@@ -27,17 +28,18 @@ public struct CustomPolicyListFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public var userName: String
         /// 분야별에서 진입 시 해당 분야. 홈 맞춤정책에서 진입하면 nil.
         public var category: PolicyCategory?
-        public var policies: IdentifiedArrayOf<PersonalizedPolicy>
+        /// 카드로 보여줄 맞춤 정책 id 목록(진입 측에서 전달).
+        public var policyIds: [Int]
+        public var userName = ""
+        public var cards: LoadingState<IdentifiedArrayOf<PolicyCardVO>> = .idle
+        /// 최초 진입 시에만 노출. `.task`에서 hasSeenGuide로 결정한다.
         public var guideStep: GuideStep?
 
-        public init(userName: String = "바지", category: PolicyCategory? = nil) {
-            self.userName = userName
+        public init(category: PolicyCategory? = nil, policyIds: [Int] = []) {
             self.category = category
-            self.policies = []
-            self.guideStep = .swipeHint
+            self.policyIds = policyIds
         }
     }
 
@@ -45,10 +47,14 @@ public struct CustomPolicyListFeature {
 
     public enum Action {
         // MARK: View
-        case onAppear
+        case task
+        case didTapRetry
         case didToggleBookmark(id: Int)
         case didTapDetail(id: Int)
         case didTapGuideNext
+
+        // MARK: Internal
+        case cardsResponse(Result<[PolicyCardVO], UseCaseError>)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -62,8 +68,8 @@ public struct CustomPolicyListFeature {
 
     // MARK: - Dependencies
 
-    // TODO: 이 Feature가 쓸 Client가 준비되면 추가
-    // @Dependency(\.someClient) var someClient
+    @Dependency(\.customPolicyClient) var customPolicyClient
+    @Dependency(\.sessionClient) var sessionClient
 
     // MARK: - Init
 
@@ -74,12 +80,31 @@ public struct CustomPolicyListFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                state.policies = IdentifiedArray(uniqueElements: PersonalizedPolicy.mockList)
+            case .task:
+                guard state.cards.value == nil, !state.cards.isLoading else { return .none }
+                state.userName = sessionClient.userName() ?? ""
+                if !customPolicyClient.hasSeenGuide() {
+                    state.guideStep = .swipeHint
+                }
+                return loadCards(&state)
+
+            case .didTapRetry:
+                return loadCards(&state)
+
+            case let .cardsResponse(.success(cards)):
+                state.cards = .loaded(IdentifiedArray(uniqueElements: cards))
+                return .none
+
+            case let .cardsResponse(.failure(error)):
+                if state.cards.value == nil {
+                    state.cards = .failed(error.loadFailureMessage)
+                }
                 return .none
 
             case .didToggleBookmark(let id):
-                state.policies[id: id]?.isBookmarked.toggle()
+                guard var cards = state.cards.value else { return .none }
+                cards[id: id]?.isBookmarked.toggle()
+                state.cards = .loaded(cards)
                 return .none
 
             case .didTapDetail(let id):
@@ -87,10 +112,40 @@ public struct CustomPolicyListFeature {
 
             case .didTapGuideNext:
                 state.guideStep = state.guideStep?.next
+                if state.guideStep == nil {
+                    return .run { [customPolicyClient] _ in customPolicyClient.markGuideSeen() }
+                }
                 return .none
 
             case .delegate:
                 return .none
+            }
+        }
+    }
+
+    // MARK: - Private
+
+    /// 전달받은 id들의 카드를 병렬로 조회한다.
+    private func loadCards(_ state: inout State) -> Effect<Action> {
+        let ids = state.policyIds
+        guard !ids.isEmpty else {
+            state.cards = .loaded([])
+            return .none
+        }
+        state.cards = .loading
+        return .run { [customPolicyClient] send in
+            do {
+                let cards = try await withThrowingTaskGroup(of: (Int, PolicyCardVO).self) { group in
+                    for (index, id) in ids.enumerated() {
+                        group.addTask { (index, try await customPolicyClient.fetchCard(id)) }
+                    }
+                    var collected: [(Int, PolicyCardVO)] = []
+                    for try await pair in group { collected.append(pair) }
+                    return collected.sorted { $0.0 < $1.0 }.map(\.1)
+                }
+                await send(.cardsResponse(.success(cards)))
+            } catch {
+                await send(.cardsResponse(.failure(UseCaseError.map(error))))
             }
         }
     }
