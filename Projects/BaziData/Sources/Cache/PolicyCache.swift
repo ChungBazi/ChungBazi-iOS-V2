@@ -6,8 +6,7 @@ import BaziDomain
 
 /// 홈 피드(aggregate) 인메모리 캐시. TTL이 지나면 만료로 취급한다.
 /// composition root에서 1개만 만들어 HomeRepository에 공유 주입한다.
-// TODO: 캐시가 여러 도메인으로 늘면 범용 인메모리 캐시 primitive는 BaziStorage로 분리하고,
-//       도메인 특화 PolicyCache는 그 위에 둔다.
+// TODO: 캐시가 여러 도메인으로 늘면 범용 인메모리 캐시 primitive는 BaziStorage로 분리하고, 도메인 특화 PolicyCache는 그 위에 둔다.
 public actor PolicyCache {
 
     private var stored: (value: HomeFeed, storedAt: Date)?
