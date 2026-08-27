@@ -15,8 +15,8 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
     public let supportContent: String
     public let applyUrl: String?
     public var isBookmarked: Bool
-    /// 온디바이스 AI 요약(nil이면 뒷면에 원문 supportContent를 쓴다).
-    public var aiSummary: String?
+    /// 온디바이스 AI 요약 상태. 뒷면이 .ready면 요약문, 그 외엔 원문 supportContent를 쓴다.
+    public var aiSummary: CardSummaryState = .idle
 
     public init(
         id: Int,
@@ -28,7 +28,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         supportContent: String,
         applyUrl: String?,
         isBookmarked: Bool = false,
-        aiSummary: String? = nil
+        aiSummary: CardSummaryState = .idle
     ) {
         self.id = id
         self.category = category
@@ -41,6 +41,24 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         self.isBookmarked = isBookmarked
         self.aiSummary = aiSummary
     }
+}
+
+// MARK: - CardSummaryState
+
+/// 카드 뒷면 온디바이스 AI 요약의 생명주기.
+public enum CardSummaryState: Equatable, Sendable {
+    case idle          // 아직 요약 요청 전
+    case loading       // 요약 생성 중
+    case ready(String) // 요약 완료
+    case unavailable   // 미지원/실패 → 원문 fallback
+
+    /// 완료된 요약문(그 외 상태는 nil).
+    public var text: String? {
+        if case let .ready(text) = self { return text }
+        return nil
+    }
+
+    public var isLoading: Bool { self == .loading }
 }
 
 // MARK: - Mapping (Domain → VO)
