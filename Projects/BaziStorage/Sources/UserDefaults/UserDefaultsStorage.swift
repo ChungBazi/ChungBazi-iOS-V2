@@ -12,6 +12,7 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         case hasCompletedOnboarding
         case sessionMarker
         case userName
+        case customPolicyGuideSeen
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -37,6 +38,12 @@ public final class UserDefaultsStorage: @unchecked Sendable {
     public var userName: String? {
         get { defaults.string(forKey: Key.userName.rawValue) }
         set { defaults.set(newValue, forKey: Key.userName.rawValue) }
+    }
+
+    /// 맞춤정책 가이드 오버레이를 본 적 있는지. 세션과 무관하게 앱 삭제 전까지 유지된다(resetSessionState에서 지우지 않음).
+    public var hasSeenCustomPolicyGuide: Bool {
+        get { defaults.bool(forKey: Key.customPolicyGuideSeen.rawValue) }
+        set { defaults.set(newValue, forKey: Key.customPolicyGuideSeen.rawValue) }
     }
 
     public func resetSessionState() {
