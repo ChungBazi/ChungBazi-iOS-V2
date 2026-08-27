@@ -11,6 +11,7 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         case hasSetNickname
         case hasCompletedOnboarding
         case sessionMarker
+        case userName
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -32,9 +33,16 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         set { defaults.set(newValue, forKey: Key.hasCompletedOnboarding.rawValue) }
     }
 
+    /// 서버에서 받은 사용자 닉네임. 로그인~로그아웃/탈퇴 동안 재사용한다.
+    public var userName: String? {
+        get { defaults.string(forKey: Key.userName.rawValue) }
+        set { defaults.set(newValue, forKey: Key.userName.rawValue) }
+    }
+
     public func resetSessionState() {
         defaults.removeObject(forKey: Key.hasSetNickname.rawValue)
         defaults.removeObject(forKey: Key.hasCompletedOnboarding.rawValue)
+        defaults.removeObject(forKey: Key.userName.rawValue)
     }
 
     // MARK: - Session Marker

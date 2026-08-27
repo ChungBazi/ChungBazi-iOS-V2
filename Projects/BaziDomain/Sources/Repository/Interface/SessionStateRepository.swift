@@ -6,7 +6,9 @@ import Foundation
 public protocol SessionStateRepository: Sendable {
     var hasSetNickname: Bool { get }
     var hasCompletedOnboarding: Bool { get }
+    var userName: String? { get }
     func setHasSetNickname(_ value: Bool)
     func setHasCompletedOnboarding(_ value: Bool)
+    func setUserName(_ value: String)
     func reset()
 }
