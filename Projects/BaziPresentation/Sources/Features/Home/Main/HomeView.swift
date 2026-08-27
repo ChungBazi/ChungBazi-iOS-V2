@@ -136,7 +136,7 @@ extension HomeView {
         .background(Color.blue100)
     }
 
-    private func personalizedContent(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
+    private func personalizedContent(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -232,7 +232,7 @@ extension HomeView {
             }
 
             HStack {
-                ForEach(PolicyCategory.allCases) { category in
+                ForEach(PolicyCategoryUI.allCases) { category in
                     categoryButton(category)
                 }
             }
@@ -241,7 +241,7 @@ extension HomeView {
         .padding(.top, 22)
     }
 
-    private func categoryButton(_ category: PolicyCategory) -> some View {
+    private func categoryButton(_ category: PolicyCategoryUI) -> some View {
         Button {
             store.send(.didTapCategory(category))
         } label: {
@@ -271,7 +271,7 @@ extension HomeView {
         title: String,
         subtitle: String,
         emptyMessage: String,
-        policies: IdentifiedArrayOf<PolicySummary>,
+        policies: IdentifiedArrayOf<PolicySummaryVO>,
         section: HomeFeature.PolicySection,
         moreAction: (() -> Void)? = nil
     ) -> some View {

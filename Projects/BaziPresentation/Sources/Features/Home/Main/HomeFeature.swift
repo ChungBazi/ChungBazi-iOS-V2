@@ -49,7 +49,7 @@ public struct HomeFeature {
         case didTapRetry
         case pullToRefresh
         case didTapBell
-        case didTapCategory(PolicyCategory)
+        case didTapCategory(PolicyCategoryUI)
         case didTapPersonalizedMore
         case didTapPersonalizedEmptyCTA
         case didTapPopularMore

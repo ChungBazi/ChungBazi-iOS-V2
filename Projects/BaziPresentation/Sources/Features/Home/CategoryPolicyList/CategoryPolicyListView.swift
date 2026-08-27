@@ -36,7 +36,7 @@ extension CategoryPolicyListView {
     private var content: some View {
         VStack(spacing: 0) {
             BZSegmentControl(
-                options: PolicyCategory.allCases.map(\.rawValue),
+                options: PolicyCategoryUI.allCases.map(\.rawValue),
                 selection: categorySelection
             ) { _ in EmptyView() }
                 .baziBackground(.bgWhite)
@@ -62,7 +62,7 @@ extension CategoryPolicyListView {
         }
     }
 
-    private func loadedContent(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
+    private func loadedContent(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         ScrollView {
             VStack(spacing: 0) {
                 if !store.teaser.isEmpty {
@@ -135,7 +135,7 @@ extension CategoryPolicyListView {
         .padding(.vertical, 16)
     }
 
-    private func policyList(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
+    private func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         LazyVStack(spacing: 12) {
             ForEach(policies) { policy in
                 BZCard(
@@ -174,7 +174,7 @@ extension CategoryPolicyListView {
         Binding(
             get: { store.selectedCategory.rawValue },
             set: { newValue in
-                guard let category = PolicyCategory(rawValue: newValue) else { return }
+                guard let category = PolicyCategoryUI(rawValue: newValue) else { return }
                 store.send(.didSelectCategory(category))
             }
         )
@@ -195,9 +195,9 @@ extension CategoryPolicyListView {
     }
 }
 
-// MARK: - PolicyCategory + Headline
+// MARK: - PolicyCategoryUI + Headline
 
-extension PolicyCategory {
+extension PolicyCategoryUI {
     fileprivate var categoryHeadline: String {
         switch self {
         case .job: return "취업과 창업에 도움이 될"

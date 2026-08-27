@@ -40,7 +40,7 @@ extension RankedPolicyListView {
                     teaserBanner
                 }
                 BZSegmentControl(
-                    options: PolicyCategory.allCases.map(\.rawValue),
+                    options: PolicyCategoryUI.allCases.map(\.rawValue),
                     selection: categorySelection
                 ) { _ in EmptyView() }
 
@@ -100,7 +100,7 @@ extension RankedPolicyListView {
         }
     }
 
-    private func policyList(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
+    private func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         LazyVStack(spacing: 12) {
             ForEach(Array(policies.enumerated()), id: \.element.id) { index, policy in
                 BZCard(
@@ -140,7 +140,7 @@ extension RankedPolicyListView {
         Binding(
             get: { store.selectedCategory.rawValue },
             set: { newValue in
-                guard let category = PolicyCategory(rawValue: newValue) else { return }
+                guard let category = PolicyCategoryUI(rawValue: newValue) else { return }
                 store.send(.didSelectCategory(category))
             }
         )

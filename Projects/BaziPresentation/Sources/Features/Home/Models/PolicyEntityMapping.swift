@@ -4,9 +4,9 @@ import ComposableArchitecture
 
 import BaziDomain
 
-// MARK: - PolicyCategory (Domain → Presentation)
+// MARK: - PolicyCategoryUI (Domain → Presentation)
 
-extension PolicyCategory {
+extension PolicyCategoryUI {
 
     /// 서버 카테고리 코드(Domain enum)를 화면용 카테고리(UI enum)로 1:1 변환한다.
     init(domain: BaziDomain.PolicyCategory) {
@@ -20,9 +20,9 @@ extension PolicyCategory {
     }
 }
 
-// MARK: - PolicyCategory (Presentation → Domain)
+// MARK: - PolicyCategoryUI (Presentation → Domain)
 
-extension PolicyCategory {
+extension PolicyCategoryUI {
 
     /// UI 카테고리 → 서버 카테고리 코드(요청 파라미터용).
     public func toDomain() -> BaziDomain.PolicyCategory {
@@ -36,14 +36,14 @@ extension PolicyCategory {
     }
 }
 
-// MARK: - PolicySummary (Domain → Presentation VO)
+// MARK: - PolicySummaryVO (Domain → Presentation VO)
 
-extension PolicySummary {
+extension PolicySummaryVO {
 
     public init(_ entity: BaziDomain.PolicySummary) {
         // 서버 코드 → UI enum. 코드가 비어 있으면(방어적) categoryName 라벨로 복구를 시도한다.
-        let category = entity.category.map(PolicyCategory.init(domain:))
-            ?? PolicyCategory(rawValue: entity.categoryName)
+        let category = entity.category.map(PolicyCategoryUI.init(domain:))
+            ?? PolicyCategoryUI(rawValue: entity.categoryName)
             ?? .job
         self.init(
             id: entity.id,
@@ -61,8 +61,8 @@ extension PolicySummary {
 extension HomeFeedVO {
 
     public init(_ entity: HomeFeed) {
-        func map(_ list: [BaziDomain.PolicySummary]) -> IdentifiedArrayOf<PolicySummary> {
-            IdentifiedArray(uniqueElements: list.map(PolicySummary.init))
+        func map(_ list: [BaziDomain.PolicySummary]) -> IdentifiedArrayOf<PolicySummaryVO> {
+            IdentifiedArray(uniqueElements: list.map(PolicySummaryVO.init))
         }
         self.init(
             hasUnreadNotification: entity.hasUnreadNotification,
