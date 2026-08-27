@@ -144,10 +144,10 @@ extension HomeView {
                     .foregroundStyle(Color.gray900)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Spacer()
-                Image.bazi(.personalizedEmptyIllustration)
+                Image.bazi(.glassBaro)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 60)
+                    .frame(width: 75)
             }
 
             Button {
