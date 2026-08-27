@@ -15,6 +15,8 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
     public let supportContent: String
     public let applyUrl: String?
     public var isBookmarked: Bool
+    /// 온디바이스 AI 요약(nil이면 뒷면에 원문 supportContent를 쓴다).
+    public var aiSummary: String?
 
     public init(
         id: Int,
@@ -25,7 +27,8 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         applyPeriod: String,
         supportContent: String,
         applyUrl: String?,
-        isBookmarked: Bool = false
+        isBookmarked: Bool = false,
+        aiSummary: String? = nil
     ) {
         self.id = id
         self.category = category
@@ -36,6 +39,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         self.supportContent = supportContent
         self.applyUrl = applyUrl
         self.isBookmarked = isBookmarked
+        self.aiSummary = aiSummary
     }
 }
 

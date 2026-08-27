@@ -22,6 +22,7 @@ public struct BZFlipCard: View {
     private let subtitle: String
     private let applyPeriod: String
     private let description: String
+    private let isSummarizing: Bool
     @Binding private var isBookmarked: Bool
 
     // MARK: - Init
@@ -34,6 +35,7 @@ public struct BZFlipCard: View {
         subtitle: String,
         applyPeriod: String,
         description: String,
+        isSummarizing: Bool = false,
         isBookmarked: Binding<Bool>
     ) {
         self.image = image
@@ -43,6 +45,7 @@ public struct BZFlipCard: View {
         self.subtitle = subtitle
         self.applyPeriod = applyPeriod
         self.description = description
+        self.isSummarizing = isSummarizing
         self._isBookmarked = isBookmarked
     }
 
@@ -154,13 +157,19 @@ extension BZFlipCard {
 extension BZFlipCard {
 
     private var back: some View {
-        ScrollView {
-            Text(description.byCharWrapping)
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray800)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 36)
-                .padding(.horizontal, 31.5)
+        Group {
+            if isSummarizing {
+                summarizingView
+            } else {
+                ScrollView {
+                    Text(description.byCharWrapping)
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray800)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 36)
+                        .padding(.horizontal, 31.5)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
@@ -174,6 +183,31 @@ extension BZFlipCard {
                 endPoint: .bottomTrailing
             )
         )
+    }
+
+    private var summarizingView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 3) {
+                Image(systemName: "sparkle")
+                    .font(.system(size: 14))
+                Text("AI가 요약하고 있어요")
+                    .baziFont(.small14R)
+            }
+            .foregroundStyle(Color.bazi(.primary))
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(0..<5, id: \.self) { index in
+                    Capsule()
+                        .fill(Color.gray400.opacity(0.25))
+                        .frame(height: 12)
+                        .frame(maxWidth: index == 4 ? 140 : .infinity, alignment: .leading)
+                }
+            }
+            .baziShimmer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.vertical, 36)
+        .padding(.horizontal, 31.5)
     }
 }
 
