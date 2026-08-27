@@ -59,6 +59,7 @@ public struct CategoryPolicyListFeature {
         // MARK: Internal
         case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
         case teaserResponse(Result<[PolicySummary], UseCaseError>)
+        case likeFailed(id: Int, liked: Bool)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -75,6 +76,7 @@ public struct CategoryPolicyListFeature {
 
     @Dependency(\.categoryPolicyClient) var categoryPolicyClient
     @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.policyLikeClient) var policyLikeClient
 
     // MARK: - Init
 
@@ -141,14 +143,15 @@ public struct CategoryPolicyListFeature {
                 state.teaser = []
                 return .none
 
-            case .didToggleTeaserBookmark(let id):
-                state.teaser[id: id]?.isBookmarked.toggle()
-                return .none
+            case .didToggleTeaserBookmark(let id), .didToggleBookmark(let id):
+                let current = state.teaser[id: id]?.isBookmarked ?? state.list.value?[id: id]?.isBookmarked
+                guard let current else { return .none }
+                let newValue = !current
+                setLiked(&state, id: id, liked: newValue)
+                return likeEffect(id: id, liked: newValue)
 
-            case .didToggleBookmark(let id):
-                guard var policies = state.list.value else { return .none }
-                policies[id: id]?.isBookmarked.toggle()
-                state.list = .loaded(policies)
+            case let .likeFailed(id, liked):
+                setLiked(&state, id: id, liked: !liked)
                 return .none
 
             case .didTapPolicy(let id):
@@ -162,9 +165,32 @@ public struct CategoryPolicyListFeature {
 
     // MARK: - Private
 
-    private enum CancelID { case list }
+    private enum CancelID: Hashable { case list, like(Int) }
 
     private static let pageSize = 20
+
+    /// 찜 상태를 teaser·list 양쪽에 반영한다.
+    private func setLiked(_ state: inout State, id: Int, liked: Bool) {
+        if state.teaser[id: id] != nil {
+            state.teaser[id: id]?.isBookmarked = liked
+        }
+        if var list = state.list.value, list[id: id] != nil {
+            list[id: id]?.isBookmarked = liked
+            state.list = .loaded(list)
+        }
+    }
+
+    /// 찜 토글: 서버 반영. 실패 시 likeFailed로 롤백. 연타는 정책별로 취소.
+    private func likeEffect(id: Int, liked: Bool) -> Effect<Action> {
+        .run { [policyLikeClient] send in
+            do {
+                try await policyLikeClient.setLike(id, liked)
+            } catch {
+                await send(.likeFailed(id: id, liked: liked))
+            }
+        }
+        .cancellable(id: CancelID.like(id), cancelInFlight: true)
+    }
 
     /// 1페이지부터 다시 조회한다. 진행 중인 요청은 취소한다.
     private func reloadFirstPage(_ state: inout State) -> Effect<Action> {

@@ -47,6 +47,8 @@ struct HomeFeatureTests {
         state.feed = .loaded(.mock)
         let store = TestStore(initialState: state) {
             HomeFeature()
+        } withDependencies: {
+            $0.policyLikeClient.setLike = { _, _ in }
         }
 
         var expected = HomeFeedVO.mock

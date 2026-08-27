@@ -21,7 +21,7 @@ public struct HomeFeature {
     // MARK: - PolicySection
 
     /// 홈 화면에서 북마크 토글이 어느 섹션의 배열을 바꿔야 하는지 구분한다.
-    public enum PolicySection: Equatable {
+    public enum PolicySection: Equatable, Sendable {
         case personalized
         case recentViewed
         case popular
@@ -60,6 +60,7 @@ public struct HomeFeature {
 
         // MARK: Internal
         case feedResponse(Result<HomeFeedVO, UseCaseError>)
+        case likeFailed(section: PolicySection, id: Int, liked: Bool)
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -69,6 +70,7 @@ public struct HomeFeature {
 
     @Dependency(\.homeClient) var homeClient
     @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.policyLikeClient) var policyLikeClient
 
     // MARK: - Init
 
@@ -142,7 +144,13 @@ public struct HomeFeature {
                 return .none
 
             case .didToggleBookmark(let section, let id):
-                toggleBookmark(section: section, id: id, state: &state)
+                guard let current = currentBookmark(section: section, id: id, state: state) else { return .none }
+                let newValue = !current
+                setBookmark(section: section, id: id, liked: newValue, state: &state)
+                return likeEffect(section: section, id: id, liked: newValue)
+
+            case let .likeFailed(section, id, liked):
+                setBookmark(section: section, id: id, liked: !liked, state: &state)
                 return .none
 
             case .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy)))),
@@ -178,16 +186,41 @@ public struct HomeFeature {
         }
     }
 
-    private func toggleBookmark(section: PolicySection, id: Int, state: inout State) {
+    private enum CancelID: Hashable { case like(Int) }
+
+    private func currentBookmark(section: PolicySection, id: Int, state: State) -> Bool? {
+        guard let feed = state.feed.value else { return nil }
+        switch section {
+        case .personalized: return feed.personalized[id: id]?.isBookmarked
+        case .recentViewed: return feed.recentViewed[id: id]?.isBookmarked
+        case .popular: return feed.popular[id: id]?.isBookmarked
+        case .deadline: return feed.deadline[id: id]?.isBookmarked
+        case .newest: return feed.newest[id: id]?.isBookmarked
+        }
+    }
+
+    private func setBookmark(section: PolicySection, id: Int, liked: Bool, state: inout State) {
         guard var feed = state.feed.value else { return }
         switch section {
-        case .personalized: feed.personalized[id: id]?.isBookmarked.toggle()
-        case .recentViewed: feed.recentViewed[id: id]?.isBookmarked.toggle()
-        case .popular: feed.popular[id: id]?.isBookmarked.toggle()
-        case .deadline: feed.deadline[id: id]?.isBookmarked.toggle()
-        case .newest: feed.newest[id: id]?.isBookmarked.toggle()
+        case .personalized: feed.personalized[id: id]?.isBookmarked = liked
+        case .recentViewed: feed.recentViewed[id: id]?.isBookmarked = liked
+        case .popular: feed.popular[id: id]?.isBookmarked = liked
+        case .deadline: feed.deadline[id: id]?.isBookmarked = liked
+        case .newest: feed.newest[id: id]?.isBookmarked = liked
         }
         state.feed = .loaded(feed)
+    }
+
+    /// 찜 토글: 서버 반영. 실패 시 likeFailed로 롤백. 연타는 정책별로 취소.
+    private func likeEffect(section: PolicySection, id: Int, liked: Bool) -> Effect<Action> {
+        .run { [policyLikeClient] send in
+            do {
+                try await policyLikeClient.setLike(id, liked)
+            } catch {
+                await send(.likeFailed(section: section, id: id, liked: liked))
+            }
+        }
+        .cancellable(id: CancelID.like(id), cancelInFlight: true)
     }
 }
 

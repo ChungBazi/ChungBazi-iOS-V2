@@ -61,6 +61,7 @@ public struct CustomPolicyListFeature {
         // MARK: Internal
         case cardsResponse(Result<[PolicyCardVO], UseCaseError>)
         case summaryResponse(id: Int, summary: String?)
+        case likeFailed(id: Int, liked: Bool)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -76,6 +77,7 @@ public struct CustomPolicyListFeature {
 
     @Dependency(\.customPolicyClient) var customPolicyClient
     @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.policyLikeClient) var policyLikeClient
 
     // MARK: - Init
 
@@ -133,8 +135,15 @@ public struct CustomPolicyListFeature {
                 return .none
 
             case .didToggleBookmark(let id):
+                guard var cards = state.cards.value, let current = cards[id: id]?.isBookmarked else { return .none }
+                let newValue = !current
+                cards[id: id]?.isBookmarked = newValue
+                state.cards = .loaded(cards)
+                return likeEffect(id: id, liked: newValue)
+
+            case let .likeFailed(id, liked):
                 guard var cards = state.cards.value else { return .none }
-                cards[id: id]?.isBookmarked.toggle()
+                cards[id: id]?.isBookmarked = !liked
                 state.cards = .loaded(cards)
                 return .none
 
@@ -155,6 +164,20 @@ public struct CustomPolicyListFeature {
     }
 
     // MARK: - Private
+
+    private enum CancelID: Hashable { case like(Int) }
+
+    /// 찜 토글: 서버 반영. 실패 시 likeFailed로 롤백한다. 연타는 정책별로 취소.
+    private func likeEffect(id: Int, liked: Bool) -> Effect<Action> {
+        .run { [policyLikeClient] send in
+            do {
+                try await policyLikeClient.setLike(id, liked)
+            } catch {
+                await send(.likeFailed(id: id, liked: liked))
+            }
+        }
+        .cancellable(id: CancelID.like(id), cancelInFlight: true)
+    }
 
     /// 전달받은 id들의 카드를 병렬로 조회한다.
     private func loadCards(_ state: inout State) -> Effect<Action> {
