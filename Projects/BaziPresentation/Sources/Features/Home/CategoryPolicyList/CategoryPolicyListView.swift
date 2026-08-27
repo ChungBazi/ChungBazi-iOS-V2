@@ -118,7 +118,7 @@ extension CategoryPolicyListView {
 
     private var resultsToolbar: some View {
         HStack {
-            Text("\(store.totalCount)개")
+            Text("\(store.pagination.totalCount)개")
             Spacer()
             Button {
                 store.send(.didTapSortOrder)
