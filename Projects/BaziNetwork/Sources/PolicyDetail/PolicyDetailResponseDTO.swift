@@ -23,7 +23,7 @@ public struct PolicyDetailResponseDTO: Decodable {
 }
 
 /// 정책 카드뉴스 조회 Response DTO
-public struct PolicyCardResponseDTO: Decodable {
+public struct PolicyCardResponseDTO: Decodable, Sendable {
     public let policyId: Int
     public let category: String
     public let categoryName: String
