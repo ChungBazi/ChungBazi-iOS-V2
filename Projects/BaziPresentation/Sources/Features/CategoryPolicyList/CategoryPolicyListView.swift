@@ -34,19 +34,22 @@ public struct CategoryPolicyListView: View {
 extension CategoryPolicyListView {
 
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                BZSegmentControl(
-                    options: PolicyCategory.allCases.map(\.rawValue),
-                    selection: categorySelection
-                ) { _ in EmptyView() }
+        VStack(spacing: 0) {
+            BZSegmentControl(
+                options: PolicyCategory.allCases.map(\.rawValue),
+                selection: categorySelection
+            ) { _ in EmptyView() }
+                .baziBackground(.bgWhite)
 
-                personalizedBanner
-                resultsToolbar
-                policyList
+            ScrollView {
+                VStack(spacing: 0) {
+                    personalizedBanner
+                    resultsToolbar
+                    policyList
+                }
             }
+            .baziBackground(.bgGray)
         }
-        .baziBackground(.bgGray)
     }
 
     private var personalizedBanner: some View {
@@ -65,7 +68,7 @@ extension CategoryPolicyListView {
             .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                LazyHStack(spacing: 12) {
                     ForEach(store.personalizedTeaser) { policy in
                         BZCard(
                             size: .small,
@@ -88,18 +91,18 @@ extension CategoryPolicyListView {
     private var resultsToolbar: some View {
         HStack {
             Text("\(store.policies.count)개")
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray600)
             Spacer()
             Button {
                 store.send(.didTapSortOrder)
             } label: {
-                Label(store.sortOrder.rawValue, systemImage: "arrow.up.arrow.down")
-                    .labelStyle(.titleAndIcon)
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.up.arrow.down")
+                    Text(store.sortOrder.rawValue)
+                }
             }
-            .baziFont(.small14R)
-            .foregroundStyle(Color.gray600)
         }
+        .baziFont(.small14R)
+        .foregroundStyle(Color.gray600)
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
     }
@@ -118,7 +121,7 @@ extension CategoryPolicyListView {
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
             }
         }
-        .padding(20)
+        .padding([.horizontal, .bottom], 20)
     }
 }
 

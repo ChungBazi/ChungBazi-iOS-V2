@@ -56,7 +56,7 @@ extension RankedPolicyListView {
                 .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                LazyHStack(spacing: 12) {
                     ForEach(store.teaserPolicies) { policy in
                         BZCard(
                             size: .small,
@@ -91,7 +91,7 @@ extension RankedPolicyListView {
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
             }
         }
-        .padding(20)
+        .padding([.horizontal, .bottom], 20)
     }
 }
 
