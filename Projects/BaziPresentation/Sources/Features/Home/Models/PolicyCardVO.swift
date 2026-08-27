@@ -13,7 +13,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
     public let applyPeriod: String
     /// 뒷면 지원 내용 원문.
     public let supportContent: String
-    public let applyUrl: String
+    public let applyUrl: String?
     public var isBookmarked: Bool
 
     public init(
@@ -24,7 +24,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         summary: String,
         applyPeriod: String,
         supportContent: String,
-        applyUrl: String,
+        applyUrl: String?,
         isBookmarked: Bool = false
     ) {
         self.id = id

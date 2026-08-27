@@ -32,6 +32,7 @@ public struct PolicyCardResponseDTO: Decodable, Sendable {
     public let applyPeriod: String
     public let summary: String
     public let supportContent: String
-    public let applyUrl: String
+    /// 신청 링크가 없는 정책은 서버가 null을 내려주므로 옵셔널.
+    public let applyUrl: String?
     public let liked: Bool
 }

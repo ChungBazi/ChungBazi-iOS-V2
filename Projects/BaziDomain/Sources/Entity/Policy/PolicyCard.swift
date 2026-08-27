@@ -14,7 +14,7 @@ public struct PolicyCard: Equatable, Sendable {
     public let summary: String
     /// "어떤 지원을 받을 수 있나요?" 지원 내용(카드 뒷면 원문).
     public let supportContent: String
-    public let applyUrl: String
+    public let applyUrl: String?
     public let liked: Bool
 
     public init(
@@ -26,7 +26,7 @@ public struct PolicyCard: Equatable, Sendable {
         applyPeriod: String,
         summary: String,
         supportContent: String,
-        applyUrl: String,
+        applyUrl: String?,
         liked: Bool
     ) {
         self.id = id
