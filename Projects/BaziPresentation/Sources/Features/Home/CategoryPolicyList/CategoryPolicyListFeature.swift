@@ -68,7 +68,7 @@ public struct CategoryPolicyListFeature {
 
     public enum Delegate: Equatable {
         case didSelectPolicy(id: Int)
-        case didTapPersonalizedMore(PolicyCategory)
+        case didTapPersonalizedMore(category: PolicyCategory, policyIds: [Int])
     }
 
     // MARK: - Dependencies
@@ -116,7 +116,7 @@ public struct CategoryPolicyListFeature {
                 return fetchPage(state: state, isFirstPage: false)
 
             case .didTapPersonalizedMore:
-                return .send(.delegate(.didTapPersonalizedMore(state.selectedCategory)))
+                return .send(.delegate(.didTapPersonalizedMore(category: state.selectedCategory, policyIds: state.teaser.map(\.id))))
 
             case let .pageResponse(.success(page), isFirstPage):
                 handlePage(page, isFirstPage: isFirstPage, state: &state)

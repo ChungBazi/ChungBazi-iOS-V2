@@ -23,7 +23,7 @@ public struct CustomPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.onAppear) }
+            .task { store.send(.task) }
             .baziNavigationBar_backWithTitle(navigationTitle) {
                 dismiss()
             }
@@ -44,14 +44,19 @@ public struct CustomPolicyListView: View {
 extension CustomPolicyListView {
 
     private var content: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                cardCarousel
-                ctaButtons
-            }
-
-            if let guideStep = store.guideStep {
-                guideOverlay(guideStep)
+        Group {
+            switch store.cards {
+            case .idle, .loading:
+                BZLoadingView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .failed:
+                BZRetryView { store.send(.didTapRetry) }
+            case .loaded(let cards):
+                if cards.isEmpty {
+                    emptyView
+                } else {
+                    loadedContent(cards)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -64,7 +69,20 @@ extension CustomPolicyListView {
         )
     }
 
-    private var cardCarousel: some View {
+    private func loadedContent(_ cards: IdentifiedArrayOf<PolicyCardVO>) -> some View {
+        ZStack {
+            VStack(spacing: 0) {
+                cardCarousel(cards)
+                ctaButtons
+            }
+
+            if let guideStep = store.guideStep {
+                guideOverlay(guideStep)
+            }
+        }
+    }
+
+    private func cardCarousel(_ cards: IdentifiedArrayOf<PolicyCardVO>) -> some View {
         GeometryReader { geo in
             let neighborPeek: CGFloat = 15 // 이웃 카드 노출 폭
             let cardSpacing: CGFloat = 20
@@ -73,18 +91,19 @@ extension CustomPolicyListView {
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: cardSpacing) {
-                    ForEach(store.policies) { policy in
+                    ForEach(cards) { card in
                         BZFlipCard(
-                            category: policy.category.rawValue,
-                            dDay: policy.dDay,
-                            title: policy.title,
-                            subtitle: policy.subtitle,
-                            applyPeriod: policy.applyPeriod,
-                            description: policy.description,
-                            isBookmarked: bookmarkBinding(id: policy.id)
+                            image: card.category.cardImage.image,
+                            category: card.category.rawValue,
+                            dDay: card.dDay,
+                            title: card.title,
+                            subtitle: card.summary,
+                            applyPeriod: card.applyPeriod,
+                            description: card.supportContent,
+                            isBookmarked: bookmarkBinding(id: card.id)
                         )
                         .frame(width: cardWidth)
-                        .id(policy.id)
+                        .id(card.id)
                     }
                 }
                 .scrollTargetLayout()
@@ -97,12 +116,12 @@ extension CustomPolicyListView {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxHeight: .infinity)
         }
-        .onAppear { selectedPolicyID = store.policies.first?.id }
+        .onAppear { selectedPolicyID = cards.first?.id }
     }
 
     private var ctaButtons: some View {
         VStack(spacing: 12) {
-            // TODO: 신청 외부 링크(ModalRoute.webView)가 준비되면 연결한다.
+            // TODO: 신청 외부 링크(ModalRoute.webView)가 준비되면 선택된 카드의 applyUrl로 연결한다.
             BZButton("바로 신청하러 가기", type: .cta) {}
             BZButton("자세한 정보 더 보기", type: .normal) {
                 guard let selectedPolicyID else { return }
@@ -110,6 +129,13 @@ extension CustomPolicyListView {
             }
         }
         .padding(20)
+    }
+
+    private var emptyView: some View {
+        Text("맞춤 정책이 없어요")
+            .baziFont(.body16R)
+            .foregroundStyle(Color.gray600)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func guideOverlay(_ step: CustomPolicyListFeature.GuideStep) -> some View {
@@ -143,7 +169,7 @@ extension CustomPolicyListView {
 
     private func bookmarkBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.policies[id: id]?.isBookmarked ?? false },
+            get: { store.cards.value?[id: id]?.isBookmarked ?? false },
             set: { _ in store.send(.didToggleBookmark(id: id)) }
         )
     }
@@ -152,9 +178,14 @@ extension CustomPolicyListView {
 // MARK: - Preview
 
 #Preview("가이드") {
-    NavigationStack {
+    var state = CustomPolicyListFeature.State()
+    state.userName = "바지"
+    state.cards = .loaded(IdentifiedArray(uniqueElements: PolicyCardVO.mockList))
+    state.guideStep = .swipeHint
+
+    return NavigationStack {
         CustomPolicyListView(
-            store: Store(initialState: .init()) {
+            store: Store(initialState: state) {
                 CustomPolicyListFeature()
             }
         )
@@ -163,6 +194,8 @@ extension CustomPolicyListView {
 
 #Preview("가이드 없음") {
     var state = CustomPolicyListFeature.State()
+    state.userName = "바지"
+    state.cards = .loaded(IdentifiedArray(uniqueElements: PolicyCardVO.mockList))
     state.guideStep = nil
 
     return NavigationStack {

@@ -117,7 +117,8 @@ public struct HomeFeature {
                 return .none
 
             case .didTapPersonalizedMore:
-                state.path.append(.customPolicyList(CustomPolicyListFeature.State(userName: state.userName)))
+                let ids = state.feed.value?.personalized.map(\.id) ?? []
+                state.path.append(.customPolicyList(CustomPolicyListFeature.State(policyIds: ids)))
                 return .none
 
             case .didTapPersonalizedEmptyCTA:
@@ -150,8 +151,8 @@ public struct HomeFeature {
                 state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
                 return .none
 
-            case let .path(.element(_, .categoryPolicyList(.delegate(.didTapPersonalizedMore(category))))):
-                state.path.append(.customPolicyList(CustomPolicyListFeature.State(userName: state.userName, category: category)))
+            case let .path(.element(_, .categoryPolicyList(.delegate(.didTapPersonalizedMore(category, policyIds))))):
+                state.path.append(.customPolicyList(CustomPolicyListFeature.State(category: category, policyIds: policyIds)))
                 return .none
 
             case .path:
