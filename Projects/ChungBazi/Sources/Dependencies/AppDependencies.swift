@@ -27,7 +27,4 @@ enum AppDependencies {
         networkProvider: networkProvider,
         cache: policyCache
     )
-
-    /// 맞춤 카드 AI 요약(supportContent→요약) 세션 캐시. 화면 재진입 시 재요약을 피하려고 공유한다.
-    static let summaryCache = SummaryCache()
 }
