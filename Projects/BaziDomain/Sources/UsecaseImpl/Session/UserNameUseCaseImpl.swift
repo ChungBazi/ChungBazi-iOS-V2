@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct SaveUserNameUseCaseImpl: SaveUserNameUseCase {
+public struct UserNameUseCaseImpl: UserNameUseCase {
 
     private let sessionStateRepository: SessionStateRepository
 
@@ -10,7 +10,11 @@ public struct SaveUserNameUseCaseImpl: SaveUserNameUseCase {
         self.sessionStateRepository = sessionStateRepository
     }
 
-    public func execute(name: String) {
+    public func get() -> String? {
+        sessionStateRepository.userName
+    }
+
+    public func save(_ name: String) {
         sessionStateRepository.setUserName(name)
     }
 }
