@@ -1,6 +1,6 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
-/// 커서 페이지네이션 부기(簿記). 랭킹·분야별 목록이 공유한다.
+/// 커서 페이지네이션 부기. 랭킹·분야별 목록이 공유한다.
 public struct PaginationState: Equatable, Sendable {
     public var nextCursor: String?
     public var hasNext: Bool
