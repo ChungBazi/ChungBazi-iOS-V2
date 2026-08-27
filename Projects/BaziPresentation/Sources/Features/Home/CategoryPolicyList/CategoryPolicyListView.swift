@@ -22,7 +22,7 @@ public struct CategoryPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.onAppear) }
+            .task { store.send(.task) }
             .baziNavigationBar_backWithTitle("분야별 정책") {
                 dismiss()
             }
@@ -41,21 +41,53 @@ extension CategoryPolicyListView {
             ) { _ in EmptyView() }
                 .baziBackground(.bgWhite)
 
-            ScrollView {
-                VStack(spacing: 0) {
+            listArea
+        }
+    }
+
+    @ViewBuilder
+    private var listArea: some View {
+        switch store.list {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .baziBackground(.bgGray)
+
+        case .failed:
+            BZRetryView { store.send(.didTapRetry) }
+                .baziBackground(.bgGray)
+
+        case .loaded(let policies):
+            loadedContent(policies)
+        }
+    }
+
+    private func loadedContent(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if !store.teaser.isEmpty {
                     personalizedBanner
+                }
+                if policies.isEmpty {
+                    emptyText
+                } else {
                     resultsToolbar
-                    policyList
+                    policyList(policies)
+                    if store.isLoadingNext {
+                        BZLoadingView(size: 28)
+                            .padding(.vertical, 16)
+                    }
                 }
             }
-            .baziBackground(.bgGray)
         }
+        .baziBackground(.bgGray)
+        .refreshable { await store.send(.pullToRefresh).finish() }
     }
 
     private var personalizedBanner: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top) {
-                Text("\(store.selectedCategory.categoryHeadline)\n민재님 맞춤 정책이에요")
+                Text("\(store.selectedCategory.categoryHeadline)\n\(store.userName)님 맞춤 정책이에요")
                     .baziFont(.head18B)
                     .foregroundStyle(Color.gray900)
                 Spacer()
@@ -69,7 +101,7 @@ extension CategoryPolicyListView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 12) {
-                    ForEach(store.personalizedTeaser) { policy in
+                    ForEach(store.teaser) { policy in
                         BZCard(
                             size: .small,
                             category: policy.category.rawValue,
@@ -90,7 +122,7 @@ extension CategoryPolicyListView {
 
     private var resultsToolbar: some View {
         HStack {
-            Text("\(store.policies.count)개")
+            Text("\(store.totalCount)개")
             Spacer()
             Button {
                 store.send(.didTapSortOrder)
@@ -107,9 +139,9 @@ extension CategoryPolicyListView {
         .padding(.vertical, 16)
     }
 
-    private var policyList: some View {
+    private func policyList(_ policies: IdentifiedArrayOf<PolicySummary>) -> some View {
         LazyVStack(spacing: 12) {
-            ForEach(store.policies) { policy in
+            ForEach(policies) { policy in
                 BZCard(
                     size: .medium,
                     category: policy.category.rawValue,
@@ -119,9 +151,22 @@ extension CategoryPolicyListView {
                     isBookmarked: bookmarkBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                .onAppear {
+                    if policy.id == policies.last?.id {
+                        store.send(.didReachListEnd)
+                    }
+                }
             }
         }
         .padding([.horizontal, .bottom], 20)
+    }
+
+    private var emptyText: some View {
+        Text("표시할 정책이 없어요")
+            .baziFont(.small14R)
+            .foregroundStyle(Color.gray400)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 60)
     }
 }
 
@@ -141,14 +186,14 @@ extension CategoryPolicyListView {
 
     private func bookmarkBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.policies[id: id]?.isBookmarked ?? false },
+            get: { store.list.value?[id: id]?.isBookmarked ?? false },
             set: { _ in store.send(.didToggleBookmark(id: id)) }
         )
     }
 
     private func teaserBookmarkBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.personalizedTeaser[id: id]?.isBookmarked ?? false },
+            get: { store.teaser[id: id]?.isBookmarked ?? false },
             set: { _ in store.send(.didToggleTeaserBookmark(id: id)) }
         )
     }
