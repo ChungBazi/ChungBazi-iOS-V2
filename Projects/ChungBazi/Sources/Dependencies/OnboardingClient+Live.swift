@@ -18,7 +18,7 @@ extension OnboardingClient: @retroactive DependencyKey {
             userRepository: userRepository,
             sessionStateRepository: sessionStateRepository
         )
-        let saveUserNameUseCase: any SaveUserNameUseCase = SaveUserNameUseCaseImpl(
+        let userNameUseCase: any UserNameUseCase = UserNameUseCaseImpl(
             sessionStateRepository: sessionStateRepository
         )
         let fetchSidoListUseCase: any FetchSidoListUseCase = FetchSidoListUseCaseImpl(regionRepository: regionRepository)
@@ -30,7 +30,7 @@ extension OnboardingClient: @retroactive DependencyKey {
             submitOnboarding: { info in
                 let nickname = try await submitOnboardingUseCase.execute(info)
                 // 온보딩 응답으로 받은 닉네임을 로컬에 저장(홈 이전에도 재사용).
-                saveUserNameUseCase.execute(name: nickname)
+                userNameUseCase.save(nickname)
                 return nickname
             }
         )

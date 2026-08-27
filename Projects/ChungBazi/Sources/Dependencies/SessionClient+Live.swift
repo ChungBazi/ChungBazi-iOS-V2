@@ -18,7 +18,7 @@ extension SessionClient: @retroactive DependencyKey {
             tokenStorage: KeychainTokenStorage(),
             sessionStateRepository: sessionStateRepository
         )
-        let getUserNameUseCase: any GetUserNameUseCase = GetUserNameUseCaseImpl(
+        let userNameUseCase: any UserNameUseCase = UserNameUseCaseImpl(
             sessionStateRepository: sessionStateRepository
         )
 
@@ -39,7 +39,7 @@ extension SessionClient: @retroactive DependencyKey {
                 }
             },
             resetSession: { resetSessionUseCase.execute() },
-            userName: { getUserNameUseCase.execute() }
+            userName: { userNameUseCase.get() }
         )
     }()
 }
