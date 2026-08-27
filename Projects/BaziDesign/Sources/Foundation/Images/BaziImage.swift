@@ -33,6 +33,10 @@ public enum BaziImage {
     case shareIcon
     case trashIcon
 
+    // MARK: Icon - Dim
+    case dimSimpleIcon
+    case dimSwipeIcon
+
     // MARK: Icon - Checkbox
     case filledCheckbox
     case unfilledCheckbox
@@ -89,6 +93,9 @@ public enum BaziImage {
         case .searchIcon: return BaziDesignAsset.searchIcon.swiftUIImage
         case .shareIcon: return BaziDesignAsset.shareIcon.swiftUIImage
         case .trashIcon: return BaziDesignAsset.trashIcon.swiftUIImage
+
+        case .dimSimpleIcon: return BaziDesignAsset.dimSimpleIcon.swiftUIImage
+        case .dimSwipeIcon: return BaziDesignAsset.dimSwipeIcon.swiftUIImage
 
         case .filledCheckbox: return BaziDesignAsset.filledCheckbox.swiftUIImage
         case .unfilledCheckbox: return BaziDesignAsset.unfilledCheckbox.swiftUIImage
