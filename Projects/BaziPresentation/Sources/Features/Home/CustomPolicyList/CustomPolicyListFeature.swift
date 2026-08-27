@@ -182,6 +182,8 @@ public struct CustomPolicyListFeature {
         state.cards = .loading
         return .run { [customPolicyClient] send in
             do {
+                // push 전환이 끝난 뒤 노출하도록 최소 로딩 시간을 함께 기다린다.
+                async let settle: Void = Self.transitionSettleDelay()
                 let cards = try await withThrowingTaskGroup(of: (Int, PolicyCardVO).self) { group in
                     for (index, id) in ids.enumerated() {
                         group.addTask { (index, try await customPolicyClient.fetchCard(id)) }
@@ -190,10 +192,16 @@ public struct CustomPolicyListFeature {
                     for try await pair in group { collected.append(pair) }
                     return collected.sorted { $0.0 < $1.0 }.map(\.1)
                 }
+                await settle
                 await send(.cardsResponse(.success(cards)))
             } catch {
                 await send(.cardsResponse(.failure(UseCaseError.map(error))))
             }
         }
+    }
+
+    /// push 전환이 끝난 뒤 카드를 노출하기 위한 최소 로딩 시간(전환 중 급격한 교체 깜빡임 방지).
+    private static func transitionSettleDelay() async {
+        try? await Task.sleep(for: .milliseconds(400))
     }
 }
