@@ -10,7 +10,10 @@ import BaziStorage
 extension CustomPolicyClient: @retroactive DependencyKey {
 
     public static let liveValue: CustomPolicyClient = {
-        let policyDetailRepository: any PolicyDetailRepository = PolicyDetailRepositoryImpl(networkProvider: AppDependencies.networkProvider)
+        let policyDetailRepository: any PolicyDetailRepository = PolicyDetailRepositoryImpl(
+            networkProvider: AppDependencies.networkProvider,
+            cache: AppDependencies.policyCache
+        )
         let fetchPolicyCardUseCase: any FetchPolicyCardUseCase = FetchPolicyCardUseCaseImpl(policyDetailRepository: policyDetailRepository)
         let summarizeUseCase: any SummarizePolicyUseCase = SummarizePolicyUseCaseImpl(summarizer: DefaultPolicySummarizer())
 
