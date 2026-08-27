@@ -21,7 +21,8 @@ public struct PersonalizedPolicyResponseDTO: Decodable, Sendable {
 public struct PolicyListResponseDTO: Decodable, Sendable {
     public let totalCount: Int
     public let policies: [PolicyItemDTO]
-    public let nextCursor: String
+    /// 마지막 페이지면 서버가 null을 내려주므로 옵셔널.
+    public let nextCursor: String?
     public let hasNext: Bool
 }
 
