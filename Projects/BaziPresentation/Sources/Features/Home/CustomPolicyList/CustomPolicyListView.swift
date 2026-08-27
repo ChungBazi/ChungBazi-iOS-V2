@@ -100,8 +100,8 @@ extension CustomPolicyListView {
                             title: card.title,
                             subtitle: card.summary,
                             applyPeriod: card.applyPeriod,
-                            description: card.aiSummary ?? card.supportContent,
-                            isSummarizing: store.summarizingIds.contains(card.id),
+                            description: card.aiSummary.text ?? card.supportContent,
+                            isSummarizing: card.aiSummary.isLoading,
                             isBookmarked: bookmarkBinding(id: card.id)
                         )
                         .frame(width: cardWidth)
