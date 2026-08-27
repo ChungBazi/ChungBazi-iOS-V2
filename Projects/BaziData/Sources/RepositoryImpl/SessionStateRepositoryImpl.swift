@@ -15,6 +15,7 @@ public struct SessionStateRepositoryImpl: SessionStateRepository {
 
     public var hasSetNickname: Bool { storage.hasSetNickname }
     public var hasCompletedOnboarding: Bool { storage.hasCompletedOnboarding }
+    public var userName: String? { storage.userName }
 
     public func setHasSetNickname(_ value: Bool) {
         storage.hasSetNickname = value
@@ -22,6 +23,10 @@ public struct SessionStateRepositoryImpl: SessionStateRepository {
 
     public func setHasCompletedOnboarding(_ value: Bool) {
         storage.hasCompletedOnboarding = value
+    }
+
+    public func setUserName(_ value: String) {
+        storage.userName = value
     }
 
     public func reset() {
