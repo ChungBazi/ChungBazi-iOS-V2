@@ -128,7 +128,7 @@ extension BZInputField {
             return Color.bazi(.accent)
         }
         if isCurrent {
-            return Color.gray400
+            return Color.bazi(.primary)
         }
         if isValid {
             return Color.bazi(.primary)
