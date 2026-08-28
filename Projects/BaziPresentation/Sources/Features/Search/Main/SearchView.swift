@@ -46,8 +46,10 @@ extension SearchView {
             if store.isTyping {
                 suggestionList
             } else {
-                recentSearchSection
-                Spacer()
+                ScrollView {
+                    recentSearchSection
+                }
+                .scrollDismissesKeyboard(.immediately)
             }
         }
         .baziBackground(.bgGray)
@@ -73,7 +75,7 @@ extension SearchView {
     private var recentSearchSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             recentSearchHeader
-            if !store.recentKeywords.isEmpty {
+            if store.isAutoSaveEnabled, !store.recentKeywords.isEmpty {
                 recentSearchList
             }
             autoSaveToggle
@@ -87,7 +89,7 @@ extension SearchView {
                 .baziFont(.small14SB)
                 .foregroundStyle(Color.gray900)
             Spacer()
-            if !store.recentKeywords.isEmpty {
+            if store.isAutoSaveEnabled, !store.recentKeywords.isEmpty {
                 Button("전체삭제") {
                     store.send(.didTapDeleteAllRecentKeywords)
                 }
