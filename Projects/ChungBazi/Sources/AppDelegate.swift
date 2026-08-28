@@ -58,6 +58,19 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        // TODO: 알림 탭 시 특정 화면으로 이동해야 하면 여기서 라우팅 처리.
+        // 알림 탭 시 payload의 policyId로 정책 상세 딥링크를 발행한다.
+        let userInfo = response.notification.request.content.userInfo
+        if let policyId = Self.policyId(from: userInfo) {
+            DeeplinkPublisher.policyDetail(id: policyId)
+        }
+    }
+
+    /// FCM payload는 값이 문자열로 오는 경우가 많아 Int/String 양쪽을 허용한다.
+    private nonisolated static func policyId(from userInfo: [AnyHashable: Any]) -> Int? {
+        switch userInfo["policyId"] {
+        case let value as Int: return value
+        case let value as String: return Int(value)
+        default: return nil
+        }
     }
 }
