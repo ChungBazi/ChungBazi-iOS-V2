@@ -41,7 +41,7 @@ extension PolicyProfileEditView {
 
     private var content: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 48) {
                 birthDateSection
                 regionSection
                 educationSection
@@ -49,15 +49,17 @@ extension PolicyProfileEditView {
                 incomeSection
                 interestSection
                 saveButton
-                    .padding(.top, 8)
+                    .padding(.top, 52)
             }
-            .padding(20)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 5)
         }
         .baziBackground(.bgWhite)
     }
 
-    private func questionTitle(_ text: String) -> some View {
-        Text(text)
+    private func questionTitle(_ number: Int, _ text: String) -> some View {
+        Text("\(number). \(text)")
             .baziFont(.body16SB)
             .foregroundStyle(Color.gray900)
     }
@@ -68,39 +70,10 @@ extension PolicyProfileEditView {
 extension PolicyProfileEditView {
 
     private var birthDateSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            questionTitle("생년월일이 언제인가요?")
-            datePicker
+        VStack(alignment: .leading, spacing: 19) {
+            questionTitle(1, "생년월일이 언제인가요?")
+            BZBirthDatePicker(year: $store.year, month: $store.month, day: $store.day)
         }
-    }
-
-    private static var maxBirthYear: Int {
-        Calendar.current.component(.year, from: Date())
-    }
-
-    private var datePicker: some View {
-        HStack(spacing: 0) {
-            dateColumn(label: "년") {
-                BZDatePicker(selection: $store.year, range: 1926...Self.maxBirthYear) { "\($0)" }
-            }
-            dateColumn(label: "월") {
-                BZDatePicker(selection: $store.month, range: 1...12) { String(format: "%02d", $0) }
-            }
-            dateColumn(label: "일") {
-                BZDatePicker(selection: $store.day, range: 1...store.daysInSelectedMonth) { String(format: "%02d", $0) }
-            }
-        }
-    }
-
-    private func dateColumn(label: String, @ViewBuilder picker: () -> some View) -> some View {
-        VStack(spacing: 8) {
-            Text(label)
-                .baziFont(.small12M)
-                .foregroundStyle(Color.gray700)
-            picker()
-                .frame(height: BZDatePicker.height)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -109,9 +82,9 @@ extension PolicyProfileEditView {
 extension PolicyProfileEditView {
 
     private var regionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            questionTitle("거주 중인 지역을 선택해주세요")
-            VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 19) {
+            questionTitle(2, "거주 중인 지역을 선택해주세요")
+            VStack(spacing: 8) {
                 BZSelectField(
                     title: "시/도 선택",
                     placeholder: "시/도 선택",
@@ -130,8 +103,8 @@ extension PolicyProfileEditView {
     }
 
     private var educationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            questionTitle("현재 어떤 학업 단계에 있나요?")
+        VStack(alignment: .leading, spacing: 19) {
+            questionTitle(3, "현재 어떤 학업 단계에 있나요?")
             BZSelectField(
                 title: "학업 단계 선택",
                 options: PolicyProfileEditFeature.educationOptions,
@@ -141,8 +114,8 @@ extension PolicyProfileEditView {
     }
 
     private var employmentSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            questionTitle("현재 하고 있는 일이 있나요?")
+        VStack(alignment: .leading, spacing: 19) {
+            questionTitle(4, "현재 하고 있는 일이 있나요?")
             BZSelectField(
                 title: "직업 형태 선택",
                 options: PolicyProfileEditFeature.employmentOptions,
@@ -152,8 +125,12 @@ extension PolicyProfileEditView {
     }
 
     private var incomeSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            questionTitle("현재 소득분위가 어떻게 되나요?")
+        VStack(alignment: .leading, spacing: 19) {
+            HStack {
+                questionTitle(5, "현재 소득분위가 어떻게 되나요?")
+                Spacer()
+                IncomeInfoTooltipButton()
+            }
             BZSelectField(
                 title: "소득 분위 선택",
                 options: PolicyProfileEditFeature.incomeOptions,
@@ -168,8 +145,14 @@ extension PolicyProfileEditView {
 extension PolicyProfileEditView {
 
     private var interestSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            questionTitle("관심 있는 분야를 선택해주세요")
+        VStack(alignment: .leading, spacing: 19) {
+            VStack(alignment: .leading, spacing: 4) {
+                questionTitle(6, "관심 있는 분야를 선택해주세요")
+                Text("3개 이상 선택 필수")
+                    .font(.bazi(.small12R))
+                    .foregroundStyle(Color.bazi(.accent))
+            }
+            
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(PolicyProfileEditFeature.interestCategories, id: \.self) { category in
                     BZChoiceChip(
