@@ -15,6 +15,13 @@ public struct PolicyDetailRepositoryImpl: PolicyDetailRepository {
         self.cache = cache
     }
 
+    public func fetchPolicyDetail(policyId: Int) async throws -> PolicyDetail {
+        let dto: PolicyDetailResponseDTO = try await networkProvider.request(
+            PolicyDetailAPI.getPolicyDetail(policyId: policyId)
+        )
+        return dto.toDomain()
+    }
+
     public func fetchPolicyCard(policyId: Int) async throws -> PolicyCard {
         let dto: PolicyCardResponseDTO = try await networkProvider.request(
             PolicyDetailAPI.getPolicyCard(policyId: policyId)
