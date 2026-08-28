@@ -20,7 +20,7 @@ public struct HomeFeature {
 
     // MARK: - PolicySection
 
-    /// 홈 화면에서 북마크 토글이 어느 섹션의 배열을 바꿔야 하는지 구분한다.
+    /// 홈 화면에서 찜 토글이 어느 섹션의 배열을 바꿔야 하는지 구분한다.
     public enum PolicySection: Equatable, Sendable {
         case personalized
         case recentViewed
@@ -56,11 +56,11 @@ public struct HomeFeature {
         case didTapDeadlineMore
         case didTapNewMore
         case didTapPolicy(section: PolicySection, id: Int)
-        case didToggleBookmark(section: PolicySection, id: Int)
+        case didToggleLike(section: PolicySection, id: Int)
 
         // MARK: Internal
         case feedResponse(Result<HomeFeedVO, UseCaseError>)
-        case likeFailed(section: PolicySection, id: Int, liked: Bool)
+        case likeFailed(id: Int, liked: Bool)
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -147,14 +147,14 @@ public struct HomeFeature {
                 state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
                 return .none
 
-            case .didToggleBookmark(let section, let id):
-                guard let current = currentBookmark(section: section, id: id, state: state) else { return .none }
+            case .didToggleLike(let section, let id):
+                guard let current = currentLike(section: section, id: id, state: state) else { return .none }
                 let newValue = !current
-                setBookmark(section: section, id: id, liked: newValue, state: &state)
-                return likeEffect(section: section, id: id, liked: newValue)
+                setLiked(id: id, liked: newValue, state: &state)
+                return likeEffect(id: id, liked: newValue)
 
-            case let .likeFailed(section, id, liked):
-                setBookmark(section: section, id: id, liked: !liked, state: &state)
+            case let .likeFailed(id, liked):
+                setLiked(id: id, liked: !liked, state: &state)
                 return .none
 
             case .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy)))),
@@ -192,36 +192,31 @@ public struct HomeFeature {
 
     private enum CancelID: Hashable { case like(Int) }
 
-    private func currentBookmark(section: PolicySection, id: Int, state: State) -> Bool? {
+    private func currentLike(section: PolicySection, id: Int, state: State) -> Bool? {
         guard let feed = state.feed.value else { return nil }
         switch section {
-        case .personalized: return feed.personalized[id: id]?.isBookmarked
-        case .recentViewed: return feed.recentViewed[id: id]?.isBookmarked
-        case .popular: return feed.popular[id: id]?.isBookmarked
-        case .deadline: return feed.deadline[id: id]?.isBookmarked
-        case .newest: return feed.newest[id: id]?.isBookmarked
+        case .personalized: return feed.personalized[id: id]?.isLiked
+        case .recentViewed: return feed.recentViewed[id: id]?.isLiked
+        case .popular: return feed.popular[id: id]?.isLiked
+        case .deadline: return feed.deadline[id: id]?.isLiked
+        case .newest: return feed.newest[id: id]?.isLiked
         }
     }
 
-    private func setBookmark(section: PolicySection, id: Int, liked: Bool, state: inout State) {
+    /// 찜 상태를 모든 섹션에 반영한다(같은 정책이 여러 섹션에 겹칠 수 있음).
+    private func setLiked(id: Int, liked: Bool, state: inout State) {
         guard var feed = state.feed.value else { return }
-        switch section {
-        case .personalized: feed.personalized[id: id]?.isBookmarked = liked
-        case .recentViewed: feed.recentViewed[id: id]?.isBookmarked = liked
-        case .popular: feed.popular[id: id]?.isBookmarked = liked
-        case .deadline: feed.deadline[id: id]?.isBookmarked = liked
-        case .newest: feed.newest[id: id]?.isBookmarked = liked
-        }
+        feed.setLiked(id: id, liked: liked)
         state.feed = .loaded(feed)
     }
 
     /// 찜 토글: 서버 반영. 실패 시 likeFailed로 롤백. 연타는 정책별로 취소.
-    private func likeEffect(section: PolicySection, id: Int, liked: Bool) -> Effect<Action> {
+    private func likeEffect(id: Int, liked: Bool) -> Effect<Action> {
         .run { [policyLikeClient] send in
             do {
                 try await policyLikeClient.setLike(id, liked)
             } catch {
-                await send(.likeFailed(section: section, id: id, liked: liked))
+                await send(.likeFailed(id: id, liked: liked))
             }
         }
         .cancellable(id: CancelID.like(id), cancelInFlight: true)

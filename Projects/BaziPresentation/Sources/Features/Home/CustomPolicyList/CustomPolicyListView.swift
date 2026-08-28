@@ -102,7 +102,7 @@ extension CustomPolicyListView {
                             applyPeriod: card.applyPeriod,
                             description: card.aiSummary.text ?? card.supportContent,
                             isSummarizing: card.aiSummary.isLoading,
-                            isBookmarked: bookmarkBinding(id: card.id)
+                            isLiked: likeBinding(id: card.id)
                         )
                         .frame(width: cardWidth)
                         .id(card.id)
@@ -130,7 +130,7 @@ extension CustomPolicyListView {
                 if let applyURL { openURL(applyURL) }
             }
             .disabled(applyURL == nil)
-            BZButton("자세한 정보 더 보기", type: .normal) {
+            BZButton("자세한 정보 더 보기", type: .normal2) {
                 guard let selectedPolicyID else { return }
                 store.send(.didTapDetail(id: selectedPolicyID))
             }
@@ -183,10 +183,10 @@ extension CustomPolicyListView {
 
 extension CustomPolicyListView {
 
-    private func bookmarkBinding(id: Int) -> Binding<Bool> {
+    private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.cards.value?[id: id]?.isBookmarked ?? false },
-            set: { _ in store.send(.didToggleBookmark(id: id)) }
+            get: { store.cards.value?[id: id]?.isLiked ?? false },
+            set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
 }

@@ -41,7 +41,7 @@ public struct BZCard: View {
     private let title: String
     private let viewCount: Int
     private let image: Image?
-    @Binding private var isBookmarked: Bool
+    @Binding private var isLiked: Bool
 
     // MARK: - Init
 
@@ -53,7 +53,7 @@ public struct BZCard: View {
         title: String,
         viewCount: Int,
         image: Image? = nil,
-        isBookmarked: Binding<Bool>
+        isLiked: Binding<Bool>
     ) {
         self.size = size
         self.badgeNumber = badgeNumber
@@ -62,7 +62,7 @@ public struct BZCard: View {
         self.title = title
         self.viewCount = viewCount
         self.image = image
-        self._isBookmarked = isBookmarked
+        self._isLiked = isLiked
     }
 
     // MARK: - Body
@@ -115,7 +115,7 @@ extension BZCard {
                     .foregroundStyle(Color.gray700)
             }
             Spacer(minLength: 8)
-            BZBookmarkButton(isBookmarked: $isBookmarked)
+            BZLikeButton(isLiked: $isLiked)
         }
     }
 
@@ -143,7 +143,7 @@ extension BZCard {
 // MARK: - Preview
 
 private struct BZCardPreview: View {
-    @State private var isBookmarked = true
+    @State private var isLiked = true
 
     var body: some View {
         ScrollView {
@@ -154,7 +154,7 @@ private struct BZCardPreview: View {
                     dDay: "D-11",
                     title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청",
                     viewCount: 15200,
-                    isBookmarked: $isBookmarked
+                    isLiked: $isLiked
                 )
                 BZCard(
                     size: .medium,
@@ -162,7 +162,7 @@ private struct BZCardPreview: View {
                     dDay: "D-11",
                     title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청 연계청년 디지털 직무역량 연계...",
                     viewCount: 15200,
-                    isBookmarked: $isBookmarked
+                    isLiked: $isLiked
                 )
                 BZCard(
                     size: .medium2,
@@ -171,7 +171,7 @@ private struct BZCardPreview: View {
                     dDay: "D-11",
                     title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청 연계청년 디지털 직무역량 연계",
                     viewCount: 15200,
-                    isBookmarked: $isBookmarked
+                    isLiked: $isLiked
                 )
                 BZCard(
                     size: .large,
@@ -179,7 +179,7 @@ private struct BZCardPreview: View {
                     dDay: "D-11",
                     title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청 연계청년 디지털",
                     viewCount: 15200,
-                    isBookmarked: $isBookmarked
+                    isLiked: $isLiked
                 )
             }
             .padding()

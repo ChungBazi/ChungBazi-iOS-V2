@@ -104,7 +104,7 @@ extension CategoryPolicyListView {
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
-                            isBookmarked: teaserBookmarkBinding(id: policy.id)
+                            isLiked: teaserLikeBinding(id: policy.id)
                         )
                     }
                 }
@@ -144,7 +144,7 @@ extension CategoryPolicyListView {
                     dDay: policy.dDay,
                     title: policy.title,
                     viewCount: policy.viewCount,
-                    isBookmarked: bookmarkBinding(id: policy.id)
+                    isLiked: likeBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
                 .onAppear {
@@ -180,17 +180,17 @@ extension CategoryPolicyListView {
         )
     }
 
-    private func bookmarkBinding(id: Int) -> Binding<Bool> {
+    private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.list.value?[id: id]?.isBookmarked ?? false },
-            set: { _ in store.send(.didToggleBookmark(id: id)) }
+            get: { store.list.value?[id: id]?.isLiked ?? false },
+            set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
 
-    private func teaserBookmarkBinding(id: Int) -> Binding<Bool> {
+    private func teaserLikeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.teaser[id: id]?.isBookmarked ?? false },
-            set: { _ in store.send(.didToggleTeaserBookmark(id: id)) }
+            get: { store.teaser[id: id]?.isLiked ?? false },
+            set: { _ in store.send(.didToggleTeaserLike(id: id)) }
         )
     }
 }
