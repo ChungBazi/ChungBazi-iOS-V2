@@ -16,6 +16,8 @@ public struct BZInputField: View {
     private let placeholder: String
     private let maxLength: Int
     private let minLength: Int
+    /// 현재(기존) 닉네임. 입력값이 이 값과 같으면 "현재 사용 중인 닉네임" 안내를 표시한다.
+    private let currentNickname: String?
 
     @FocusState private var isFocused: Bool
 
@@ -25,12 +27,14 @@ public struct BZInputField: View {
         text: Binding<String>,
         placeholder: String,
         maxLength: Int = BZInputField.defaultMaxLength,
-        minLength: Int = BZInputField.defaultMinLength
+        minLength: Int = BZInputField.defaultMinLength,
+        currentNickname: String? = nil
     ) {
         self._text = text
         self.placeholder = placeholder
         self.maxLength = maxLength
         self.minLength = minLength
+        self.currentNickname = currentNickname
     }
 
     // MARK: - Body
@@ -93,6 +97,13 @@ extension BZInputField {
     private var isTooShort: Bool { !text.isEmpty && trimmedLength < minLength }
 
     private var isValid: Bool { trimmedLength >= minLength }
+
+    /// 유효하면서 현재(기존) 닉네임과 동일한 상태. 변경 없이 저장할 수 없음을 안내한다.
+    private var isCurrent: Bool {
+        guard let currentNickname, isValid else { return false }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+            == currentNickname.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 // MARK: - Colors & Text
@@ -116,6 +127,9 @@ extension BZInputField {
         if isTooShort {
             return Color.bazi(.accent)
         }
+        if isCurrent {
+            return Color.gray400
+        }
         if isValid {
             return Color.bazi(.primary)
         }
@@ -125,6 +139,9 @@ extension BZInputField {
     private var helperText: String {
         if isTooShort {
             return "\(minLength)자 이상 입력해주세요"
+        }
+        if isCurrent {
+            return "현재 사용 중인 닉네임이에요"
         }
         if isValid {
             return "사용 가능한 닉네임이에요"
