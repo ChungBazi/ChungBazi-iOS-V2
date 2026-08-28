@@ -22,6 +22,7 @@ public struct AppFeature {
         // MARK: View
         case task
         case forceLoggedOut
+        case deeplink(Deeplink)
 
         // MARK: Child
         case splash(SplashFeature.Action)
@@ -34,8 +35,9 @@ public struct AppFeature {
     // MARK: - Dependencies
 
     @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.deeplinkClient) var deeplinkClient
 
-    private enum CancelID { case forceLogout }
+    private enum CancelID { case forceLogout, deeplink }
 
     // MARK: - Init
 
@@ -47,13 +49,30 @@ public struct AppFeature {
         Reduce { state, action in
             switch action {
             case .task:
-                // 런타임 강제 로그아웃(.forceLogout) 구독
-                return .run { [sessionClient] send in
-                    for await _ in sessionClient.forceLogoutEvents() {
-                        await send(.forceLoggedOut)
+                // 런타임 강제 로그아웃(.forceLogout) + 딥링크(카카오/푸시) 구독
+                return .merge(
+                    .run { [sessionClient] send in
+                        for await _ in sessionClient.forceLogoutEvents() {
+                            await send(.forceLoggedOut)
+                        }
                     }
-                }
-                .cancellable(id: CancelID.forceLogout, cancelInFlight: true)
+                    .cancellable(id: CancelID.forceLogout, cancelInFlight: true),
+                    .run { [deeplinkClient] send in
+                        for await link in deeplinkClient.events() {
+                            await send(.deeplink(link))
+                        }
+                    }
+                    .cancellable(id: CancelID.deeplink, cancelInFlight: true)
+                )
+
+            case .deeplink(let link):
+                // main이면 즉시 라우팅하고 버퍼를 비운다. 아직 main이 아니면(콜드런치 등) 버퍼에 남겨두고
+                // main 진입 시점(splash/login/onboarding → main)에 flush한다.
+                guard case .main(var mainState) = state else { return .none }
+                apply(link, to: &mainState)
+                state = .main(mainState)
+                _ = deeplinkClient.takePending()
+                return .none
 
             case .forceLoggedOut:
                 if case .login = state { return .none } // 이미 로그인 화면이면 무시(멱등)
@@ -67,6 +86,7 @@ public struct AppFeature {
                     hasNickname: hasNickname,
                     hasCompletedOnboarding: hasCompletedOnboarding
                 )
+                routePendingIfMain(&state)
                 return .none
 
             case .splash:
@@ -79,6 +99,7 @@ public struct AppFeature {
                     hasNickname: hasNickname,
                     hasCompletedOnboarding: hasCompletedOnboarding
                 )
+                routePendingIfMain(&state)
                 return .none
 
             case .login:
@@ -93,6 +114,7 @@ public struct AppFeature {
 
             case .onboarding(.delegate(.didCompleteOnboarding)):
                 state = .main(MainFeature.State())
+                routePendingIfMain(&state)
                 return .none
 
             case .onboarding:
@@ -120,6 +142,26 @@ public struct AppFeature {
         }
         .ifCaseLet(\.main, action: \.main) {
             MainFeature()
+        }
+    }
+}
+
+// MARK: - Deeplink 라우팅
+
+extension AppFeature {
+
+    /// main 상태로 진입한 직후, 아직 처리되지 못한 딥링크(콜드런치 등)가 있으면 적용한다.
+    private func routePendingIfMain(_ state: inout State) {
+        guard case .main(var main) = state, let pending = deeplinkClient.takePending() else { return }
+        apply(pending, to: &main)
+        state = .main(main)
+    }
+
+    private func apply(_ deeplink: Deeplink, to main: inout MainFeature.State) {
+        switch deeplink {
+        case .policyDetail(let id):
+            main.selectedTab = .home
+            main.home.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
         }
     }
 }
