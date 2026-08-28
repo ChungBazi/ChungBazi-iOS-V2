@@ -34,14 +34,14 @@ public struct NicknameEditView: View {
 extension NicknameEditView {
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 36) {
             titleText
             inputField
             Spacer()
             saveButton
         }
         .padding(.horizontal, 20)
-        .padding(.top, 24)
+        .padding(.top, 28)
         .baziBackground(.bgWhite)
     }
 
@@ -52,7 +52,11 @@ extension NicknameEditView {
     }
 
     private var inputField: some View {
-        BZInputField(text: $store.draftNickname, placeholder: "닉네임을 입력해주세요")
+        BZInputField(
+            text: $store.draftNickname,
+            placeholder: "닉네임을 입력해주세요",
+            currentNickname: store.currentNickname
+        )
     }
 
     private var saveButton: some View {
