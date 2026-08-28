@@ -32,11 +32,11 @@ public struct SearchResultView: View {
 extension SearchResultView {
 
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                header
-                categoryFilter
-                resultsToolbar
+        VStack(spacing: 0) {
+            header
+            categoryFilter
+            resultsToolbar
+            ScrollView {
                 resultList
             }
         }
@@ -49,7 +49,7 @@ extension SearchResultView {
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Color.gray900)
             }
             .buttonStyle(.plain)
@@ -59,53 +59,36 @@ extension SearchResultView {
                 .disabled(true)
         }
         .padding(.horizontal, 20)
-        .frame(height: 64)
+        .padding(.vertical, 12)
         .baziBackground(.bgGray)
     }
+
+    private static let allCategoryTitle = "전체"
 
     private var categoryFilter: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 20) {
-                categoryFilterItem(title: "전체", isSelected: store.selectedCategory == nil) {
-                    store.send(.didSelectCategory(nil))
-                }
-                ForEach(PolicyCategory.allCases) { category in
-                    categoryFilterItem(title: category.rawValue, isSelected: store.selectedCategory == category) {
-                        store.send(.didSelectCategory(category))
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-        }
-        .frame(height: 44)
+        BZSegmentControl(
+            options: [Self.allCategoryTitle] + PolicyCategory.allCases.map(\.rawValue),
+            selection: categorySelection
+        ) { _ in EmptyView() }
         .baziBackground(.bgGray)
-    }
-
-    private func categoryFilterItem(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .baziFont(isSelected ? .small14SB : .small14R)
-                .foregroundStyle(isSelected ? Color.grayBlack : Color.gray300)
-        }
-        .buttonStyle(.plain)
     }
 
     private var resultsToolbar: some View {
         HStack {
             Text("\(store.results.count)개")
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray600)
             Spacer()
             Button {
                 store.send(.didTapSortOrder)
             } label: {
-                Label(store.sortOrder.rawValue, systemImage: "arrow.up.arrow.down")
-                    .labelStyle(.titleAndIcon)
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.up.arrow.down")
+                    Text(store.sortOrder.rawValue)
+                }
             }
             .buttonStyle(.plain)
-            .baziFont(.small14R)
-            .foregroundStyle(Color.gray600)
         }
+        .baziFont(.small14R)
+        .foregroundStyle(Color.gray600)
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
     }
@@ -131,6 +114,16 @@ extension SearchResultView {
 // MARK: - Bindings
 
 extension SearchResultView {
+
+    private var categorySelection: Binding<String> {
+        Binding(
+            get: { store.selectedCategory?.rawValue ?? Self.allCategoryTitle },
+            set: { newValue in
+                // "전체"는 PolicyCategory에 없어 rawValue 변환이 nil → 전체(필터 해제)로 처리된다.
+                store.send(.didSelectCategory(PolicyCategory(rawValue: newValue)))
+            }
+        )
+    }
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
