@@ -11,6 +11,7 @@ public struct PolicyDetailView: View {
 
     @Bindable var store: StoreOf<PolicyDetailFeature>
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     // MARK: - Init
 
@@ -22,11 +23,14 @@ public struct PolicyDetailView: View {
 
     public var body: some View {
         Group {
-            if let detail = store.detail {
-                content(detail)
-            } else {
-                ProgressView()
+            switch store.detail {
+            case .idle, .loading:
+                BZLoadingView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .failed:
+                BZRetryView { store.send(.didTapRetry) }
+            case .loaded(let detail):
+                content(detail)
             }
         }
         .task { store.send(.onAppear) }
@@ -34,6 +38,7 @@ public struct PolicyDetailView: View {
             leading: .back(action: { dismiss() }),
             trailing: .share(action: { store.send(.didTapShare) })
         )
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 
@@ -41,24 +46,28 @@ public struct PolicyDetailView: View {
 
 extension PolicyDetailView {
 
-    private func content(_ detail: PolicyDetail) -> some View {
+    private func content(_ detail: PolicyDetailVO) -> some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
                     headerSection(detail)
                     qnaSection(detail)
-                    recommendationSection(
-                        title: "민재님 이런 정책은 어때요?",
-                        background: Color.green100,
-                        policies: store.personalizedPolicies,
-                        section: .personalized
-                    )
-                    recommendationSection(
-                        title: "\(detail.category.rawValue) 분야의 가장 인기 있는 정책",
-                        background: Color.green50,
-                        policies: store.popularPolicies,
-                        section: .popular
-                    )
+                    if !detail.personalized.isEmpty {
+                        recommendationSection(
+                            title: "\(store.userName)님 이런 정책은 어때요?",
+                            background: Color.green100,
+                            policies: detail.personalized,
+                            section: .personalized
+                        )
+                    }
+                    if !detail.popular.isEmpty {
+                        recommendationSection(
+                            title: "\(detail.category.rawValue) 분야의 가장 인기 있는 정책",
+                            background: Color.green50,
+                            policies: detail.popular,
+                            section: .popular
+                        )
+                    }
                 }
             }
             ctaButtons
@@ -66,7 +75,7 @@ extension PolicyDetailView {
         .baziBackground(.bgWhite)
     }
 
-    private func headerSection(_ detail: PolicyDetail) -> some View {
+    private func headerSection(_ detail: PolicyDetailVO) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 HStack(spacing: 8) {
@@ -83,9 +92,11 @@ extension PolicyDetailView {
                 Text(detail.title)
                     .baziFont(.head24B)
                     .foregroundStyle(Color.grayBlack)
-                Text(detail.summary)
-                    .baziFont(.small14R)
-                    .foregroundStyle(Color.grayBlack80)
+                if !detail.summary.isEmpty {
+                    Text(detail.summary)
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.grayBlack80)
+                }
             }
 
             HStack(spacing: 4) {
@@ -116,7 +127,7 @@ extension PolicyDetailView {
         .accessibilityLabel("찜하기")
     }
 
-    private func qnaSection(_ detail: PolicyDetail) -> some View {
+    private func qnaSection(_ detail: PolicyDetailVO) -> some View {
         VStack(alignment: .leading, spacing: 32) {
             qnaRow(number: 1, question: "누가 신청할 수 있나요?", answer: detail.eligibilityDescription)
             qnaRow(number: 2, question: "언제 신청할 수 있나요?", answer: detail.applyPeriod)
@@ -136,9 +147,12 @@ extension PolicyDetailView {
             Text("\(number). \(question)")
                 .baziFont(.body15SB)
                 .foregroundStyle(Color.gray900)
-            Text(answer)
+            // 서버가 내용 없는 항목을 null(→ 빈 문자열)로 내려주므로 "-"로 대체 표시한다.
+            Text(answer.isEmpty ? "-" : answer)
                 .baziFont(.small14R)
                 .foregroundStyle(Color.gray600)
+                // 사용자가 답변/링크를 길게 눌러 복사할 수 있게 한다.
+                .textSelection(.enabled)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -146,7 +160,7 @@ extension PolicyDetailView {
     private func recommendationSection(
         title: String,
         background: Color,
-        policies: IdentifiedArrayOf<PolicySummary>,
+        policies: IdentifiedArrayOf<PolicySummaryVO>,
         section: PolicyDetailFeature.RecommendationSection
     ) -> some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -178,13 +192,16 @@ extension PolicyDetailView {
     }
 
     private var ctaButtons: some View {
-        HStack(spacing: 10) {
+        // 신청 링크(참고 링크 첫 항목)가 없으면 신청 버튼을 비활성화한다.
+        let applyURL = store.detail.value?.applyURL
+        return HStack(spacing: 10) {
             BZButton("찜하기", type: .normal, size: .small) {
                 store.send(.didTapLike)
             }
             BZButton("바로 신청하러 가기", type: .cta, size: .medium) {
-                store.send(.didTapApply)
+                if let applyURL { openURL(applyURL) }
             }
+            .disabled(applyURL == nil)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 5)
@@ -203,8 +220,8 @@ extension PolicyDetailView {
         Binding(
             get: {
                 switch section {
-                case .personalized: return store.personalizedPolicies[id: id]?.isLiked ?? false
-                case .popular: return store.popularPolicies[id: id]?.isLiked ?? false
+                case .personalized: return store.detail.value?.personalized[id: id]?.isLiked ?? false
+                case .popular: return store.detail.value?.popular[id: id]?.isLiked ?? false
                 }
             },
             set: { _ in store.send(.didToggleRecommendationLike(section: section, id: id)) }
