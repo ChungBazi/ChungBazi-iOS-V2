@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// 카카오 SDK를 통해 정책을 공유한다.
+/// 정책을 공유하는 메서드
 public protocol PolicyShareService: Sendable {
     func shareToKakao(_ content: PolicyShareContent) async throws
 }

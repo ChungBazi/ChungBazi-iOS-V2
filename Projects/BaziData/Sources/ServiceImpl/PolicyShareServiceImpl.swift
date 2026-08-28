@@ -27,7 +27,7 @@ public struct PolicyShareServiceImpl: PolicyShareService {
                     androidExecutionParams: params,
                     iosExecutionParams: params
                 )
-                // 카드 대표 이미지는 생략(제목/설명 중심). 카카오 콘솔에 등록된 앱 아이콘이 메시지 앱 출처로 표시된다.
+                // 카드 대표 이미지는 생략(제목/설명 중심).
                 let template = FeedTemplate(
                     content: Content(
                         title: content.title,

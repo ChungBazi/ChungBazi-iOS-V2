@@ -114,10 +114,8 @@ public struct PolicyDetailFeature {
                 let content = PolicyShareContent(
                     policyId: detail.id,
                     title: detail.title,
-                    // 설명에 요약을 넣으면 잘리고 궁금증도 안 생겨서, 고정 문구로 클릭을 유도한다.
                     description: "청바지에서 청년 정책을 확인해보세요!",
                     // 앱 복귀는 iosExecutionParams(policyId)로 처리하므로 webURL은 두지 않는다.
-                    // (등록되지 않은 외부 도메인을 webUrl로 넣으면 카카오 공유 전송이 거부될 수 있음)
                     webURL: nil
                 )
                 return .run { [policyDetailClient] _ in

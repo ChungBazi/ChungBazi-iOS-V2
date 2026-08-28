@@ -17,7 +17,6 @@ private let pendingDeeplink = LockIsolated<Deeplink?>(nil)
 
 /// 카카오 공유 링크를 탭해 앱이 열릴 때 도착하는 URL(kakao{appkey}://kakaolink?...)에서
 /// 공유 시 심어둔 iosExecutionParams("policyId")를 파싱한다.
-/// 주의: executionParams 전달 형식은 기기(카카오톡 설치)에서 최종 검증 필요.
 enum KakaoLinkParser {
     static func policyId(from url: URL) -> Int? {
         guard url.host == "kakaolink" else { return nil }
