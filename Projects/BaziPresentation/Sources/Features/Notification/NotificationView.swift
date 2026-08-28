@@ -21,34 +21,26 @@ public struct NotificationView: View {
     // MARK: - Body
 
     public var body: some View {
-        NavigationStack(
-            path: $store.scope(state: \.path, action: \.path)
-        ) {
-            content
-                .task { store.send(.onAppear) }
-                .baziNavigationBar_backWithTitleAndTextButton(
-                    "알림",
-                    buttonTitle: "전체 삭제",
-                    onBack: { dismiss() },
-                    onButtonTap: { store.send(.didTapDeleteAll) }
-                )
-                .baziAlert(
-                    isPresented: Binding(
-                        get: { store.isDeleteAllConfirmPresented },
-                        set: { store.send(.didSetDeleteAllConfirm($0)) }
-                    ),
-                    title: "모든 알림을 삭제할까요?",
-                    message: "삭제된 알림은 다시 복구할 수 없어요",
-                    confirmTitle: "삭제하기",
-                    confirmType: .accent,
-                    onConfirm: { store.send(.didConfirmDeleteAll) }
-                )
-        } destination: { store in
-            switch store.case {
-            case .detail(let store):
-                PolicyDetailView(store: store)
-            }
-        }
+        content
+            .task { store.send(.onAppear) }
+            .baziNavigationBar_backWithTitleAndTextButton(
+                "알림",
+                buttonTitle: "전체 삭제",
+                onBack: { dismiss() },
+                onButtonTap: { store.send(.didTapDeleteAll) }
+            )
+            .baziAlert(
+                isPresented: Binding(
+                    get: { store.isDeleteAllConfirmPresented },
+                    set: { store.send(.didSetDeleteAllConfirm($0)) }
+                ),
+                title: "모든 알림을 삭제할까요?",
+                message: "삭제된 알림은 다시 복구할 수 없어요",
+                confirmTitle: "삭제하기",
+                confirmType: .accent,
+                onConfirm: { store.send(.didConfirmDeleteAll) }
+            )
+            .toolbar(.hidden, for: .tabBar)
     }
 }
 
@@ -59,13 +51,26 @@ extension NotificationView {
     private var content: some View {
         VStack(spacing: 0) {
             tabBar
-            if store.visibleNotifications.isEmpty {
+            stateContent
+        }
+        .baziBackground(.bgGray)
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        switch store.notifications {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .failed:
+            BZRetryView { store.send(.didTapRetry) }
+        case .loaded:
+            if (store.notifications.value ?? []).isEmpty {
                 emptyState
             } else {
                 notificationList
             }
         }
-        .baziBackground(.bgGray)
     }
 
     private var tabBar: some View {
@@ -87,8 +92,9 @@ extension NotificationView {
     }
 
     private var notificationList: some View {
-        List {
-            ForEach(Array(store.visibleNotifications.enumerated()), id: \.element.id) { index, notification in
+        let items = store.notifications.value ?? []
+        return List {
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, notification in
                 BZAlarmCard(
                     icon: notification.kind.iconType,
                     title: notification.title,
@@ -98,7 +104,7 @@ extension NotificationView {
                 .listRowInsets(EdgeInsets(
                     top: index == 0 ? 20 : 6,
                     leading: 20,
-                    bottom: index == store.visibleNotifications.count - 1 ? 20 : 6,
+                    bottom: index == items.count - 1 ? 20 : 6,
                     trailing: 20
                 ))
                 .listRowSeparator(.hidden)
@@ -108,10 +114,16 @@ extension NotificationView {
                 .baziAlarmCardSwipeToDelete {
                     store.send(.didSwipeDelete(id: notification.id))
                 }
+                .onAppear {
+                    if notification.id == items.last?.id {
+                        store.send(.didReachListEnd)
+                    }
+                }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .refreshable { await store.send(.pullToRefresh).finish() }
     }
 
     private var emptyState: some View {
@@ -132,7 +144,7 @@ extension NotificationView {
 
 #Preview("비어 있음") {
     var state = NotificationFeature.State()
-    state.notifications = []
+    state.notifications = .loaded([])
 
     return NotificationView(
         store: Store(initialState: state) {
