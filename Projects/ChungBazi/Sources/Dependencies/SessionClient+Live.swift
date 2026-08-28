@@ -39,7 +39,8 @@ extension SessionClient: @retroactive DependencyKey {
                 }
             },
             resetSession: { resetSessionUseCase.execute() },
-            userName: { userNameUseCase.get() }
+            userName: { userNameUseCase.get() },
+            displayName: { userNameUseCase.get() ?? "회원" }
         )
     }()
 }

@@ -86,7 +86,7 @@ public struct CategoryPolicyListFeature {
             switch action {
             case .task:
                 guard state.list.value == nil, !state.list.isLoading else { return .none }
-                state.userName = sessionClient.userName() ?? ""
+                state.userName = sessionClient.displayName()
                 let first = reloadFirstPage(&state)
                 let teaser = loadTeaser(state)
                 return .merge(first, teaser)

@@ -88,7 +88,7 @@ public struct CustomPolicyListFeature {
             switch action {
             case .task:
                 guard state.cards.value == nil, !state.cards.isLoading else { return .none }
-                state.userName = sessionClient.userName() ?? ""
+                state.userName = sessionClient.displayName()
                 if !customPolicyClient.hasSeenGuide() {
                     state.guideStep = .swipeHint
                 }

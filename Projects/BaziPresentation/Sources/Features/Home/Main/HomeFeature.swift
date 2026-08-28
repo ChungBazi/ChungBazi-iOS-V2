@@ -83,7 +83,7 @@ public struct HomeFeature {
         Reduce { state, action in
             switch action {
             case .task:
-                state.userName = sessionClient.userName() ?? ""
+                state.userName = sessionClient.displayName()
                 return loadFeed(&state)
 
             case .didTapRetry:

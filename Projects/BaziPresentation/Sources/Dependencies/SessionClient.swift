@@ -8,8 +8,10 @@ public struct SessionClient: Sendable {
     public var forceLogoutEvents: @Sendable () -> AsyncStream<Void> = { AsyncStream { $0.finish() } }
     /// 로컬 세션(토큰 + 상태) 초기화.
     public var resetSession: @Sendable () -> Void
-    /// 로컬에 저장된 사용자 닉네임(없으면 nil).
+    /// 로컬에 저장된 사용자 닉네임(없으면 nil). 로직 판단용 원본 값.
     public var userName: @Sendable () -> String? = { nil }
+    /// 화면 인사말 표시용 이름. 저장된 닉네임이 없으면 "회원"으로 대체한다.
+    public var displayName: @Sendable () -> String = { "회원" }
 }
 
 extension SessionClient: TestDependencyKey {
