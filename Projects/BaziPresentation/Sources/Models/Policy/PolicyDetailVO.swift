@@ -83,8 +83,8 @@ public struct PolicyDetailVO: Equatable, Identifiable, Sendable {
             submittedDocument: entity.submittedDocument.orDash,
             screeningMethod: entity.screeningMethod.orDash,
             referenceURLs: entity.referenceUrls,
-            personalized: IdentifiedArray(uniqueElements: entity.personalized.map(PolicySummaryVO.init)),
-            popular: IdentifiedArray(uniqueElements: entity.popular.map(PolicySummaryVO.init))
+            personalized: IdentifiedArray(deduplicating: entity.personalized.map(PolicySummaryVO.init)),
+            popular: IdentifiedArray(deduplicating: entity.popular.map(PolicySummaryVO.init))
         )
     }
 }

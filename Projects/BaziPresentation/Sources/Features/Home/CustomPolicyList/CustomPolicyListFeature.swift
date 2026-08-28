@@ -98,7 +98,7 @@ public struct CustomPolicyListFeature {
                 return loadCards(&state)
 
             case let .cardsResponse(.success(cards)):
-                state.cards = .loaded(IdentifiedArray(uniqueElements: cards))
+                state.cards = .loaded(IdentifiedArray(deduplicating: cards))
                 return .none
 
             case let .cardsResponse(.failure(error)):

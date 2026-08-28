@@ -22,7 +22,7 @@ public struct NotificationPageVO: Equatable, Sendable {
 
     public init(_ entity: NotificationPage) {
         self.init(
-            items: IdentifiedArray(uniqueElements: entity.items.map(NotificationItemVO.init)),
+            items: IdentifiedArray(deduplicating: entity.items.map(NotificationItemVO.init)),
             nextCursor: entity.nextCursor,
             hasNext: entity.hasNext
         )
