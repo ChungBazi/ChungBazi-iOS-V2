@@ -24,7 +24,7 @@ public struct CategoryPolicyListFeature {
     @ObservableState
     public struct State: Equatable {
         public var selectedCategory: PolicyCategoryUI
-        public var userName = ""
+        public var displayName = ""
         public var sortOrder: SortOrder = .deadline
 
         public var teaser: IdentifiedArrayOf<PolicySummaryVO> = []
@@ -86,7 +86,7 @@ public struct CategoryPolicyListFeature {
             switch action {
             case .task:
                 guard state.list.value == nil, !state.list.isLoading else { return .none }
-                state.userName = sessionClient.displayName()
+                state.displayName = sessionClient.displayName()
                 let first = reloadFirstPage(&state)
                 let teaser = loadTeaser(state)
                 return .merge(first, teaser)

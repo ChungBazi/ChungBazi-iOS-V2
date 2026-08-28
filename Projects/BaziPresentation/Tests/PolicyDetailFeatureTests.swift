@@ -18,6 +18,7 @@ struct PolicyDetailFeatureTests {
         }
 
         await store.send(.onAppear) {
+            $0.displayName = "회원"
             $0.detail = .loading
         }
         await store.receive(\.detailResponse) {

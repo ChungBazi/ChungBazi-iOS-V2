@@ -142,10 +142,10 @@ extension HomeView {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(store.userName)님을 기다리는 정책")
+                    Text("\(store.displayName)님을 기다리는 정책")
                         .baziFont(.head20B)
                         .foregroundStyle(Color.gray900)
-                    Text("\(store.userName)님에게 딱 맞는 정책이에요!")
+                    Text("\(store.displayName)님에게 딱 맞는 정책이에요!")
                         .baziFont(.small14R)
                         .foregroundStyle(Color.gray500)
                 }
@@ -180,7 +180,7 @@ extension HomeView {
 
     private var personalizedEmptyState: some View {
         VStack(spacing: 12) {
-            Text("\(store.userName)님 조건에 딱 맞는 정책이\n아직 없어요")
+            Text("\(store.displayName)님 조건에 딱 맞는 정책이\n아직 없어요")
                 .baziFont(.head20B)
                 .foregroundStyle(Color.gray900)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -351,7 +351,7 @@ extension HomeView {
 
 #Preview("맞춤정책 있음") {
     var state = HomeFeature.State()
-    state.userName = "바지"
+    state.displayName = "바지"
     state.feed = .loaded(.mock)
     return HomeView(
         store: Store(initialState: state) {
@@ -364,7 +364,7 @@ extension HomeView {
     var emptyFeed = HomeFeedVO.mock
     emptyFeed.personalized = []
     var state = HomeFeature.State()
-    state.userName = "바지"
+    state.displayName = "바지"
     state.feed = .loaded(emptyFeed)
     return HomeView(
         store: Store(initialState: state) {
