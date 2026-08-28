@@ -15,6 +15,7 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in .mock }
+            $0.sessionClient.userName = { nil }
         }
 
         await store.send(.task) {
@@ -31,6 +32,7 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.network }
+            $0.sessionClient.userName = { nil }
         }
 
         await store.send(.task) {
@@ -41,8 +43,8 @@ struct HomeFeatureTests {
         }
     }
 
-    @Test("북마크 토글은 loaded feed의 해당 정책만 뒤집는다")
-    func didToggleBookmark_togglesInLoadedFeed() async {
+    @Test("찜 토글은 모든 섹션의 해당 정책 찜 상태를 뒤집는다")
+    func didToggleLike_togglesInLoadedFeed() async {
         var state = HomeFeature.State()
         state.feed = .loaded(.mock)
         let store = TestStore(initialState: state) {
@@ -52,9 +54,9 @@ struct HomeFeatureTests {
         }
 
         var expected = HomeFeedVO.mock
-        expected.popular[id: 1]?.isBookmarked = true
+        expected.setLiked(id: 1, liked: true) // id 1은 맞춤·인기 양쪽에 있어 두 섹션 모두 반영된다
 
-        await store.send(.didToggleBookmark(section: .popular, id: 1)) {
+        await store.send(.didToggleLike(section: .popular, id: 1)) {
             $0.feed = .loaded(expected)
         }
     }
@@ -65,6 +67,8 @@ struct HomeFeatureTests {
         state.feed = .loaded(.mock)
         let store = TestStore(initialState: state) {
             HomeFeature()
+        } withDependencies: {
+            $0.sessionClient.userName = { nil }
         }
 
         await store.send(.task)
