@@ -1,6 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import BaziDesign
+import BaziDomain
 
 /// 정책 분야. 홈 "분야별 정책" 아이콘 목록과 분야 필터에서 공유한다.
 public enum PolicyCategoryUI: String, CaseIterable, Equatable, Identifiable, Sendable {
@@ -30,6 +31,33 @@ public enum PolicyCategoryUI: String, CaseIterable, Equatable, Identifiable, Sen
         case .study: return .growthCard
         case .livingSupport: return .lifesupportCard
         case .activity: return .activityCard
+        }
+    }
+}
+
+// MARK: - Mapping
+
+extension PolicyCategoryUI {
+
+    /// 서버 카테고리 코드(Domain enum)를 화면용 카테고리(UI enum)로 1:1 변환한다.
+    init(domain: BaziDomain.PolicyCategory) {
+        switch domain {
+        case .jobStartup:  self = .job
+        case .housing:     self = .dwelling
+        case .growth:      self = .study
+        case .lifeSupport: self = .livingSupport
+        case .activity:    self = .activity
+        }
+    }
+
+    /// UI 카테고리 → 서버 카테고리 코드(요청 파라미터용).
+    public func toDomain() -> BaziDomain.PolicyCategory {
+        switch self {
+        case .job:           return .jobStartup
+        case .dwelling:      return .housing
+        case .study:         return .growth
+        case .livingSupport: return .lifeSupport
+        case .activity:      return .activity
         }
     }
 }

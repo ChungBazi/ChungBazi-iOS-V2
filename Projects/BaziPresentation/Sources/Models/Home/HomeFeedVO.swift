@@ -2,6 +2,8 @@
 
 import ComposableArchitecture
 
+import BaziDomain
+
 /// 홈 메인 화면이 한 번에 그리는 섹션별 정책 묶음(Presentation VO).
 /// userName은 세션 상태이므로 여기 담지 않고 SessionClient에서 읽는다.
 public struct HomeFeedVO: Equatable, Sendable {
@@ -41,6 +43,25 @@ extension HomeFeedVO {
         popular[id: id]?.isLiked = liked
         deadline[id: id]?.isLiked = liked
         newest[id: id]?.isLiked = liked
+    }
+}
+
+// MARK: - Mapping
+
+extension HomeFeedVO {
+
+    public init(_ entity: HomeFeed) {
+        func map(_ list: [BaziDomain.PolicySummary]) -> IdentifiedArrayOf<PolicySummaryVO> {
+            IdentifiedArray(uniqueElements: list.map(PolicySummaryVO.init))
+        }
+        self.init(
+            hasUnreadNotification: entity.hasUnreadNotification,
+            personalized: map(entity.personalized),
+            recentViewed: map(entity.recentViewed),
+            popular: map(entity.popular),
+            deadline: map(entity.upcomingDeadline),
+            newest: map(entity.latest)
+        )
     }
 }
 
