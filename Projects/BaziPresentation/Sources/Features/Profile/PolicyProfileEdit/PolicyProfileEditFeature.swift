@@ -2,6 +2,7 @@
 
 import Foundation
 
+import BaziCore
 import BaziDomain
 import ComposableArchitecture
 
@@ -61,15 +62,7 @@ public struct PolicyProfileEditFeature {
 
         /// 선택된 연/월 기준 실제 일수(윤년 2월 포함).
         public var daysInSelectedMonth: Int {
-            var components = DateComponents()
-            components.year = year
-            components.month = month
-            let calendar = Calendar(identifier: .gregorian)
-            guard let date = calendar.date(from: components),
-                  let range = calendar.range(of: .day, in: .month, for: date) else {
-                return 31
-            }
-            return range.count
+            CalendarUtil.daysInMonth(year: year, month: month)
         }
 
         public var isSaveEnabled: Bool {
