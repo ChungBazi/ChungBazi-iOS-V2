@@ -134,8 +134,8 @@ extension PolicyDetailView {
             qnaRow(number: 3, question: "어떤 지원을 받을 수 있나요?", answer: detail.supportContent)
             qnaRow(number: 4, question: "어떻게 신청하나요?", answer: detail.applicationMethod)
             qnaRow(number: 5, question: "어떤 서류가 필요한가요?", answer: detail.submittedDocument)
-            if let url = detail.referenceURLs.first {
-                qnaRow(number: 6, question: "참고할 수 있는 링크예요", answer: url)
+            if !detail.referenceURLs.isEmpty {
+                qnaLinkRow(number: 6, urls: detail.referenceURLs)
             }
         }
         .padding(20)
@@ -147,12 +147,35 @@ extension PolicyDetailView {
             Text("\(number). \(question)")
                 .baziFont(.body15SB)
                 .foregroundStyle(Color.gray900)
-            // 서버가 내용 없는 항목을 null(→ 빈 문자열)로 내려주므로 "-"로 대체 표시한다.
-            Text(answer.isEmpty ? "-" : answer)
+            Text(answer)
                 .baziFont(.small14R)
                 .foregroundStyle(Color.gray600)
                 // 사용자가 답변/링크를 길게 눌러 복사할 수 있게 한다.
                 .textSelection(.enabled)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// 참고 링크가 여러 개일 수 있어 각 URL을 불릿 + 줄바꿈으로 구분해 표시한다.
+    /// 불릿은 별도 Text로 두어 길게 눌러 복사할 때 URL만 선택되도록 한다.
+    private func qnaLinkRow(number: Int, urls: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(number). 참고할 수 있는 링크예요")
+                .baziFont(.body15SB)
+                .foregroundStyle(Color.gray900)
+            VStack(alignment: .leading, spacing: 5) {
+                ForEach(Array(urls.enumerated()), id: \.offset) { _, url in
+                    HStack(alignment: .top, spacing: 3) {
+                        Text("•")
+                        
+                        Text(url)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray600)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
