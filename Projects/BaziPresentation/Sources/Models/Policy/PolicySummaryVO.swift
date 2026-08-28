@@ -2,6 +2,8 @@
 
 import Foundation
 
+import BaziDomain
+
 /// 홈의 카드형 정책 목록(최근 본/인기/마감임박/새로 뜬/분야별)이 공유하는 요약 모델.
 public struct PolicySummaryVO: Equatable, Identifiable, Sendable {
     public let id: Int
@@ -25,6 +27,26 @@ public struct PolicySummaryVO: Equatable, Identifiable, Sendable {
         self.title = title
         self.viewCount = viewCount
         self.isLiked = isLiked
+    }
+}
+
+// MARK: - Mapping
+
+extension PolicySummaryVO {
+
+    public init(_ entity: BaziDomain.PolicySummary) {
+        // 서버 코드 → UI enum. 코드가 비어 있으면(방어적) categoryName 라벨로 복구를 시도한다.
+        let category = entity.category.map(PolicyCategoryUI.init(domain:))
+            ?? PolicyCategoryUI(rawValue: entity.categoryName)
+            ?? .job
+        self.init(
+            id: entity.id,
+            category: category,
+            dDay: entity.dDay,
+            title: entity.title,
+            viewCount: entity.viewCount,
+            isLiked: entity.liked
+        )
     }
 }
 
