@@ -170,6 +170,7 @@ extension PolicyProfileEditView {
         BZButton("저장하기") {
             store.send(.didTapSaveButton)
         }
+        .baziToastAnchor()
         .disabled(!store.isSaveEnabled)
     }
 }

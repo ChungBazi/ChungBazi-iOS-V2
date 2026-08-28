@@ -34,25 +34,71 @@ public struct BZToastMessage: View {
     }
 }
 
+// MARK: - Anchor
+
+private struct BZToastAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = value ?? nextValue()
+    }
+}
+
+extension View {
+    /// 토스트를 이 뷰(보통 토스트를 띄우는 버튼) 위에 띄우기 위한 위치 기준을 표시한다.
+    public func baziToastAnchor() -> some View {
+        anchorPreference(key: BZToastAnchorKey.self, value: .bounds) { $0 }
+    }
+}
+
 // MARK: - Auto-dismiss
 
 extension View {
-    /// `isPresented`가 `true`가 되면 `edge` 쪽에 토스트를 띄우고, 2초 뒤 자동으로 내린다.
+    /// `isPresented`가 `true`가 되면 토스트를 띄우고 2초 뒤 자동으로 내린다.
+    /// `baziToastAnchor()`로 표시된 뷰가 있으면 그 위 15pt에, 없으면 `edge` 가장자리(20pt)에 띄운다.
     public func baziToast(isPresented: Binding<Bool>, message: String, edge: VerticalEdge = .bottom) -> some View {
-        overlay(alignment: edge == .top ? .top : .bottom) {
-            if isPresented.wrappedValue {
-                BZToastMessage(message)
-                    .padding(.horizontal, 20)
-                    .padding(edge == .top ? .top : .bottom, 20)
-                    .allowsHitTesting(false)
-                    .zIndex(999)
-                    .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                    .id(message)
-                    .task {
-                        try? await Task.sleep(for: .seconds(2.0))
-                        isPresented.wrappedValue = false
-                    }
+        overlayPreferenceValue(BZToastAnchorKey.self) { anchor in
+            GeometryReader { proxy in
+                if isPresented.wrappedValue {
+                    let placement = BZToastPlacement(anchor: anchor, edge: edge, proxy: proxy)
+                    BZToastMessage(message)
+                        .padding(.horizontal, 20)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: placement.alignment)
+                        .padding(placement.paddingEdge, placement.inset)
+                        .allowsHitTesting(false)
+                        .zIndex(999)
+                        .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+                        .id(message)
+                        .task {
+                            try? await Task.sleep(for: .seconds(2.0))
+                            isPresented.wrappedValue = false
+                        }
+                }
             }
+        }
+    }
+}
+
+// MARK: - Placement
+
+/// 앵커가 있으면 트리거 뷰 상단 15pt 위에, 없으면 지정 edge 가장자리 20pt에 토스트를 둔다.
+private struct BZToastPlacement {
+    let alignment: Alignment
+    let paddingEdge: Edge.Set
+    let inset: CGFloat
+
+    init(anchor: Anchor<CGRect>?, edge: VerticalEdge, proxy: GeometryProxy) {
+        if let anchor {
+            alignment = .bottom
+            paddingEdge = .bottom
+            inset = max(0, proxy.size.height - proxy[anchor].minY + 15)
+        } else if edge == .top {
+            alignment = .top
+            paddingEdge = .top
+            inset = 20
+        } else {
+            alignment = .bottom
+            paddingEdge = .bottom
+            inset = 20
         }
     }
 }
