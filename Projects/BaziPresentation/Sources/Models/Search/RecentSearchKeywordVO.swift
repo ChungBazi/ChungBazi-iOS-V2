@@ -32,7 +32,7 @@ public struct RecentSearchResultVO: Equatable, Sendable {
 
     public init(_ entity: RecentSearchResult) {
         self.init(
-            keywords: IdentifiedArray(uniqueElements: entity.keywords.map(RecentSearchKeywordVO.init)),
+            keywords: IdentifiedArray(deduplicating: entity.keywords.map(RecentSearchKeywordVO.init)),
             autoSaveEnabled: entity.autoSaveEnabled
         )
     }

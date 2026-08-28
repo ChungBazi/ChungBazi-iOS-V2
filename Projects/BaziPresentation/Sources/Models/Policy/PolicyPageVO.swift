@@ -25,7 +25,7 @@ public struct PolicyPageVO: Equatable, Sendable {
 
     public init(_ entity: PolicyPage) {
         self.init(
-            policies: IdentifiedArray(uniqueElements: entity.policies.map(PolicySummaryVO.init)),
+            policies: IdentifiedArray(deduplicating: entity.policies.map(PolicySummaryVO.init)),
             nextCursor: entity.nextCursor,
             hasNext: entity.hasNext,
             totalCount: entity.totalCount

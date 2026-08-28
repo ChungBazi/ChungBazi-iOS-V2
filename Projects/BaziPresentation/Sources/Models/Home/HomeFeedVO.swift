@@ -52,7 +52,7 @@ extension HomeFeedVO {
 
     public init(_ entity: HomeFeed) {
         func map(_ list: [BaziDomain.PolicySummary]) -> IdentifiedArrayOf<PolicySummaryVO> {
-            IdentifiedArray(uniqueElements: list.map(PolicySummaryVO.init))
+            IdentifiedArray(deduplicating: list.map(PolicySummaryVO.init))
         }
         self.init(
             hasUnreadNotification: entity.hasUnreadNotification,

@@ -132,7 +132,7 @@ public struct RankedPolicyListFeature {
                 return .none
 
             case .teaserResponse(.success(let policies)):
-                state.teaser = IdentifiedArray(uniqueElements: policies)
+                state.teaser = IdentifiedArray(deduplicating: policies)
                 return .none
 
             case .teaserResponse(.failure):
