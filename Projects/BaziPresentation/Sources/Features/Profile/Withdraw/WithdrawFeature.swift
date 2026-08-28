@@ -15,14 +15,20 @@ public struct WithdrawFeature {
         public var selectedReasons: Set<String> = []
         public var detailText = ""
         public var isWithdrawing = false
-        public var isConfirmAlertPresented = false
-        public var isCompletionAlertPresented = false
+        public var activeAlert: ActiveAlert?
 
         public var isSubmitEnabled: Bool {
             hasConfirmedNotice && !selectedReasons.isEmpty && !isWithdrawing
         }
 
         public init() {}
+    }
+
+    // MARK: - Alert
+
+    public enum ActiveAlert: Equatable {
+        case confirm
+        case completion
     }
 
     // MARK: - Action
@@ -83,15 +89,15 @@ public struct WithdrawFeature {
 
             case .didTapWithdrawButton:
                 guard state.isSubmitEnabled else { return .none }
-                state.isConfirmAlertPresented = true
+                state.activeAlert = .confirm
                 return .none
 
             case .didCancelConfirm:
-                state.isConfirmAlertPresented = false
+                state.activeAlert = nil
                 return .none
 
             case .didConfirmWithdraw:
-                state.isConfirmAlertPresented = false
+                state.activeAlert = nil
                 state.isWithdrawing = true
                 // TODO: withdrawClient가 준비되면 UserAPI.withdraw(reasons:detail:) 호출로 교체한다.
                 return .run { send in
@@ -100,13 +106,15 @@ public struct WithdrawFeature {
 
             case .didFinishWithdraw:
                 state.isWithdrawing = false
-                state.isCompletionAlertPresented = true
+                state.activeAlert = .completion
                 return .none
 
             case .didTapCompletionConfirm:
-                state.isCompletionAlertPresented = false
-                sessionClient.resetSession()
-                return .send(.delegate(.didCompleteWithdrawal))
+                state.activeAlert = nil
+                return .run { [sessionClient] send in
+                    sessionClient.resetSession()
+                    await send(.delegate(.didCompleteWithdrawal))
+                }
 
             case .delegate:
                 return .none

@@ -14,7 +14,7 @@ public struct TermsOfServiceFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
 
