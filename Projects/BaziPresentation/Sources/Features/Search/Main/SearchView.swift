@@ -62,7 +62,7 @@ extension SearchView {
             onSubmit: { store.send(.didSubmitQuery) }
         )
         .padding(.horizontal, 20)
-        .frame(height: 64)
+        .padding(.vertical, 12)
     }
 }
 
@@ -116,6 +116,7 @@ extension SearchView {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16)
+                        .foregroundStyle(Color.gray500)
                     Text(keyword.keyword)
                         .baziFont(.small14R)
                         .foregroundStyle(Color.gray700)
@@ -130,7 +131,7 @@ extension SearchView {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.gray400)
+                    .foregroundStyle(Color.gray500)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
