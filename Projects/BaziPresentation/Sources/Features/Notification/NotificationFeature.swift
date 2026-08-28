@@ -112,6 +112,14 @@ public struct NotificationFeature {
             case .didSwipeDelete(let id):
                 guard state.notifications.value?[id: id] != nil else { return .none }
                 removeNotification(&state, id: id)
+                // 삭제로 현재 목록이 비었는데 다음 페이지가 남아 있으면, 빈 화면 대신 다음 페이지를 이어서 불러온다.
+                if state.notifications.value?.isEmpty == true, state.pagination.canLoadNext {
+                    state.pagination.isLoadingNext = true
+                    return .merge(
+                        deleteEffect(id: id),
+                        fetchPage(category: state.selectedTab.serverCategory, cursor: state.pagination.nextCursor, isFirstPage: false)
+                    )
+                }
                 return deleteEffect(id: id)
 
             case .didTapDeleteAll:
