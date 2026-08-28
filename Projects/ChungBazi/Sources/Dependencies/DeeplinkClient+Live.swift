@@ -4,6 +4,7 @@ import Foundation
 
 import ComposableArchitecture
 
+import BaziCore
 import BaziPresentation
 
 extension Notification.Name {
@@ -22,9 +23,14 @@ enum KakaoLinkParser {
         guard url.host == "kakaolink" else { return nil }
         guard
             let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
-            let value = items.first(where: { $0.name == "policyId" })?.value
-        else { return nil }
-        return Int(value)
+            let value = items.first(where: { $0.name == "policyId" })?.value,
+            let id = Int(value)
+        else {
+            // 카카오 링크인데 policyId를 못 읽으면 딥링크가 조용히 유실되므로 원인 추적용으로 남긴다.
+            Log.error("카카오 공유 링크 policyId 파싱 실패: \(url.absoluteString)", category: .lifecycle)
+            return nil
+        }
+        return id
     }
 }
 
