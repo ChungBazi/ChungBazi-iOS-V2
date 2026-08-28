@@ -138,8 +138,20 @@ public struct SearchFeature {
             case .didToggleAutoSave:
                 let enabled = !state.isAutoSaveEnabled
                 state.isAutoSaveEnabled = enabled
-                return .run { [policySearchClient] _ in
-                    try? await policySearchClient.updateAutoSave(enabled)
+                // 끌 때는 서버 반영만. 켤 때는 서버 반영 후 최근 검색어를 다시 불러와 즉시 노출한다.
+                guard enabled else {
+                    return .run { [policySearchClient] _ in
+                        try? await policySearchClient.updateAutoSave(false)
+                    }
+                }
+                return .run { [policySearchClient] send in
+                    try? await policySearchClient.updateAutoSave(true)
+                    do {
+                        let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
+                        await send(.recentSearchesResponse(.success(result)))
+                    } catch {
+                        await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
+                    }
                 }
 
             case .path(.element(_, .searchResult(.delegate(.didSelectPolicy(let id))))),
