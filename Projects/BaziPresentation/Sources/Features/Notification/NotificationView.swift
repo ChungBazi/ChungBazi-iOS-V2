@@ -69,22 +69,21 @@ extension NotificationView {
     }
 
     private var tabBar: some View {
-        HStack(spacing: 24) {
-            ForEach(NotificationTab.allCases, id: \.self) { tab in
-                Button {
-                    store.send(.didSelectTab(tab))
-                } label: {
-                    Text(tab.rawValue)
-                        .baziFont(store.selectedTab == tab ? .body16SB : .body16R)
-                        .foregroundStyle(store.selectedTab == tab ? Color.grayBlack : Color.gray400)
-                }
-                .buttonStyle(.plain)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 40)
+        BZSegmentControl(
+            options: NotificationTab.allCases.map(\.rawValue),
+            selection: tabSelection
+        ) { _ in EmptyView() }
         .baziBackground(.bgWhite)
+    }
+
+    private var tabSelection: Binding<String> {
+        Binding(
+            get: { store.selectedTab.rawValue },
+            set: { newValue in
+                guard let tab = NotificationTab(rawValue: newValue) else { return }
+                store.send(.didSelectTab(tab))
+            }
+        )
     }
 
     private var notificationList: some View {
