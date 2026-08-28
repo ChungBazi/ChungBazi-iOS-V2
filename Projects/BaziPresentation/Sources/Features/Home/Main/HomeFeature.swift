@@ -15,6 +15,8 @@ public struct HomeFeature {
         case categoryPolicyList(CategoryPolicyListFeature)
         case rankedPolicyList(RankedPolicyListFeature)
         case customPolicyList(CustomPolicyListFeature)
+        case notification(NotificationFeature)
+        case policyDetail(PolicyDetailFeature)
         case detail(PlaceholderDetailFeature)
     }
 
@@ -115,7 +117,7 @@ public struct HomeFeature {
                 return .none
 
             case .didTapBell:
-                // TODO: 알림 Feature가 준비되면 연결한다.
+                state.path.append(.notification(NotificationFeature.State()))
                 return .none
 
             case .didTapCategory(let category):
@@ -155,6 +157,10 @@ public struct HomeFeature {
 
             case let .likeFailed(id, liked):
                 setLiked(id: id, liked: !liked, state: &state)
+                return .none
+
+            case let .path(.element(_, .notification(.delegate(.didSelectPolicy(id))))):
+                state.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
                 return .none
 
             case .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy)))),

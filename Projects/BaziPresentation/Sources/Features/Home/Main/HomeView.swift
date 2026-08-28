@@ -38,6 +38,10 @@ public struct HomeView: View {
                 RankedPolicyListView(store: store)
             case .customPolicyList(let store):
                 CustomPolicyListView(store: store)
+            case .notification(let store):
+                NotificationView(store: store)
+            case .policyDetail(let store):
+                PolicyDetailView(store: store)
             case .detail(let store):
                 PlaceholderDetailView(store: store)
             }
