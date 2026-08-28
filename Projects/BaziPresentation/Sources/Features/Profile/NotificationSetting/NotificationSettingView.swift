@@ -61,27 +61,26 @@ extension NotificationSettingView {
             )
         }
         .padding(.horizontal, 20)
-        .padding(.top, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .baziBackground(.bgWhite)
     }
 
     private func row(title: String, description: String, isOn: Binding<Bool>) -> some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .baziFont(.body16SB)
                     .foregroundStyle(Color.gray900)
                 Text(description)
-                    .baziFont(.small12R)
+                    .baziFont(.small14R)
                     .foregroundStyle(Color.gray500)
             }
-            Spacer()
+            Spacer(minLength: 30)
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .tint(Color.bazi(.primary))
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, 18)
     }
 }
 

@@ -34,46 +34,38 @@ public struct LinkedAccountsView: View {
 extension LinkedAccountsView {
 
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                ForEach(store.accounts) { account in
-                    accountRow(account)
-                }
+        VStack {
+            ForEach(store.accounts) { account in
+                accountRow(account)
             }
-            .padding(20)
+            Spacer()
         }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
         .baziBackground(.bgWhite)
     }
 
     private func accountRow(_ account: SocialAccount) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image.bazi(.kakaoIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 12)
+                
                 Text(account.provider.displayName)
-                    .baziFont(.small12M)
-                    .foregroundStyle(Color.gray600)
-                Text(account.email)
-                    .baziFont(.body16R)
-                    .foregroundStyle(Color.gray900)
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray800)
             }
-
-            Spacer()
-
-            if store.isUnlinkEnabled {
-                Button("해지") {
-                    store.send(.didTapUnlink(id: account.id))
-                }
-                .baziFont(.small14SB)
-                .foregroundStyle(Color.bazi(.accent))
-            }
+            Text(account.email)
+                .baziFont(.body16R)
+                .foregroundStyle(Color.gray900)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.blue50)
-        .overlay(
-            RoundedRectangle(cornerRadius: BaziRadius.medium.rawValue, style: .continuous)
-                .strokeBorder(Color.blue200, lineWidth: 0.8)
-        )
-        .baziRadius(.medium)
+        .baziRadius(.small)
     }
 }
 
