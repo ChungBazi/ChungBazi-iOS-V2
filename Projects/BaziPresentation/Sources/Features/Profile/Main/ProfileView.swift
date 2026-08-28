@@ -61,8 +61,8 @@ extension ProfileView {
                 rows
             }
         }
-        .baziBackground(.bgGray)
-        .background(Color.bazi(.bgWhite).ignoresSafeArea(edges: .top))
+        .baziBackground(.bgWhite)
+        .background(Color.bazi(.bgWhite).ignoresSafeArea())
     }
 
     private var header: some View {
