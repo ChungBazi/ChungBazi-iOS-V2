@@ -64,7 +64,7 @@ public struct SearchFeature {
     public init() {}
 
     private static let recentSize = 10
-    private enum CancelID { case suggestions }
+    private enum CancelID { case suggestions, recentSearches }
 
     // MARK: - Body
 
@@ -80,6 +80,7 @@ public struct SearchFeature {
                         await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
                     }
                 }
+                .cancellable(id: CancelID.recentSearches, cancelInFlight: true)
 
             case let .recentSearchesResponse(.success(result)):
                 state.recentKeywords = result.keywords
@@ -140,9 +141,13 @@ public struct SearchFeature {
                 state.isAutoSaveEnabled = enabled
                 // 끌 때는 서버 반영만. 켤 때는 서버 반영 후 최근 검색어를 다시 불러와 즉시 노출한다.
                 guard enabled else {
-                    return .run { [policySearchClient] _ in
-                        try? await policySearchClient.updateAutoSave(false)
-                    }
+                    // 진행 중인 재조회(ON)의 늦은 응답이 다시 ON으로 덮지 않도록 취소한다.
+                    return .merge(
+                        .cancel(id: CancelID.recentSearches),
+                        .run { [policySearchClient] _ in
+                            try? await policySearchClient.updateAutoSave(false)
+                        }
+                    )
                 }
                 return .run { [policySearchClient] send in
                     try? await policySearchClient.updateAutoSave(true)
@@ -153,6 +158,7 @@ public struct SearchFeature {
                         await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
                     }
                 }
+                .cancellable(id: CancelID.recentSearches, cancelInFlight: true)
 
             case .path(.element(_, .searchResult(.delegate(.didSelectPolicy(let id))))),
                  .path(.element(_, .detail(.delegate(.didSelectPolicy(let id))))):
