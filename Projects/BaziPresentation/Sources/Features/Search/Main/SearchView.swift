@@ -47,8 +47,8 @@ extension SearchView {
                 suggestionList
             } else {
                 recentSearchSection
+                Spacer()
             }
-            Spacer()
         }
         .baziBackground(.bgGray)
     }
@@ -106,7 +106,7 @@ extension SearchView {
         }
     }
 
-    private func recentSearchRow(_ keyword: RecentSearchKeyword) -> some View {
+    private func recentSearchRow(_ keyword: RecentSearchKeywordVO) -> some View {
         HStack {
             Button {
                 store.send(.didTapSuggestion(keyword.keyword))
@@ -160,16 +160,19 @@ extension SearchView {
 extension SearchView {
 
     private var suggestionList: some View {
-        VStack(spacing: 0) {
-            ForEach(store.suggestions) { suggestion in
-                suggestionRow(suggestion)
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(store.suggestions) { suggestion in
+                    suggestionRow(suggestion)
+                }
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
+        .scrollDismissesKeyboard(.immediately)
     }
 
-    private func suggestionRow(_ suggestion: SearchSuggestion) -> some View {
+    private func suggestionRow(_ suggestion: SearchSuggestionVO) -> some View {
         Button {
             store.send(.didTapSuggestion(suggestion.keyword))
         } label: {
@@ -195,13 +198,16 @@ extension SearchView {
                 .font(BaziFont.small14R.font)
                 .foregroundColor(Color.gray700)
         }
+        let prefix = Text(keyword[..<range.lowerBound])
+            .font(BaziFont.small14R.font)
+            .foregroundColor(Color.gray700)
         let matched = Text(keyword[range])
             .font(BaziFont.small14SB.font)
             .foregroundColor(Color.bazi(.primary))
         let rest = Text(keyword[range.upperBound...])
             .font(BaziFont.small14R.font)
             .foregroundColor(Color.gray700)
-        return matched + rest
+        return prefix + matched + rest
     }
 }
 
@@ -230,8 +236,8 @@ extension SearchView {
 #Preview("입력 중") {
     var state = SearchFeature.State()
     state.query = "청년 일자리"
-    state.recentKeywords = IdentifiedArray(uniqueElements: RecentSearchKeyword.mockList)
-    state.suggestions = SearchSuggestion.suggestions(for: "청년 일자리", recentKeywords: ["청년 일자리 지원금"])
+    state.recentKeywords = RecentSearchResultVO.mock.keywords
+    state.suggestions = SearchSuggestionVO.mockList
 
     return SearchView(
         store: Store(initialState: state) {

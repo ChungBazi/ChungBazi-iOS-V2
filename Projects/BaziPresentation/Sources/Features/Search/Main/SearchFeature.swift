@@ -2,8 +2,11 @@
 
 import Foundation
 
+import BaziDomain
 import ComposableArchitecture
 
+/// 검색 메인 화면. 최근 검색어·자동완성 + 검색 제출로 결과 화면에 진입한다.
+/// 최근 검색어/자동저장/자동완성은 모두 서버가 관리한다(검색하면 서버가 최근검색에 자동 저장).
 @Reducer
 public struct SearchFeature {
 
@@ -21,19 +24,14 @@ public struct SearchFeature {
     public struct State: Equatable {
         public var path = StackState<Path.State>()
 
-        public var query: String
-        public var recentKeywords: IdentifiedArrayOf<RecentSearchKeyword>
-        public var isAutoSaveEnabled: Bool
-        public var suggestions: [SearchSuggestion]
+        public var query: String = ""
+        public var recentKeywords: IdentifiedArrayOf<RecentSearchKeywordVO> = []
+        public var isAutoSaveEnabled: Bool = true
+        public var suggestions: [SearchSuggestionVO] = []
 
         public var isTyping: Bool { !query.isEmpty }
 
-        public init() {
-            self.query = ""
-            self.recentKeywords = []
-            self.isAutoSaveEnabled = true
-            self.suggestions = []
-        }
+        public init() {}
     }
 
     // MARK: - Action
@@ -48,18 +46,25 @@ public struct SearchFeature {
         case didTapDeleteAllRecentKeywords
         case didToggleAutoSave
 
+        // MARK: Internal
+        case recentSearchesResponse(Result<RecentSearchResultVO, UseCaseError>)
+        case suggestionsResponse(Result<[SearchSuggestionVO], UseCaseError>)
+
         // MARK: Child
         case path(StackActionOf<Path>)
     }
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 검색 UseCase가 준비되면 추가
-    // @Dependency(\.policySearchClient) var policySearchClient
+    @Dependency(\.policySearchClient) var policySearchClient
+    @Dependency(\.continuousClock) var clock
 
     // MARK: - Init
 
     public init() {}
+
+    private static let recentSize = 10
+    private enum CancelID { case suggestions }
 
     // MARK: - Body
 
@@ -67,16 +72,48 @@ public struct SearchFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // TODO: policySearchClient가 준비되면 RecentSearchAPI 응답으로 교체한다.
-                state.recentKeywords = IdentifiedArray(uniqueElements: RecentSearchKeyword.mockList)
+                return .run { [policySearchClient] send in
+                    do {
+                        let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
+                        await send(.recentSearchesResponse(.success(result)))
+                    } catch {
+                        await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
+            case let .recentSearchesResponse(.success(result)):
+                state.recentKeywords = result.keywords
+                state.isAutoSaveEnabled = result.autoSaveEnabled
+                return .none
+
+            case .recentSearchesResponse(.failure):
                 return .none
 
             case .didChangeQuery(let query):
                 state.query = query
-                state.suggestions = SearchSuggestion.suggestions(
-                    for: query,
-                    recentKeywords: state.recentKeywords.map(\.keyword)
-                )
+                guard !query.isEmpty else {
+                    state.suggestions = []
+                    return .cancel(id: CancelID.suggestions)
+                }
+                // 입력 중 디바운스(0.3s) 후 서버 자동완성 조회. 다음 입력이 오면 취소.
+                return .run { [policySearchClient, clock] send in
+                    try await clock.sleep(for: .milliseconds(300))
+                    do {
+                        let suggestions = try await policySearchClient.suggestions(query)
+                        await send(.suggestionsResponse(.success(suggestions)))
+                    } catch {
+                        await send(.suggestionsResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+                .cancellable(id: CancelID.suggestions, cancelInFlight: true)
+
+            case let .suggestionsResponse(.success(suggestions)):
+                // 같은 키워드가 최근검색·정책후보로 중복될 수 있어, 먼저 온 항목(최근검색) 기준으로 dedup한다.
+                var seen = Set<String>()
+                state.suggestions = suggestions.filter { seen.insert($0.keyword).inserted }
+                return .none
+
+            case .suggestionsResponse(.failure):
                 return .none
 
             case .didSubmitQuery:
@@ -88,15 +125,22 @@ public struct SearchFeature {
 
             case .didTapDeleteRecentKeyword(let id):
                 state.recentKeywords.remove(id: id)
-                return .none
+                return .run { [policySearchClient] _ in
+                    try? await policySearchClient.deleteRecentSearch(id)
+                }
 
             case .didTapDeleteAllRecentKeywords:
                 state.recentKeywords.removeAll()
-                return .none
+                return .run { [policySearchClient] _ in
+                    try? await policySearchClient.deleteAllRecentSearches()
+                }
 
             case .didToggleAutoSave:
-                state.isAutoSaveEnabled.toggle()
-                return .none
+                let enabled = !state.isAutoSaveEnabled
+                state.isAutoSaveEnabled = enabled
+                return .run { [policySearchClient] _ in
+                    try? await policySearchClient.updateAutoSave(enabled)
+                }
 
             case .path(.element(_, .searchResult(.delegate(.didSelectPolicy(let id))))),
                  .path(.element(_, .detail(.delegate(.didSelectPolicy(let id))))):
@@ -115,12 +159,13 @@ public struct SearchFeature {
     private func submitSearch(state: inout State, query: String) -> Effect<Action> {
         state.query = query
         state.suggestions = []
+        // 서버가 자동저장하지만, 재진입 전까지 즉시 반영되도록 로컬에도 낙관적으로 추가한다.
         if state.isAutoSaveEnabled, !state.recentKeywords.contains(where: { $0.keyword == query }) {
             let nextID = (state.recentKeywords.map(\.id).max() ?? 0) + 1
-            state.recentKeywords.insert(RecentSearchKeyword(id: nextID, keyword: query), at: 0)
+            state.recentKeywords.insert(RecentSearchKeywordVO(id: nextID, keyword: query), at: 0)
         }
         state.path.append(.searchResult(SearchResultFeature.State(query: query)))
-        return .none
+        return .cancel(id: CancelID.suggestions)
     }
 }
 
