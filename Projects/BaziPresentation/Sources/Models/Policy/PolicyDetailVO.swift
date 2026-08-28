@@ -76,12 +76,12 @@ public struct PolicyDetailVO: Equatable, Identifiable, Sendable {
             summary: entity.summary,
             viewCount: entity.viewCount,
             isLiked: entity.liked,
-            eligibilityDescription: entity.eligibilityDescription,
-            applyPeriod: entity.applyPeriod,
-            supportContent: entity.supportContent,
-            applicationMethod: entity.applicationMethod,
-            submittedDocument: entity.submittedDocument,
-            screeningMethod: entity.screeningMethod,
+            eligibilityDescription: entity.eligibilityDescription.orDash,
+            applyPeriod: entity.applyPeriod.orDash,
+            supportContent: entity.supportContent.orDash,
+            applicationMethod: entity.applicationMethod.orDash,
+            submittedDocument: entity.submittedDocument.orDash,
+            screeningMethod: entity.screeningMethod.orDash,
             referenceURLs: entity.referenceUrls,
             personalized: IdentifiedArray(uniqueElements: entity.personalized.map(PolicySummaryVO.init)),
             popular: IdentifiedArray(uniqueElements: entity.popular.map(PolicySummaryVO.init))
@@ -112,4 +112,12 @@ extension PolicyDetailVO {
             popular: IdentifiedArray(uniqueElements: Array(PolicySummaryVO.mockList.suffix(2)))
         )
     }
+}
+
+// MARK: - Empty → Placeholder
+
+private extension String {
+    /// 서버가 내용 없는 Q&A 항목을 null(→ 빈 문자열)로 내려주므로, 화면에서 바로 쓰도록 "-"로 대체한다.
+    /// (summary는 비어 있으면 화면에서 숨기므로 이 변환을 적용하지 않는다.)
+    var orDash: String { isEmpty ? "-" : self }
 }
