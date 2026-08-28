@@ -14,11 +14,13 @@ extension PolicyDetailClient: @retroactive DependencyKey {
             cache: AppDependencies.policyCache
         )
         let fetchUseCase: any FetchPolicyDetailUseCase = FetchPolicyDetailUseCaseImpl(policyDetailRepository: repository)
+        let shareService: any PolicyShareService = PolicyShareServiceImpl()
 
         return PolicyDetailClient(
             fetch: { policyId in
                 PolicyDetailVO(try await fetchUseCase.execute(policyId: policyId))
-            }
+            },
+            shareToKakao: { try await shareService.shareToKakao($0) }
         )
     }()
 }
