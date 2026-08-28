@@ -48,12 +48,15 @@ extension PolicyProfileEditView {
                 employmentSection
                 incomeSection
                 interestSection
-                saveButton
-                    .padding(.top, 52)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 5)
+            .padding(.vertical, 16)
+        }
+        .safeAreaInset(edge: .bottom) {
+            saveButton
+                .padding(.horizontal, 20)
+                .padding(.vertical, 5)
+                .background(Color.bazi(.bgWhite))
         }
         .baziBackground(.bgWhite)
     }
