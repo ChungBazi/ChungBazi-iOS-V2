@@ -39,7 +39,7 @@ public struct SearchResultFeature {
         case onAppear
         case didSelectCategory(PolicyCategory?)
         case didTapSortOrder
-        case didToggleBookmark(id: Int)
+        case didToggleLike(id: Int)
         case didTapPolicy(id: Int)
 
         // MARK: Delegate
@@ -80,8 +80,8 @@ public struct SearchResultFeature {
                 state.results = results(query: state.query, category: state.selectedCategory, sortOrder: state.sortOrder)
                 return .none
 
-            case .didToggleBookmark(let id):
-                state.results[id: id]?.isBookmarked.toggle()
+            case .didToggleLike(let id):
+                state.results[id: id]?.isLiked.toggle()
                 return .none
 
             case .didTapPolicy(let id):

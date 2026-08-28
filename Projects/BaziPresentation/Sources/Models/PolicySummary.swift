@@ -9,7 +9,7 @@ public struct PolicySummary: Equatable, Identifiable, Sendable {
     public let dDay: String
     public let title: String
     public let viewCount: Int
-    public var isBookmarked: Bool
+    public var isLiked: Bool
 
     public init(
         id: Int,
@@ -17,14 +17,14 @@ public struct PolicySummary: Equatable, Identifiable, Sendable {
         dDay: String,
         title: String,
         viewCount: Int,
-        isBookmarked: Bool = false
+        isLiked: Bool = false
     ) {
         self.id = id
         self.category = category
         self.dDay = dDay
         self.title = title
         self.viewCount = viewCount
-        self.isBookmarked = isBookmarked
+        self.isLiked = isLiked
     }
 }
 

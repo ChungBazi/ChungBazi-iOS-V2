@@ -10,7 +10,7 @@ public struct PolicyDetail: Equatable, Identifiable, Sendable {
     public let title: String
     public let summary: String
     public let viewCount: Int
-    public var isBookmarked: Bool
+    public var isLiked: Bool
     public let eligibilityDescription: String
     public let applyPeriod: String
     public let supportContent: String
@@ -26,7 +26,7 @@ public struct PolicyDetail: Equatable, Identifiable, Sendable {
         title: String,
         summary: String,
         viewCount: Int,
-        isBookmarked: Bool = false,
+        isLiked: Bool = false,
         eligibilityDescription: String,
         applyPeriod: String,
         supportContent: String,
@@ -41,7 +41,7 @@ public struct PolicyDetail: Equatable, Identifiable, Sendable {
         self.title = title
         self.summary = summary
         self.viewCount = viewCount
-        self.isBookmarked = isBookmarked
+        self.isLiked = isLiked
         self.eligibilityDescription = eligibilityDescription
         self.applyPeriod = applyPeriod
         self.supportContent = supportContent
