@@ -26,11 +26,26 @@ public struct ProfileInfoEditView: View {
             .baziNavigationBar_backWithTitle("내 정보 수정") {
                 dismiss()
             }
-            .overlay {
-                if store.isLogoutAlertPresented {
-                    logoutAlertOverlay
-                }
-            }
+            .baziAlert(
+                isPresented: Binding(
+                    get: { store.isLogoutAlertPresented },
+                    set: { if !$0 { store.send(.didCancelLogout) } }
+                ),
+                title: "로그아웃 할까요?",
+                message: "현재 계정에서 로그아웃됩니다.\n다시 이용하려면 로그인해 주세요.",
+                confirmTitle: "로그아웃",
+                onConfirm: { store.send(.didConfirmLogout) }
+            )
+            .baziAlert(
+                isPresented: Binding(
+                    get: { store.isWithdrawAlertPresented },
+                    set: { if !$0 { store.send(.didCancelWithdraw) } }
+                ),
+                title: "탈퇴를 진행할까요?",
+                message: "확인을 누르면 탈퇴 절차를\n진행하는 화면으로 이동해요",
+                confirmTitle: "확인",
+                onConfirm: { store.send(.didConfirmWithdraw) }
+            )
     }
 }
 
@@ -40,59 +55,14 @@ extension ProfileInfoEditView {
 
     private var content: some View {
         VStack(spacing: 0) {
-            row(title: "닉네임 수정", showsChevron: true) {
-                store.send(.didTapNicknameEdit)
-            }
-            row(title: "로그인된 소셜 계정", showsChevron: true) {
-                store.send(.didTapLinkedAccounts)
-            }
-            row(title: "로그아웃", showsChevron: false) {
-                store.send(.didTapLogout)
-            }
-            row(title: "탈퇴하기", showsChevron: false) {
-                store.send(.didTapWithdraw)
-            }
+            ProfileRow("닉네임 수정") { store.send(.didTapNicknameEdit) }
+            ProfileRow("로그인된 소셜 계정") { store.send(.didTapLinkedAccounts) }
+            ProfileRow("로그아웃", showsChevron: false) { store.send(.didTapLogout) }
+            ProfileRow("탈퇴하기", showsChevron: false) { store.send(.didTapWithdraw) }
             Spacer()
         }
+        .padding(.horizontal, 20)
         .baziBackground(.bgWhite)
-    }
-
-    private func row(title: String, showsChevron: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .baziFont(.body16R)
-                    .foregroundStyle(Color.gray900)
-                Spacer()
-                if showsChevron {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.gray400)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 22)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var logoutAlertOverlay: some View {
-        ZStack {
-            BZDimOverlay(level: .dim1)
-                .onTapGesture { store.send(.didCancelLogout) }
-
-            BZAlert(
-                title: "로그아웃 할까요?",
-                message: "현재 계정에서 로그아웃됩니다.\n다시 이용하려면 로그인해 주세요.",
-                confirmTitle: "로그아웃",
-                onCancel: { store.send(.didCancelLogout) },
-                onConfirm: { store.send(.didConfirmLogout) },
-                onClose: { store.send(.didCancelLogout) }
-            )
-            .padding(.horizontal, 40)
-        }
-        .ignoresSafeArea()
     }
 }
 
