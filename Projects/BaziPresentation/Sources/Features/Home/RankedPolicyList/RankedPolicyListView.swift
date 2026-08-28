@@ -93,7 +93,7 @@ extension RankedPolicyListView {
 
         case .loaded(let policies):
             if policies.isEmpty {
-                emptyText
+                emptyView
             } else {
                 policyList(policies)
             }
@@ -123,12 +123,8 @@ extension RankedPolicyListView {
         .padding([.horizontal, .bottom], 20)
     }
 
-    private var emptyText: some View {
-        Text("조건에 맞는 정책이 없어요")
-            .baziFont(.small14R)
-            .foregroundStyle(Color.gray400)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 60)
+    private var emptyView: some View {
+        BZEmptyView(message: "조건에 맞는 정책이 없어요")
     }
 }
 
@@ -188,6 +184,34 @@ extension RankedPolicyListView {
         RankedPolicyListView(
             store: Store(initialState: .init(kind: .latest)) {
                 RankedPolicyListFeature()
+            }
+        )
+    }
+}
+
+#Preview("목록 빔 · 티저 있음") {
+    var state = RankedPolicyListFeature.State(kind: .popular)
+    state.teaser = IdentifiedArray(uniqueElements: PolicySummaryVO.mockList)
+    state.list = .loaded([])
+
+    return NavigationStack {
+        RankedPolicyListView(
+            store: Store(initialState: state) {
+                EmptyReducer()
+            }
+        )
+    }
+}
+
+#Preview("목록 빔 · 티저 없음") {
+    var state = RankedPolicyListFeature.State(kind: .popular)
+    state.teaser = []
+    state.list = .loaded([])
+
+    return NavigationStack {
+        RankedPolicyListView(
+            store: Store(initialState: state) {
+                EmptyReducer()
             }
         )
     }

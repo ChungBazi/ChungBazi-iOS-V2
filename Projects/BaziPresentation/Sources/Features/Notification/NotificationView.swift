@@ -116,16 +116,8 @@ extension NotificationView {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image.bazi(.notificationEmptyIllustration)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 105)
-            Text("알림이 비어 있어요")
-                .baziFont(.body16SB)
-                .foregroundStyle(Color.gray400)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        BZEmptyView(message: "알림이 비어 있어요")
+            .frame(maxHeight: .infinity)
     }
 }
 

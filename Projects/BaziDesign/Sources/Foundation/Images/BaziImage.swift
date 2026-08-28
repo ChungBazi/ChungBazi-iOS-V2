@@ -5,11 +5,11 @@ import SwiftUI
 public enum BaziImage {
     case appLogo
     case imagePlaceholder
-    case notificationEmptyIllustration
 
     // MARK: Character
     case basicBaro
     case glassBaro
+    case emptyBaro
 
     // MARK: Card
     case activityCard
@@ -71,10 +71,10 @@ public enum BaziImage {
         switch self {
         case .appLogo: return BaziDesignAsset.appLogo.swiftUIImage
         case .imagePlaceholder: return BaziDesignAsset.imagePlaceholder.swiftUIImage
-        case .notificationEmptyIllustration: return BaziDesignAsset.notificationEmptyIllustration.swiftUIImage
 
         case .basicBaro: return BaziDesignAsset.basicBaro.swiftUIImage
         case .glassBaro: return BaziDesignAsset.glassBaro.swiftUIImage
+        case .emptyBaro: return BaziDesignAsset.emptyBaro.swiftUIImage
 
         case .activityCard: return BaziDesignAsset.activityCard.swiftUIImage
         case .growthCard: return BaziDesignAsset.growthCard.swiftUIImage
