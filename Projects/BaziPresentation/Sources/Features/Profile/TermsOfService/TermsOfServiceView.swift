@@ -21,29 +21,18 @@ public struct TermsOfServiceView: View {
     // MARK: - Body
 
     public var body: some View {
-        content
-            .task { store.send(.onAppear) }
-            .baziNavigationBar_backWithTitle("서비스 이용약관") {
-                dismiss()
-            }
+        StaticTextDocumentView(
+            title: "서비스 이용약관",
+            text: Self.termsText,
+            onAppear: { store.send(.onAppear) },
+            onBack: { dismiss() }
+        )
     }
 }
 
-// MARK: - Subviews
+// MARK: - Content
 
 extension TermsOfServiceView {
-
-    private var content: some View {
-        ScrollView {
-            Text(Self.termsText)
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray800)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-        }
-        .baziBackground(.bgWhite)
-    }
 
     private static let termsText = """
     청바지 서비스 이용약관은 다음과 같은 내용을 담고 있습니다.
