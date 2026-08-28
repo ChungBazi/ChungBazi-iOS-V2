@@ -76,7 +76,7 @@ extension PolicyDetailView {
                         .foregroundStyle(Color.gray700)
                 }
                 Spacer()
-                bookmarkButton(isBookmarked: detail.isBookmarked)
+                likeButton(isLiked: detail.isLiked)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -103,11 +103,11 @@ extension PolicyDetailView {
         .background(Color.blue50)
     }
 
-    private func bookmarkButton(isBookmarked: Bool) -> some View {
+    private func likeButton(isLiked: Bool) -> some View {
         Button {
-            store.send(.didTapBookmark)
+            store.send(.didTapLike)
         } label: {
-            Image.bazi(isBookmarked ? .filledStar : .unfilledStar)
+            Image.bazi(isLiked ? .filledStar : .unfilledStar)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
@@ -164,7 +164,7 @@ extension PolicyDetailView {
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
-                            isBookmarked: recommendationBookmarkBinding(section: section, id: policy.id)
+                            isLiked: recommendationLikeBinding(section: section, id: policy.id)
                         )
                         .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
                     }
@@ -180,7 +180,7 @@ extension PolicyDetailView {
     private var ctaButtons: some View {
         HStack(spacing: 10) {
             BZButton("찜하기", type: .normal, size: .small) {
-                store.send(.didTapBookmark)
+                store.send(.didTapLike)
             }
             BZButton("바로 신청하러 가기", type: .cta, size: .medium) {
                 store.send(.didTapApply)
@@ -197,18 +197,18 @@ extension PolicyDetailView {
 
 extension PolicyDetailView {
 
-    private func recommendationBookmarkBinding(
+    private func recommendationLikeBinding(
         section: PolicyDetailFeature.RecommendationSection,
         id: Int
     ) -> Binding<Bool> {
         Binding(
             get: {
                 switch section {
-                case .personalized: return store.personalizedPolicies[id: id]?.isBookmarked ?? false
-                case .popular: return store.popularPolicies[id: id]?.isBookmarked ?? false
+                case .personalized: return store.personalizedPolicies[id: id]?.isLiked ?? false
+                case .popular: return store.popularPolicies[id: id]?.isLiked ?? false
                 }
             },
-            set: { _ in store.send(.didToggleRecommendationBookmark(section: section, id: id)) }
+            set: { _ in store.send(.didToggleRecommendationLike(section: section, id: id)) }
         )
     }
 }

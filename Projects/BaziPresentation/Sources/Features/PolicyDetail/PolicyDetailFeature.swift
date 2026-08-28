@@ -30,10 +30,10 @@ public struct PolicyDetailFeature {
     public enum Action {
         // MARK: View
         case onAppear
-        case didTapBookmark
+        case didTapLike
         case didTapShare
         case didTapApply
-        case didToggleRecommendationBookmark(section: RecommendationSection, id: Int)
+        case didToggleRecommendationLike(section: RecommendationSection, id: Int)
         case didTapPolicy(id: Int)
 
         // MARK: Delegate
@@ -74,8 +74,8 @@ public struct PolicyDetailFeature {
                 state.popularPolicies = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.suffix(2)))
                 return .none
 
-            case .didTapBookmark:
-                state.detail?.isBookmarked.toggle()
+            case .didTapLike:
+                state.detail?.isLiked.toggle()
                 return .none
 
             case .didTapShare:
@@ -86,10 +86,10 @@ public struct PolicyDetailFeature {
                 // TODO: 신청 외부 링크(ModalRoute.webView) 연결
                 return .none
 
-            case .didToggleRecommendationBookmark(let section, let id):
+            case .didToggleRecommendationLike(let section, let id):
                 switch section {
-                case .personalized: state.personalizedPolicies[id: id]?.isBookmarked.toggle()
-                case .popular: state.popularPolicies[id: id]?.isBookmarked.toggle()
+                case .personalized: state.personalizedPolicies[id: id]?.isLiked.toggle()
+                case .popular: state.popularPolicies[id: id]?.isLiked.toggle()
                 }
                 return .none
 
