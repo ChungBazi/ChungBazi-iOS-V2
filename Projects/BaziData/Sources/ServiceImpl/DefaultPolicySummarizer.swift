@@ -62,7 +62,9 @@ extension DefaultPolicySummarizer {
         do {
             let response = try await session.respond(to: "다음 지원 내용을 요약해줘.\n\n\(text)")
             let cleaned = Self.stripMarkdownEscapes(response.content)
-            return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // 공백만 남으면 요약 실패로 간주 → 뒷면은 원문(supportContent) fallback
+            return cleaned.isEmpty ? nil : cleaned
         } catch {
             return nil
         }
