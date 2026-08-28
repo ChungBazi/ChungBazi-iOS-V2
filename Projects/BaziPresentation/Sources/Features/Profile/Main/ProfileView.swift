@@ -27,24 +27,28 @@ public struct ProfileView: View {
                 .task { store.send(.onAppear) }
                 .toolbar(.hidden, for: .navigationBar)
         } destination: { store in
-            switch store.case {
-            case .infoEdit(let store):
-                ProfileInfoEditView(store: store)
-            case .nicknameEdit(let store):
-                NicknameEditView(store: store)
-            case .linkedAccounts(let store):
-                LinkedAccountsView(store: store)
-            case .withdraw(let store):
-                WithdrawView(store: store)
-            case .policyProfileEdit(let store):
-                PolicyProfileEditView(store: store)
-            case .notificationSetting(let store):
-                NotificationSettingView(store: store)
-            case .terms(let store):
-                TermsOfServiceView(store: store)
-            case .privacy(let store):
-                PrivacyPolicyView(store: store)
+            Group {
+                switch store.case {
+                case .infoEdit(let store):
+                    ProfileInfoEditView(store: store)
+                case .nicknameEdit(let store):
+                    NicknameEditView(store: store)
+                case .linkedAccounts(let store):
+                    LinkedAccountsView(store: store)
+                case .withdraw(let store):
+                    WithdrawView(store: store)
+                case .policyProfileEdit(let store):
+                    PolicyProfileEditView(store: store)
+                case .notificationSetting(let store):
+                    NotificationSettingView(store: store)
+                case .terms(let store):
+                    TermsOfServiceView(store: store)
+                case .privacy(let store):
+                    PrivacyPolicyView(store: store)
+                }
             }
+            // 프로필에서 push되는 모든 화면은 하단 탭바를 숨긴다.
+            .toolbar(.hidden, for: .tabBar)
         }
     }
 }
