@@ -69,6 +69,7 @@ extension RankedPolicyListView {
                             viewCount: policy.viewCount,
                             isLiked: teaserLikeBinding(id: policy.id)
                         )
+                        .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
                     }
                 }
                 .padding(.horizontal, 20)
