@@ -11,6 +11,7 @@ public struct ProfileInfoEditFeature {
     @ObservableState
     public struct State: Equatable {
         public var isLogoutAlertPresented = false
+        public var isWithdrawAlertPresented = false
 
         public init() {}
     }
@@ -26,6 +27,8 @@ public struct ProfileInfoEditFeature {
         case didCancelLogout
         case didConfirmLogout
         case didTapWithdraw
+        case didCancelWithdraw
+        case didConfirmWithdraw
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -76,6 +79,15 @@ public struct ProfileInfoEditFeature {
                 return .send(.delegate(.didLogout))
 
             case .didTapWithdraw:
+                state.isWithdrawAlertPresented = true
+                return .none
+
+            case .didCancelWithdraw:
+                state.isWithdrawAlertPresented = false
+                return .none
+
+            case .didConfirmWithdraw:
+                state.isWithdrawAlertPresented = false
                 return .send(.delegate(.didTapWithdraw))
 
             case .delegate:
