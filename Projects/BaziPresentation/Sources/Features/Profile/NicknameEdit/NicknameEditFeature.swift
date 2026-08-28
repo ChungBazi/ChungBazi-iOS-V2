@@ -12,19 +12,23 @@ public struct NicknameEditFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public let currentNickname: String
+        public var currentNickname: String
         public var draftNickname: String
         public var isSaving = false
         public var isSuccessToastPresented = false
 
-        public var isNicknameValid: Bool {
-            let trimmed = draftNickname.trimmingCharacters(in: .whitespacesAndNewlines)
-            return (BZInputField.defaultMinLength...BZInputField.defaultMaxLength).contains(trimmed.count)
+        /// 공백을 제거한 정규화 닉네임. 저장 요청·활성화 비교·성공 반영에 모두 이 값을 사용한다.
+        public var normalizedNickname: String {
+            draftNickname.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        /// 기존 닉네임에서 한 글자라도 바뀌어야 저장하기 버튼이 활성화된다.
+        public var isNicknameValid: Bool {
+            (BZInputField.defaultMinLength...BZInputField.defaultMaxLength).contains(normalizedNickname.count)
+        }
+
+        /// 기존 닉네임에서 (공백 제거 기준) 한 글자라도 바뀌어야 저장하기 버튼이 활성화된다.
         public var isSaveEnabled: Bool {
-            isNicknameValid && draftNickname != currentNickname
+            isNicknameValid && normalizedNickname != currentNickname
         }
 
         public init(currentNickname: String) {
@@ -41,7 +45,7 @@ public struct NicknameEditFeature {
         case didTapSaveButton
 
         // MARK: Internal
-        case didSaveNickname
+        case didSaveNickname(String)
         case didFailToSaveNickname(UseCaseError)
 
         // MARK: Delegate
@@ -80,21 +84,23 @@ public struct NicknameEditFeature {
             case .didTapSaveButton:
                 guard state.isSaveEnabled, !state.isSaving else { return .none }
                 state.isSaving = true
-                let name = state.draftNickname.trimmingCharacters(in: .whitespacesAndNewlines)
+                let name = state.normalizedNickname
                 return .run { [nicknameClient] send in
                     do {
                         try await nicknameClient.setNickname(name)
-                        await send(.didSaveNickname)
+                        await send(.didSaveNickname(name))
                     } catch {
                         await send(.didFailToSaveNickname(UseCaseError.map(error)))
                     }
                 }
                 .cancellable(id: CancelID.saveNickname, cancelInFlight: true)
 
-            case .didSaveNickname:
+            case .didSaveNickname(let name):
                 state.isSaving = false
+                state.currentNickname = name
+                state.draftNickname = name
                 state.isSuccessToastPresented = true
-                return .send(.delegate(.didSaveNickname(state.draftNickname)))
+                return .send(.delegate(.didSaveNickname(name)))
 
             case .didFailToSaveNickname:
                 state.isSaving = false
