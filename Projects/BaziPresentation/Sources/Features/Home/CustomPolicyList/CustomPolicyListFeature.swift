@@ -32,7 +32,7 @@ public struct CustomPolicyListFeature {
         public var category: PolicyCategoryUI?
         /// 카드로 보여줄 맞춤 정책 id 목록(진입 측에서 전달).
         public var policyIds: [Int]
-        public var userName = ""
+        public var displayName = ""
         public var cards: LoadingState<IdentifiedArrayOf<PolicyCardVO>> = .idle
         /// 최초 진입 시에만 노출. `.task`에서 hasSeenGuide로 결정한다.
         public var guideStep: GuideStep?
@@ -88,7 +88,7 @@ public struct CustomPolicyListFeature {
             switch action {
             case .task:
                 guard state.cards.value == nil, !state.cards.isLoading else { return .none }
-                state.userName = sessionClient.displayName()
+                state.displayName = sessionClient.displayName()
                 if !customPolicyClient.hasSeenGuide() {
                     state.guideStep = .swipeHint
                 }

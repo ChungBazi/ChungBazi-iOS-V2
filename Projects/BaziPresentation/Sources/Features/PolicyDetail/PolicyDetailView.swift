@@ -54,7 +54,7 @@ extension PolicyDetailView {
                     qnaSection(detail)
                     if !detail.personalized.isEmpty {
                         recommendationSection(
-                            title: "\(store.userName)님 이런 정책은 어때요?",
+                            title: "\(store.displayName)님 이런 정책은 어때요?",
                             background: Color.green100,
                             policies: detail.personalized,
                             section: .personalized

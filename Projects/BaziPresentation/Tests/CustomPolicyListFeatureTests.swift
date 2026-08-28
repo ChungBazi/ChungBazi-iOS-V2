@@ -15,7 +15,7 @@ struct CustomPolicyListFeatureTests {
             CustomPolicyListFeature()
         } withDependencies: {
             $0.continuousClock = ImmediateClock()
-            $0.sessionClient.userName = { "바지" }
+            $0.sessionClient.displayName = { "바지" }
             $0.customPolicyClient.hasSeenGuide = { true }
             $0.customPolicyClient.isAISummaryAvailable = { false }
             $0.customPolicyClient.fetchCard = { id in
@@ -24,7 +24,7 @@ struct CustomPolicyListFeatureTests {
         }
 
         await store.send(.task) {
-            $0.userName = "바지"
+            $0.displayName = "바지"
             $0.cards = .loading
         }
         await store.receive(\.cardsResponse.success) {

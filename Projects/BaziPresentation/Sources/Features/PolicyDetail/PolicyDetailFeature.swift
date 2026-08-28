@@ -13,7 +13,7 @@ public struct PolicyDetailFeature {
     public struct State: Equatable, Identifiable {
         public let policyId: Int
         public var detail: LoadingState<PolicyDetailVO> = .idle
-        public var userName: String = ""
+        public var displayName: String = ""
 
         public var id: Int { policyId }
 
@@ -71,7 +71,7 @@ public struct PolicyDetailFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.userName = sessionClient.displayName()
+                state.displayName = sessionClient.displayName()
                 return load(&state)
 
             case .didTapRetry:

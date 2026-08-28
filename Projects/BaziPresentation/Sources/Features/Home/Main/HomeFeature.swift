@@ -37,7 +37,7 @@ public struct HomeFeature {
         public var path = StackState<Path.State>()
         public var feed: LoadingState<HomeFeedVO> = .idle
         /// 인사말·맞춤정책 타이틀용 사용자 이름. 세션(로컬 저장)에서 읽는다.
-        public var userName = ""
+        public var displayName = ""
 
         public init() {}
     }
@@ -83,7 +83,7 @@ public struct HomeFeature {
         Reduce { state, action in
             switch action {
             case .task:
-                state.userName = sessionClient.displayName()
+                state.displayName = sessionClient.displayName()
                 return loadFeed(&state)
 
             case .didTapRetry:
@@ -104,7 +104,7 @@ public struct HomeFeature {
                 state.feed = .loaded(feed)
                 // 홈 피드 조회 시 서버 닉네임이 세션에 저장되므로, 재로그인 등으로 비어 있던 인사말 이름을 갱신한다.
                 if let name = sessionClient.userName() {
-                    state.userName = name
+                    state.displayName = name
                 }
                 return .none
 

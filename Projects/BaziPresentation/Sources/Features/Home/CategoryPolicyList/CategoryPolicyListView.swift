@@ -83,7 +83,7 @@ extension CategoryPolicyListView {
     private var personalizedBanner: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top) {
-                Text("\(store.selectedCategory.categoryHeadline)\n\(store.userName)님 맞춤 정책이에요")
+                Text("\(store.selectedCategory.categoryHeadline)\n\(store.displayName)님 맞춤 정책이에요")
                     .baziFont(.head18B)
                     .foregroundStyle(Color.gray900)
                 Spacer()

@@ -19,6 +19,7 @@ struct HomeFeatureTests {
         }
 
         await store.send(.task) {
+            $0.displayName = "회원"
             $0.feed = .loading
         }
         await store.receive(\.feedResponse.success) {
@@ -36,6 +37,7 @@ struct HomeFeatureTests {
         }
 
         await store.send(.task) {
+            $0.displayName = "회원"
             $0.feed = .loading
         }
         await store.receive(\.feedResponse.failure) {
@@ -71,6 +73,8 @@ struct HomeFeatureTests {
             $0.sessionClient.userName = { nil }
         }
 
-        await store.send(.task)
+        await store.send(.task) {
+            $0.displayName = "회원"
+        }
     }
 }

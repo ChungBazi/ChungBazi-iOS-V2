@@ -34,9 +34,9 @@ public struct CustomPolicyListView: View {
 
     private var navigationTitle: String {
         if let category = store.category {
-            return "\(store.userName)님의 \(category.rawValue) 맞춤 정책"
+            return "\(store.displayName)님의 \(category.rawValue) 맞춤 정책"
         }
-        return "\(store.userName)님의 맞춤 정책"
+        return "\(store.displayName)님의 맞춤 정책"
     }
 }
 
@@ -194,7 +194,7 @@ extension CustomPolicyListView {
 
 #Preview("가이드") {
     var state = CustomPolicyListFeature.State()
-    state.userName = "바지"
+    state.displayName = "바지"
     state.cards = .loaded(IdentifiedArray(uniqueElements: PolicyCardVO.mockList))
     state.guideStep = .swipeHint
 
@@ -209,7 +209,7 @@ extension CustomPolicyListView {
 
 #Preview("가이드 없음") {
     var state = CustomPolicyListFeature.State()
-    state.userName = "바지"
+    state.displayName = "바지"
     state.cards = .loaded(IdentifiedArray(uniqueElements: PolicyCardVO.mockList))
     state.guideStep = nil
 
@@ -224,7 +224,7 @@ extension CustomPolicyListView {
 
 #Preview("맞춤 정책 없음") {
     var state = CustomPolicyListFeature.State()
-    state.userName = "바지"
+    state.displayName = "바지"
     state.cards = .loaded([])
 
     return NavigationStack {
