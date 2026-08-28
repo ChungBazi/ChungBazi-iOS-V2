@@ -45,7 +45,7 @@ public struct RankedPolicyListFeature {
         public var list: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
 
         // 페이지네이션
-        public var pagination = PaginationState()
+        public var pagination = PaginationState<String>()
 
         public init(kind: Kind, selectedCategory: PolicyCategoryUI = .job) {
             self.kind = kind
