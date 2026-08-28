@@ -177,11 +177,7 @@ public struct SearchFeature {
     private func submitSearch(state: inout State, query: String) -> Effect<Action> {
         state.query = query
         state.suggestions = []
-        // 서버가 자동저장하지만, 재진입 전까지 즉시 반영되도록 로컬에도 낙관적으로 추가한다.
-        if state.isAutoSaveEnabled, !state.recentKeywords.contains(where: { $0.keyword == query }) {
-            let nextID = (state.recentKeywords.map(\.id).max() ?? 0) + 1
-            state.recentKeywords.insert(RecentSearchKeywordVO(id: nextID, keyword: query), at: 0)
-        }
+        // 서버가 검색 시점에 최근검색을 저장한다. 낙관적 추가 없이 재진입(onAppear) 시 서버에서 다시 불러온다.
         state.path.append(.searchResult(SearchResultFeature.State(query: query)))
         return .cancel(id: CancelID.suggestions)
     }
