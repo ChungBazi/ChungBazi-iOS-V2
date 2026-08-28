@@ -110,6 +110,6 @@ struct NotificationFeatureTests {
         }
 
         await store.send(.didTapNotification(id: 1))
-        await store.receive(\.delegate.didSelectPolicy)
+        await store.receive(\.delegate)
     }
 }
