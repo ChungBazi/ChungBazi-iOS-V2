@@ -17,7 +17,6 @@ public struct HomeFeature {
         case customPolicyList(CustomPolicyListFeature)
         case notification(NotificationFeature)
         case policyDetail(PolicyDetailFeature)
-        case detail(PlaceholderDetailFeature)
     }
 
     // MARK: - PolicySection
@@ -145,8 +144,8 @@ public struct HomeFeature {
                 state.path.append(.rankedPolicyList(RankedPolicyListFeature.State(kind: .latest)))
                 return .none
 
-            case .didTapPolicy:
-                state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
+            case let .didTapPolicy(_, id):
+                state.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
                 return .none
 
             case .didToggleLike(let section, let id):
@@ -159,14 +158,13 @@ public struct HomeFeature {
                 setLiked(id: id, liked: !liked, state: &state)
                 return .none
 
-            case let .path(.element(_, .notification(.delegate(.didSelectPolicy(id))))):
+            // 알림·리스트·정책상세(추천 카드) 등 스택 내 모든 정책 선택은 정책 상세로 push한다.
+            case let .path(.element(_, .notification(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .rankedPolicyList(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .customPolicyList(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .policyDetail(.delegate(.didSelectPolicy(id))))):
                 state.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
-                return .none
-
-            case .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy)))),
-                 .path(.element(_, .rankedPolicyList(.delegate(.didSelectPolicy)))),
-                 .path(.element(_, .customPolicyList(.delegate(.didSelectPolicy)))):
-                state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
                 return .none
 
             case let .path(.element(_, .categoryPolicyList(.delegate(.didTapPersonalizedMore(category, policyIds))))):
