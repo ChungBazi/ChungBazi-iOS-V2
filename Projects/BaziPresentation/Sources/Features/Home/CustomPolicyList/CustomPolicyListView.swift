@@ -148,10 +148,8 @@ extension CustomPolicyListView {
     }
 
     private var emptyView: some View {
-        Text("맞춤 정책이 없어요")
-            .baziFont(.body16R)
-            .foregroundStyle(Color.gray600)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        BZEmptyView(message: "맞춤 정책이 없어요")
+            .frame(maxHeight: .infinity)
     }
 
     private func guideOverlay(_ step: CustomPolicyListFeature.GuideStep) -> some View {
@@ -218,6 +216,20 @@ extension CustomPolicyListView {
         CustomPolicyListView(
             store: Store(initialState: state) {
                 CustomPolicyListFeature()
+            }
+        )
+    }
+}
+
+#Preview("맞춤 정책 없음") {
+    var state = CustomPolicyListFeature.State()
+    state.userName = "바지"
+    state.cards = .loaded([])
+
+    return NavigationStack {
+        CustomPolicyListView(
+            store: Store(initialState: state) {
+                EmptyReducer()
             }
         )
     }
