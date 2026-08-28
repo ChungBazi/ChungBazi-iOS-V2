@@ -6,6 +6,8 @@ public enum External: String {
     case KakaoSDKCommon
     case KakaoSDKAuth
     case KakaoSDKUser
+    case KakaoSDKShare
+    case KakaoSDKTemplate
     case FirebaseCore
     case FirebaseMessaging
 }

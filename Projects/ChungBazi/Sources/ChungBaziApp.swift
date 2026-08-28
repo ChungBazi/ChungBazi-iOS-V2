@@ -24,6 +24,8 @@ struct ChungBaziApp: App {
             .onOpenURL { url in
                 if AuthApi.isKakaoTalkLoginUrl(url) {
                     _ = AuthController.handleOpenUrl(url: url)
+                } else if let policyId = KakaoLinkParser.policyId(from: url) {
+                    DeeplinkPublisher.policyDetail(id: policyId)
                 }
             }
         }

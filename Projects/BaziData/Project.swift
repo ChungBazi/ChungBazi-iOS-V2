@@ -15,6 +15,8 @@ let project = Project.project(
                 .core(),
                 .external(.KakaoSDKAuth),
                 .external(.KakaoSDKUser),
+                .external(.KakaoSDKShare),
+                .external(.KakaoSDKTemplate),
                 .external(.FirebaseMessaging),
             ]
         ),
