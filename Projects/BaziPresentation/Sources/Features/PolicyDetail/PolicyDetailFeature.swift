@@ -71,7 +71,7 @@ public struct PolicyDetailFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.userName = sessionClient.userName() ?? ""
+                state.userName = sessionClient.displayName()
                 return load(&state)
 
             case .didTapRetry:
