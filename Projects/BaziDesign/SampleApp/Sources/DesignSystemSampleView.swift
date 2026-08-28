@@ -15,9 +15,9 @@ struct DesignSystemSampleView: View {
     @State private var region: String?
     @State private var selectedChips: Set<String> = []
 
-    @State private var isCardSBookmarked = true
-    @State private var isCardMBookmarked = false
-    @State private var isFlipCardBookmarked = true
+    @State private var isCardSLiked = true
+    @State private var isCardMLiked = false
+    @State private var isFlipCardLiked = true
 
     @State private var segmentDemoSelection = "전체"
     @State private var isToastPresented = false
@@ -298,7 +298,7 @@ extension DesignSystemSampleView {
                     dDay: "D-11",
                     title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청 연계청년 디지털 직무역량 연계...",
                     viewCount: 15200,
-                    isBookmarked: $isCardMBookmarked
+                    isLiked: $isCardMLiked
                 )
                 BZCard(
                     size: .medium2,
@@ -307,7 +307,7 @@ extension DesignSystemSampleView {
                     dDay: "D-11",
                     title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청 연계청년 디지털 직무역량 연계...",
                     viewCount: 15200,
-                    isBookmarked: $isCardMBookmarked
+                    isLiked: $isCardMLiked
                 )
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -318,7 +318,7 @@ extension DesignSystemSampleView {
                             dDay: "D-11",
                             title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청...",
                             viewCount: 15200,
-                            isBookmarked: $isCardSBookmarked
+                            isLiked: $isCardSLiked
                         )
                         BZCard(
                             size: .large,
@@ -326,7 +326,7 @@ extension DesignSystemSampleView {
                             dDay: "D-11",
                             title: "2026 지역특화산업 연계청년 디지털 직무역량 연계청...",
                             viewCount: 15200,
-                            isBookmarked: $isCardSBookmarked
+                            isLiked: $isCardSLiked
                         )
                     }
                 }
@@ -371,7 +371,7 @@ extension DesignSystemSampleView {
                 subtitle: "소속 근로자가 일·생활 균형을 위해 유연근무제를 활용하게 하는 중소, 중견기업에게 장려금을 지원",
                 applyPeriod: "2025.05.03 - 2025.06.30",
                 description: "서울 청년취업사관학교는 청년들의 실무 역량을 키우고 취업까지 이어질 수 있도록 돕는 교육 프로그램이에요. 디지털·IT 분야를 중심으로 현장에서 활용할 수 있는 실무 교육과 프로젝트 기반 수업을 제공해요.",
-                isBookmarked: $isFlipCardBookmarked
+                isLiked: $isFlipCardLiked
             )
             .padding(.horizontal, 36)
         }

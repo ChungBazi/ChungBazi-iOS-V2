@@ -23,7 +23,7 @@ public struct BZFlipCard: View {
     private let applyPeriod: String
     private let description: String
     private let isSummarizing: Bool
-    @Binding private var isBookmarked: Bool
+    @Binding private var isLiked: Bool
 
     // MARK: - Init
 
@@ -36,7 +36,7 @@ public struct BZFlipCard: View {
         applyPeriod: String,
         description: String,
         isSummarizing: Bool = false,
-        isBookmarked: Binding<Bool>
+        isLiked: Binding<Bool>
     ) {
         self.image = image
         self.category = category
@@ -46,7 +46,7 @@ public struct BZFlipCard: View {
         self.applyPeriod = applyPeriod
         self.description = description
         self.isSummarizing = isSummarizing
-        self._isBookmarked = isBookmarked
+        self._isLiked = isLiked
     }
 
     // MARK: - Body
@@ -101,7 +101,7 @@ extension BZFlipCard {
         HStack(alignment: .top, spacing: 8) {
             categoryAndDDay
             Spacer(minLength: 8)
-            BZBookmarkButton(isBookmarked: $isBookmarked)
+            BZLikeButton(isLiked: $isLiked)
         }
     }
 
@@ -214,7 +214,7 @@ extension BZFlipCard {
 // MARK: - Preview
 
 private struct BZFlipCardPreview: View {
-    @State private var isBookmarked = true
+    @State private var isLiked = true
 
     var body: some View {
         BZFlipCard(
@@ -224,7 +224,7 @@ private struct BZFlipCardPreview: View {
             subtitle: "소속 근로자가 일·생활 균형을 위해 유연근무제를 활용하게 하는 중소, 중견기업에게 장려금을 지원",
             applyPeriod: "2025.05.03 - 2025.06.30",
             description: "서울 청년취업사관학교는 청년들의 실무 역량을 키우고 취업까지 이어질 수 있도록 돕는 교육 프로그램이에요. 디지털·IT 분야를 중심으로 현장에서 활용할 수 있는 실무 교육과 프로젝트 기반 수업을 제공해요.",
-            isBookmarked: $isBookmarked
+            isLiked: $isLiked
         )
         .padding(.horizontal, 36)
     }

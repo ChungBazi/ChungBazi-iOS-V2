@@ -45,17 +45,18 @@ public struct CustomPolicyListFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case task
         case didTapRetry
-        case didToggleBookmark(id: Int)
+        case didToggleLike(id: Int)
         case didTapDetail(id: Int)
         case didShowCard(id: Int)
         case didTapGuideNext
 
         // MARK: Internal
         case cardsResponse(Result<[PolicyCardVO], UseCaseError>)
+        case summarizeStarted(id: Int)
         case summaryResponse(id: Int, summary: String?)
         case likeFailed(id: Int, liked: Bool)
 
@@ -74,6 +75,7 @@ public struct CustomPolicyListFeature {
     @Dependency(\.customPolicyClient) var customPolicyClient
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.policyLikeClient) var policyLikeClient
+    @Dependency(\.continuousClock) var clock
 
     // MARK: - Init
 
@@ -106,20 +108,27 @@ public struct CustomPolicyListFeature {
                 return .none
 
             case .didShowCard(let id):
-                // 지원 기기면 현재 보이는 카드를 미리 요약(뒤집기 전에 준비). .idle일 때만 1회.
+                // 지원 기기면 현재 보이는 카드를 미리 요약. 스크롤로 지나친 카드는 debounce+취소로 추론을 생략한다.
                 guard
                     customPolicyClient.isAISummaryAvailable(),
-                    var cards = state.cards.value,
-                    let card = cards[id: id],
+                    let card = state.cards.value?[id: id],
                     card.aiSummary == .idle
                 else { return .none }
-                cards[id: id]?.aiSummary = .loading
-                state.cards = .loaded(cards)
                 let content = card.supportContent
-                return .run { [customPolicyClient] send in
+                return .run { [customPolicyClient, clock] send in
+                    // 스크롤이 정착한 카드만 요약. 지나친 카드는 아래 cancellable로 취소돼 .idle로 남는다.
+                    try await clock.sleep(for: .milliseconds(300))
+                    await send(.summarizeStarted(id: id))
                     let summary = await customPolicyClient.summarize(content)
                     await send(.summaryResponse(id: id, summary: summary))
                 }
+                .cancellable(id: CancelID.summarize, cancelInFlight: true)
+
+            case .summarizeStarted(let id):
+                guard var cards = state.cards.value, cards[id: id]?.aiSummary == .idle else { return .none }
+                cards[id: id]?.aiSummary = .loading
+                state.cards = .loaded(cards)
+                return .none
 
             case let .summaryResponse(id, summary):
                 guard var cards = state.cards.value else { return .none }
@@ -127,16 +136,16 @@ public struct CustomPolicyListFeature {
                 state.cards = .loaded(cards)
                 return .none
 
-            case .didToggleBookmark(let id):
-                guard var cards = state.cards.value, let current = cards[id: id]?.isBookmarked else { return .none }
+            case .didToggleLike(let id):
+                guard var cards = state.cards.value, let current = cards[id: id]?.isLiked else { return .none }
                 let newValue = !current
-                cards[id: id]?.isBookmarked = newValue
+                cards[id: id]?.isLiked = newValue
                 state.cards = .loaded(cards)
                 return likeEffect(id: id, liked: newValue)
 
             case let .likeFailed(id, liked):
                 guard var cards = state.cards.value else { return .none }
-                cards[id: id]?.isBookmarked = !liked
+                cards[id: id]?.isLiked = !liked
                 state.cards = .loaded(cards)
                 return .none
 
@@ -158,7 +167,7 @@ public struct CustomPolicyListFeature {
 
     // MARK: - Private
 
-    private enum CancelID: Hashable { case like(Int) }
+    private enum CancelID: Hashable { case like(Int), summarize }
 
     /// 찜 토글: 서버 반영. 실패 시 likeFailed로 롤백한다. 연타는 정책별로 취소.
     private func likeEffect(id: Int, liked: Bool) -> Effect<Action> {
@@ -180,10 +189,10 @@ public struct CustomPolicyListFeature {
             return .none
         }
         state.cards = .loading
-        return .run { [customPolicyClient] send in
+        return .run { [customPolicyClient, clock] send in
             do {
                 // push 전환이 끝난 뒤 노출하도록 최소 로딩 시간을 함께 기다린다.
-                async let settle: Void = Self.transitionSettleDelay()
+                async let settle: Void = clock.sleep(for: .milliseconds(400))
                 let cards = try await withThrowingTaskGroup(of: (Int, PolicyCardVO).self) { group in
                     for (index, id) in ids.enumerated() {
                         group.addTask { (index, try await customPolicyClient.fetchCard(id)) }
@@ -192,16 +201,11 @@ public struct CustomPolicyListFeature {
                     for try await pair in group { collected.append(pair) }
                     return collected.sorted { $0.0 < $1.0 }.map(\.1)
                 }
-                await settle
+                try await settle
                 await send(.cardsResponse(.success(cards)))
             } catch {
                 await send(.cardsResponse(.failure(UseCaseError.map(error))))
             }
         }
-    }
-
-    /// push 전환이 끝난 뒤 카드를 노출하기 위한 최소 로딩 시간(전환 중 급격한 교체 깜빡임 방지).
-    private static func transitionSettleDelay() async {
-        try? await Task.sleep(for: .milliseconds(400))
     }
 }

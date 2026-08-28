@@ -3,20 +3,20 @@
 import SwiftUI
 
 /// `BZCard`/`BZFlipCard`가 공유하는 찜하기(별) 버튼.
-struct BZBookmarkButton: View {
+struct BZLikeButton: View {
 
-    @Binding var isBookmarked: Bool
+    @Binding var isLiked: Bool
 
     var body: some View {
         Button {
-            isBookmarked.toggle()
+            isLiked.toggle()
         } label: {
-            Image.bazi(isBookmarked ? .filledStar : .unfilledStar)
+            Image.bazi(isLiked ? .filledStar : .unfilledStar)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
         .accessibilityLabel("찜하기")
-        .accessibilityAddTraits(isBookmarked ? .isSelected : [])
+        .accessibilityAddTraits(isLiked ? .isSelected : [])
     }
 }

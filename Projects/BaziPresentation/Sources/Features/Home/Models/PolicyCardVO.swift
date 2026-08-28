@@ -14,7 +14,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
     /// 뒷면 지원 내용 원문.
     public let supportContent: String
     public let applyUrl: String?
-    public var isBookmarked: Bool
+    public var isLiked: Bool
     /// 온디바이스 AI 요약 상태. 뒷면이 .ready면 요약문, 그 외엔 원문 supportContent를 쓴다.
     public var aiSummary: CardSummaryState = .idle
 
@@ -27,7 +27,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         applyPeriod: String,
         supportContent: String,
         applyUrl: String?,
-        isBookmarked: Bool = false,
+        isLiked: Bool = false,
         aiSummary: CardSummaryState = .idle
     ) {
         self.id = id
@@ -38,7 +38,7 @@ public struct PolicyCardVO: Equatable, Identifiable, Sendable {
         self.applyPeriod = applyPeriod
         self.supportContent = supportContent
         self.applyUrl = applyUrl
-        self.isBookmarked = isBookmarked
+        self.isLiked = isLiked
         self.aiSummary = aiSummary
     }
 }
@@ -78,7 +78,7 @@ extension PolicyCardVO {
             applyPeriod: entity.applyPeriod,
             supportContent: entity.supportContent,
             applyUrl: entity.applyUrl,
-            isBookmarked: entity.liked
+            isLiked: entity.liked
         )
     }
 }

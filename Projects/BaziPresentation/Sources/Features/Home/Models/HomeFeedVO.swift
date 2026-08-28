@@ -29,6 +29,21 @@ public struct HomeFeedVO: Equatable, Sendable {
     }
 }
 
+// MARK: - Like
+
+extension HomeFeedVO {
+
+    /// 모든 섹션에서 해당 정책의 찜 상태를 갱신한다.
+    /// 같은 정책이 여러 섹션(맞춤·인기 등)에 겹쳐 나올 수 있어, 한 섹션만 바꾸면 하트가 어긋난다.
+    public mutating func setLiked(id: Int, liked: Bool) {
+        personalized[id: id]?.isLiked = liked
+        recentViewed[id: id]?.isLiked = liked
+        popular[id: id]?.isLiked = liked
+        deadline[id: id]?.isLiked = liked
+        newest[id: id]?.isLiked = liked
+    }
+}
+
 // MARK: - Mock
 
 extension HomeFeedVO {

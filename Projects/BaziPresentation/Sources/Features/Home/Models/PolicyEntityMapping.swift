@@ -51,7 +51,7 @@ extension PolicySummaryVO {
             dDay: entity.dDay,
             title: entity.title,
             viewCount: entity.viewCount,
-            isBookmarked: entity.liked
+            isLiked: entity.liked
         )
     }
 }

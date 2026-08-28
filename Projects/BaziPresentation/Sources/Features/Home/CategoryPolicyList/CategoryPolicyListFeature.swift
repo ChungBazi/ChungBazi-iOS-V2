@@ -40,7 +40,7 @@ public struct CategoryPolicyListFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case task
         case didTapRetry
@@ -49,8 +49,8 @@ public struct CategoryPolicyListFeature {
         case didTapSortOrder
         case didTapPersonalizedMore
         case didReachListEnd
-        case didToggleTeaserBookmark(id: Int)
-        case didToggleBookmark(id: Int)
+        case didToggleTeaserLike(id: Int)
+        case didToggleLike(id: Int)
         case didTapPolicy(id: Int)
 
         // MARK: Internal
@@ -140,8 +140,8 @@ public struct CategoryPolicyListFeature {
                 state.teaser = []
                 return .none
 
-            case .didToggleTeaserBookmark(let id), .didToggleBookmark(let id):
-                let current = state.teaser[id: id]?.isBookmarked ?? state.list.value?[id: id]?.isBookmarked
+            case .didToggleTeaserLike(let id), .didToggleLike(let id):
+                let current = state.teaser[id: id]?.isLiked ?? state.list.value?[id: id]?.isLiked
                 guard let current else { return .none }
                 let newValue = !current
                 setLiked(&state, id: id, liked: newValue)
@@ -169,10 +169,10 @@ public struct CategoryPolicyListFeature {
     /// 찜 상태를 teaser·list 양쪽에 반영한다.
     private func setLiked(_ state: inout State, id: Int, liked: Bool) {
         if state.teaser[id: id] != nil {
-            state.teaser[id: id]?.isBookmarked = liked
+            state.teaser[id: id]?.isLiked = liked
         }
         if var list = state.list.value, list[id: id] != nil {
-            list[id: id]?.isBookmarked = liked
+            list[id: id]?.isLiked = liked
             state.list = .loaded(list)
         }
     }

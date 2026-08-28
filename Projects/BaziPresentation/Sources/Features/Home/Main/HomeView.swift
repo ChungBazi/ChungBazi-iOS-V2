@@ -166,7 +166,7 @@ extension HomeView {
                             title: policy.title,
                             viewCount: policy.viewCount,
                             image: policy.category.cardImage.image,
-                            isBookmarked: bookmarkBinding(section: .personalized, id: policy.id)
+                            isLiked: likeBinding(section: .personalized, id: policy.id)
                         )
                         .onTapGesture { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
                     }
@@ -311,7 +311,7 @@ extension HomeView {
                                 dDay: policy.dDay,
                                 title: policy.title,
                                 viewCount: policy.viewCount,
-                                isBookmarked: bookmarkBinding(section: section, id: policy.id)
+                                isLiked: likeBinding(section: section, id: policy.id)
                             )
                             .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
                         }
@@ -328,19 +328,19 @@ extension HomeView {
 
 extension HomeView {
 
-    private func bookmarkBinding(section: HomeFeature.PolicySection, id: Int) -> Binding<Bool> {
+    private func likeBinding(section: HomeFeature.PolicySection, id: Int) -> Binding<Bool> {
         Binding(
             get: {
                 guard let feed = store.feed.value else { return false }
                 switch section {
-                case .personalized: return feed.personalized[id: id]?.isBookmarked ?? false
-                case .recentViewed: return feed.recentViewed[id: id]?.isBookmarked ?? false
-                case .popular: return feed.popular[id: id]?.isBookmarked ?? false
-                case .deadline: return feed.deadline[id: id]?.isBookmarked ?? false
-                case .newest: return feed.newest[id: id]?.isBookmarked ?? false
+                case .personalized: return feed.personalized[id: id]?.isLiked ?? false
+                case .recentViewed: return feed.recentViewed[id: id]?.isLiked ?? false
+                case .popular: return feed.popular[id: id]?.isLiked ?? false
+                case .deadline: return feed.deadline[id: id]?.isLiked ?? false
+                case .newest: return feed.newest[id: id]?.isLiked ?? false
                 }
             },
-            set: { _ in store.send(.didToggleBookmark(section: section, id: id)) }
+            set: { _ in store.send(.didToggleLike(section: section, id: id)) }
         )
     }
 }
