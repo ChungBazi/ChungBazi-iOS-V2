@@ -76,9 +76,10 @@ extension NotificationSettingView {
                     .foregroundStyle(Color.gray500)
             }
             Spacer(minLength: 30)
-            Toggle("", isOn: isOn)
+            Toggle(title, isOn: isOn)
                 .labelsHidden()
                 .tint(Color.bazi(.primary))
+                .accessibilityLabel(title)
         }
         .padding(.vertical, 18)
     }
