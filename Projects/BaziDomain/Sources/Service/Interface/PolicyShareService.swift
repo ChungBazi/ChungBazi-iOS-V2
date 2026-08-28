@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// 정책을 공유하는 메서드
+/// 카카오 공유 URL을 생성하는 서비스. 실제 앱 전환(open)은 상위 계층이 담당한다.
 public protocol PolicyShareService: Sendable {
-    func shareToKakao(_ content: PolicyShareContent) async throws
+    func makeKakaoShareURL(_ content: PolicyShareContent) async throws -> URL
 }

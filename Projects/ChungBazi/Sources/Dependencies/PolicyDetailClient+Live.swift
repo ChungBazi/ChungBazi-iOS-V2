@@ -1,5 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import UIKit
+
 import ComposableArchitecture
 
 import BaziData
@@ -20,7 +22,11 @@ extension PolicyDetailClient: @retroactive DependencyKey {
             fetch: { policyId in
                 PolicyDetailVO(try await fetchUseCase.execute(policyId: policyId))
             },
-            shareToKakao: { try await shareService.shareToKakao($0) }
+            shareToKakao: { content in
+                // 공유 URL 생성은 서비스가, 앱 전환(open)은 Composition Root가 담당한다.
+                let url = try await shareService.makeKakaoShareURL(content)
+                await MainActor.run { UIApplication.shared.open(url) }
+            }
         )
     }()
 }
