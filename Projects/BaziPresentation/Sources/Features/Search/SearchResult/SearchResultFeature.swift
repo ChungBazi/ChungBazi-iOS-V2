@@ -1,34 +1,35 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import BaziDomain
 import ComposableArchitecture
 
-/// 검색 결과 화면 (17-4). 분야 필터 + 정렬 + 결과 목록으로 구성된다.
+/// 검색 결과 화면. 분야 필터 + 정렬 + 결과 목록(커서 페이지네이션)으로 구성된다.
+/// 필터·정렬·페이지네이션은 모두 서버가 처리한다.
 @Reducer
 public struct SearchResultFeature {
 
     // MARK: - SortOrder
 
-    public enum SortOrder: String, Equatable {
+    public enum SortOrder: String, Equatable, Sendable {
         case deadline = "마감순"
         case latest = "최신순"
 
         var next: SortOrder { self == .deadline ? .latest : .deadline }
+        var serverValue: String { self == .deadline ? "DEADLINE" : "LATEST" }
     }
 
     // MARK: - State
 
     @ObservableState
     public struct State: Equatable {
-        public var query: String
-        public var selectedCategory: PolicyCategory?
-        public var sortOrder: SortOrder
-        public var results: IdentifiedArrayOf<PolicySummary>
+        public let query: String
+        public var selectedCategory: PolicyCategoryUI?
+        public var sortOrder: SortOrder = .deadline
+        public var results: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
+        public var pagination = PaginationState<String>()
 
         public init(query: String) {
             self.query = query
-            self.selectedCategory = nil
-            self.sortOrder = .deadline
-            self.results = []
         }
     }
 
@@ -37,51 +38,89 @@ public struct SearchResultFeature {
     public enum Action {
         // MARK: View
         case onAppear
-        case didSelectCategory(PolicyCategory?)
+        case didTapRetry
+        case pullToRefresh
+        case didSelectCategory(PolicyCategoryUI?)
         case didTapSortOrder
+        case didReachListEnd
         case didToggleLike(id: Int)
         case didTapPolicy(id: Int)
 
+        // MARK: Internal
+        case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
+        case likeFailed(id: Int, liked: Bool)
+
         // MARK: Delegate
         case delegate(Delegate)
-    }
 
-    // MARK: - Delegate
-
-    public enum Delegate: Equatable {
-        case didSelectPolicy(id: Int)
+        public enum Delegate: Equatable {
+            case didSelectPolicy(id: Int)
+        }
     }
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 검색 UseCase가 준비되면 추가
-    // @Dependency(\.policySearchClient) var policySearchClient
+    @Dependency(\.policySearchClient) var policySearchClient
+    @Dependency(\.policyLikeClient) var policyLikeClient
 
     // MARK: - Init
 
     public init() {}
+
+    private static let pageSize = 20
+    private enum CancelID: Hashable { case list, like(Int) }
 
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                state.results = results(query: state.query, category: state.selectedCategory, sortOrder: state.sortOrder)
-                return .none
+            case .onAppear, .didTapRetry:
+                return loadFirstPage(&state)
+
+            case .pullToRefresh:
+                return fetchPage(state, isFirstPage: true)
 
             case .didSelectCategory(let category):
+                guard category != state.selectedCategory else { return .none }
                 state.selectedCategory = category
-                state.results = results(query: state.query, category: category, sortOrder: state.sortOrder)
-                return .none
+                return reloadFirstPage(&state)
 
             case .didTapSortOrder:
                 state.sortOrder = state.sortOrder.next
-                state.results = results(query: state.query, category: state.selectedCategory, sortOrder: state.sortOrder)
+                return reloadFirstPage(&state)
+
+            case .didReachListEnd:
+                guard state.pagination.canLoadNext, state.results.value != nil else { return .none }
+                state.pagination.isLoadingNext = true
+                return fetchPage(state, isFirstPage: false)
+
+            case let .pageResponse(.success(page), isFirstPage):
+                if isFirstPage {
+                    state.results = .loaded(page.policies)
+                } else {
+                    var list = state.results.value ?? []
+                    list.append(contentsOf: page.policies)
+                    state.results = .loaded(list)
+                }
+                state.pagination.apply(page)
+                return .none
+
+            case let .pageResponse(.failure(error), isFirstPage):
+                state.pagination.isLoadingNext = false
+                if isFirstPage, state.results.value == nil {
+                    state.results = .failed(error.loadFailureMessage)
+                }
                 return .none
 
             case .didToggleLike(let id):
-                state.results[id: id]?.isLiked.toggle()
+                guard let current = state.results.value?[id: id]?.isLiked else { return .none }
+                let newValue = !current
+                setLiked(&state, id: id, liked: newValue)
+                return likeEffect(id: id, liked: newValue)
+
+            case let .likeFailed(id, liked):
+                setLiked(&state, id: id, liked: !liked)
                 return .none
 
             case .didTapPolicy(let id):
@@ -95,28 +134,47 @@ public struct SearchResultFeature {
 
     // MARK: - Private
 
-    private func results(
-        query: String,
-        category: PolicyCategory?,
-        sortOrder: SortOrder
-    ) -> IdentifiedArrayOf<PolicySummary> {
-        let filtered = PolicySummary.mockList.filter { policy in
-            let matchesQuery = query.isEmpty || policy.title.contains(query)
-            let matchesCategory = category == nil || policy.category == category
-            return matchesQuery && matchesCategory
-        }
-        let sorted = sortOrder == .deadline
-            ? filtered.sorted { $0.dDay.dDayValue < $1.dDay.dDayValue }
-            : filtered.sorted { $0.id > $1.id }
-        return IdentifiedArray(uniqueElements: sorted)
+    private func loadFirstPage(_ state: inout State) -> Effect<Action> {
+        if state.results.isLoading || state.results.value != nil { return .none }
+        return reloadFirstPage(&state)
     }
-}
 
-// MARK: - DDay Sorting
+    private func reloadFirstPage(_ state: inout State) -> Effect<Action> {
+        state.pagination.reset()
+        state.results = .loading
+        return fetchPage(state, isFirstPage: true)
+    }
 
-extension String {
-    /// "D-11" → 11. 정렬 전용 값으로 파싱 실패 시 가장 마지막 순위로 취급한다.
-    fileprivate var dDayValue: Int {
-        Int(dropFirst(2)) ?? .max
+    private func fetchPage(_ state: State, isFirstPage: Bool) -> Effect<Action> {
+        let cursor = isFirstPage ? nil : state.pagination.nextCursor
+        let query = state.query
+        let category = state.selectedCategory
+        let sort = state.sortOrder.serverValue
+        return .run { [policySearchClient] send in
+            do {
+                let page = try await policySearchClient.search(query, category, sort, cursor, Self.pageSize)
+                await send(.pageResponse(.success(page), isFirstPage: isFirstPage))
+            } catch {
+                await send(.pageResponse(.failure(UseCaseError.map(error)), isFirstPage: isFirstPage))
+            }
+        }
+        .cancellable(id: CancelID.list, cancelInFlight: true)
+    }
+
+    private func setLiked(_ state: inout State, id: Int, liked: Bool) {
+        guard var list = state.results.value else { return }
+        list[id: id]?.isLiked = liked
+        state.results = .loaded(list)
+    }
+
+    private func likeEffect(id: Int, liked: Bool) -> Effect<Action> {
+        .run { [policyLikeClient] send in
+            do {
+                try await policyLikeClient.setLike(id, liked)
+            } catch {
+                await send(.likeFailed(id: id, liked: liked))
+            }
+        }
+        .cancellable(id: CancelID.like(id), cancelInFlight: true)
     }
 }

@@ -36,9 +36,7 @@ extension SearchResultView {
             header
             categoryFilter
             resultsToolbar
-            ScrollView {
-                resultList
-            }
+            resultsArea
         }
         .baziBackground(.bgGray)
     }
@@ -67,7 +65,7 @@ extension SearchResultView {
 
     private var categoryFilter: some View {
         BZSegmentControl(
-            options: [Self.allCategoryTitle] + PolicyCategory.allCases.map(\.rawValue),
+            options: [Self.allCategoryTitle] + PolicyCategoryUI.allCases.map(\.rawValue),
             selection: categorySelection
         ) { _ in EmptyView() }
         .baziBackground(.bgGray)
@@ -75,7 +73,7 @@ extension SearchResultView {
 
     private var resultsToolbar: some View {
         HStack {
-            Text("\(store.results.count)개")
+            Text("\(store.pagination.totalCount)개")
             Spacer()
             Button {
                 store.send(.didTapSortOrder)
@@ -90,12 +88,34 @@ extension SearchResultView {
         .baziFont(.small14R)
         .foregroundStyle(Color.gray600)
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 8)
     }
 
-    private var resultList: some View {
+    @ViewBuilder
+    private var resultsArea: some View {
+        switch store.results {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .failed:
+            BZRetryView { store.send(.didTapRetry) }
+        case .loaded(let policies):
+            if policies.isEmpty {
+                BZEmptyView(message: "검색 결과가 없어요")
+                    .frame(maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    resultList(policies)
+                }
+                .refreshable { await store.send(.pullToRefresh).finish() }
+            }
+        }
+    }
+
+    private func resultList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         LazyVStack(spacing: 12) {
-            ForEach(store.results) { policy in
+            ForEach(policies) { policy in
                 BZCard(
                     size: .medium,
                     category: policy.category.rawValue,
@@ -105,9 +125,16 @@ extension SearchResultView {
                     isLiked: likeBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                .onAppear {
+                    if policy.id == policies.last?.id {
+                        store.send(.didReachListEnd)
+                    }
+                }
             }
         }
         .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 20)
     }
 }
 
@@ -119,15 +146,15 @@ extension SearchResultView {
         Binding(
             get: { store.selectedCategory?.rawValue ?? Self.allCategoryTitle },
             set: { newValue in
-                // "전체"는 PolicyCategory에 없어 rawValue 변환이 nil → 전체(필터 해제)로 처리된다.
-                store.send(.didSelectCategory(PolicyCategory(rawValue: newValue)))
+                // "전체"는 PolicyCategoryUI에 없어 rawValue 변환이 nil → 전체(필터 해제)로 처리된다.
+                store.send(.didSelectCategory(PolicyCategoryUI(rawValue: newValue)))
             }
         )
     }
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.results[id: id]?.isLiked ?? false },
+            get: { store.results.value?[id: id]?.isLiked ?? false },
             set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
