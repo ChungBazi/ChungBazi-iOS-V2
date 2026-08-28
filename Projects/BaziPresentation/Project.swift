@@ -16,7 +16,12 @@ let project = Project.project(
             ]
         ),
         .tests(
-            name: BaziModule.BaziPresentation.name
+            name: BaziModule.BaziPresentation.name,
+            dependencies: [
+                .target(name: BaziModule.BaziPresentation.name),
+                .domain(),
+                .external(.ComposableArchitecture),
+            ]
         ),
     ]
 )
