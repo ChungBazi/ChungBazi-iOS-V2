@@ -3,13 +3,14 @@
 import Foundation
 
 /// 알림 목록 조회 Response DTO
-public struct NotificationListResponseDTO: Decodable {
+public struct NotificationListResponseDTO: Decodable, Sendable {
     public let notifications: [NotificationItemDTO]
-    public let nextCursor: Int
+    // 마지막 페이지에서는 서버가 null을 준다.
+    public let nextCursor: Int?
     public let hasNext: Bool
 }
 
-public struct NotificationItemDTO: Decodable {
+public struct NotificationItemDTO: Decodable, Sendable {
     public let notificationId: Int
     public let category: String
     public let title: String
