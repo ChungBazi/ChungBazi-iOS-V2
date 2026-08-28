@@ -21,29 +21,18 @@ public struct PrivacyPolicyView: View {
     // MARK: - Body
 
     public var body: some View {
-        content
-            .task { store.send(.onAppear) }
-            .baziNavigationBar_backWithTitle("개인정보 처리방침") {
-                dismiss()
-            }
+        StaticTextDocumentView(
+            title: "개인정보 처리방침",
+            text: Self.privacyText,
+            onAppear: { store.send(.onAppear) },
+            onBack: { dismiss() }
+        )
     }
 }
 
-// MARK: - Subviews
+// MARK: - Content
 
 extension PrivacyPolicyView {
-
-    private var content: some View {
-        ScrollView {
-            Text(Self.privacyText)
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray800)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-        }
-        .baziBackground(.bgWhite)
-    }
 
     private static let privacyText = """
     청바지 개인정보처리방침은 다음과 같은 내용을 담고 있습니다.
