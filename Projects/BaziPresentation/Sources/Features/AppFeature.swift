@@ -161,6 +161,8 @@ extension AppFeature {
         switch deeplink {
         case .policyDetail(let id):
             main.selectedTab = .home
+            // 같은 정책 상세가 이미 홈 스택 최상단이면 중복 push하지 않는다.
+            if case .policyDetail(let top) = main.home.path.last, top.policyId == id { return }
             main.home.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
         }
     }
