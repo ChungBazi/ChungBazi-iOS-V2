@@ -62,11 +62,6 @@ public struct OnboardingContainerFeature {
 
         public init() {}
 
-        /// 선택된 연/월 기준 실제 일수(윤년 2월 포함).
-        public var daysInSelectedMonth: Int {
-            CalendarUtil.daysInMonth(year: year, month: month)
-        }
-
         var isCurrentStepValid: Bool {
             switch currentStep {
             case .birthDate: return hasChangedYear && hasChangedMonth && hasChangedDay
@@ -109,6 +104,8 @@ public struct OnboardingContainerFeature {
     // MARK: - Dependencies
 
     @Dependency(\.onboardingClient) var onboardingClient
+    @Dependency(\.date.now) var now
+    @Dependency(\.calendar) var calendar
 
     // MARK: - Init
 
@@ -151,12 +148,12 @@ public struct OnboardingContainerFeature {
 
             case .binding(\.year):
                 state.hasChangedYear = true
-                state.day = min(state.day, state.daysInSelectedMonth)
+                clampBirthDateToToday(&state)
                 return .none
 
             case .binding(\.month):
                 state.hasChangedMonth = true
-                state.day = min(state.day, state.daysInSelectedMonth)
+                clampBirthDateToToday(&state)
                 return .none
 
             case .binding(\.day):
@@ -205,6 +202,20 @@ public struct OnboardingContainerFeature {
     }
 
     // MARK: - Private
+
+    /// 생년월일이 오늘을 넘지 않도록 연/월 변경 시 연·월·일을 보정한다. (미래 생일 방지)
+    private func clampBirthDateToToday(_ state: inout State) {
+        let clamped = CalendarUtil.clampToNotFuture(
+            year: state.year,
+            month: state.month,
+            day: state.day,
+            now: now,
+            calendar: calendar
+        )
+        state.year = clamped.year
+        state.month = clamped.month
+        state.day = clamped.day
+    }
 
     private enum CancelID {
         case sigunguFetch
