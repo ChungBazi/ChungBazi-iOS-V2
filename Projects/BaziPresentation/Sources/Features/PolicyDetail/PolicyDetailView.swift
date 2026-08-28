@@ -85,7 +85,7 @@ extension PolicyDetailView {
                     .foregroundStyle(Color.grayBlack)
                 Text(detail.summary)
                     .baziFont(.small14R)
-                    .foregroundStyle(Color.grayBlack.opacity(0.8))
+                    .foregroundStyle(Color.grayBlack80)
             }
 
             HStack(spacing: 4) {
@@ -156,7 +156,7 @@ extension PolicyDetailView {
                 .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                LazyHStack(spacing: 12) {
                     ForEach(policies) { policy in
                         BZCard(
                             size: .small,
@@ -187,8 +187,7 @@ extension PolicyDetailView {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 12)
-        .padding(.bottom, 36)
+        .padding(.vertical, 5)
         .baziBackground(.bgWhite)
     }
 }

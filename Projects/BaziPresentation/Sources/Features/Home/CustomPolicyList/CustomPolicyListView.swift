@@ -135,7 +135,8 @@ extension CustomPolicyListView {
                 store.send(.didTapDetail(id: selectedPolicyID))
             }
         }
-        .padding(20)
+        .padding([.top, .horizontal], 20)
+        .padding(.bottom, 5)
     }
 
     /// 현재 선택된 카드의 신청 링크. 값이 없거나 URL로 변환 불가하면 nil(버튼 비활성).
