@@ -49,7 +49,9 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
               response.statusCode == 401,
               // 로그인/재발급 요청의 401은 토큰 재발급 대상이 아니다.
               // (reissue는 무한루프 방지, 로그인은 세션이 없어 재발급이 무의미 + 불필요한 forceLogout 방지)
-              !isUnauthenticated else {
+              !isUnauthenticated,
+              // 재발급 후 재시도가 또 401이면 그만둔다 — 새 토큰도 거부당하는 경우의 무한 재발급 루프 방지.
+              request.retryCount == 0 else {
             return completion(.doNotRetry)
         }
 
