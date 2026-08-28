@@ -1,7 +1,6 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import Foundation
-import UIKit
 
 import BaziDomain
 import KakaoSDKShare
@@ -11,9 +10,9 @@ public struct PolicyShareServiceImpl: PolicyShareService {
 
     public init() {}
 
-    public func shareToKakao(_ content: PolicyShareContent) async throws {
-        // 카카오 SDK 호출은 메인 스레드에서 수행하고, 공유 결과 URL을 받아 앱을 전환한다.
-        let sharingURL: URL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+    /// 카카오 공유 템플릿을 만들어 공유 URL을 반환한다. 앱 전환(open)은 호출부(Composition Root)가 담당한다.
+    public func makeKakaoShareURL(_ content: PolicyShareContent) async throws -> URL {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
             Task { @MainActor in
                 guard ShareApi.isKakaoTalkSharingAvailable() else {
                     continuation.resume(throwing: UseCaseError.unknown("카카오톡이 설치되어 있지 않아 공유할 수 없습니다."))
@@ -47,6 +46,5 @@ public struct PolicyShareServiceImpl: PolicyShareService {
                 }
             }
         }
-        await MainActor.run { UIApplication.shared.open(sharingURL) }
     }
 }
