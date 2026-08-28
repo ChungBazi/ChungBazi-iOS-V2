@@ -27,7 +27,7 @@ public struct WithdrawView: View {
             }
             .baziAlert(
                 isPresented: Binding(
-                    get: { store.isConfirmAlertPresented },
+                    get: { store.activeAlert == .confirm },
                     set: { if !$0 { store.send(.didCancelConfirm) } }
                 ),
                 title: "정말 탈퇴하시겠어요?",
@@ -39,7 +39,7 @@ public struct WithdrawView: View {
             .alert(
                 "회원 탈퇴가 완료되었습니다.",
                 isPresented: Binding(
-                    get: { store.isCompletionAlertPresented },
+                    get: { store.activeAlert == .completion },
                     set: { isPresented in
                         if !isPresented { store.send(.didTapCompletionConfirm) }
                     }

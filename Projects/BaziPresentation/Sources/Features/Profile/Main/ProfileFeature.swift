@@ -32,7 +32,7 @@ public struct ProfileFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didTapProfileHeader
@@ -86,15 +86,15 @@ public struct ProfileFeature {
                 state.path.append(.privacy(PrivacyPolicyFeature.State()))
                 return .none
 
-            case .path(.element(_, .infoEdit(.delegate(.didTapNicknameEdit)))):
+            case .path(.element(_, .infoEdit(.delegate(.nicknameEditRequested)))):
                 state.path.append(.nicknameEdit(NicknameEditFeature.State(currentNickname: state.nickname)))
                 return .none
 
-            case .path(.element(_, .infoEdit(.delegate(.didTapLinkedAccounts)))):
+            case .path(.element(_, .infoEdit(.delegate(.linkedAccountsRequested)))):
                 state.path.append(.linkedAccounts(LinkedAccountsFeature.State()))
                 return .none
 
-            case .path(.element(_, .infoEdit(.delegate(.didTapWithdraw)))):
+            case .path(.element(_, .infoEdit(.delegate(.withdrawRequested)))):
                 state.path.append(.withdraw(WithdrawFeature.State()))
                 return .none
 
@@ -118,3 +118,4 @@ public struct ProfileFeature {
 }
 
 extension ProfileFeature.Path.State: Equatable {}
+extension ProfileFeature.Path.Action: Equatable {}

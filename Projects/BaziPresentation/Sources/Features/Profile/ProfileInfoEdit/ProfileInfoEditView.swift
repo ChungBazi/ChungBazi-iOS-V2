@@ -28,7 +28,7 @@ public struct ProfileInfoEditView: View {
             }
             .baziAlert(
                 isPresented: Binding(
-                    get: { store.isLogoutAlertPresented },
+                    get: { store.activeAlert == .logout },
                     set: { if !$0 { store.send(.didCancelLogout) } }
                 ),
                 title: "로그아웃 할까요?",
@@ -38,7 +38,7 @@ public struct ProfileInfoEditView: View {
             )
             .baziAlert(
                 isPresented: Binding(
-                    get: { store.isWithdrawAlertPresented },
+                    get: { store.activeAlert == .withdraw },
                     set: { if !$0 { store.send(.didCancelWithdraw) } }
                 ),
                 title: "탈퇴를 진행할까요?",

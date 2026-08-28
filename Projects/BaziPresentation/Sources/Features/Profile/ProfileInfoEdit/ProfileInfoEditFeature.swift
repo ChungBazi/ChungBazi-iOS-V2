@@ -10,10 +10,16 @@ public struct ProfileInfoEditFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public var isLogoutAlertPresented = false
-        public var isWithdrawAlertPresented = false
+        public var activeAlert: ActiveAlert?
 
         public init() {}
+    }
+
+    // MARK: - Alert
+
+    public enum ActiveAlert: Equatable {
+        case logout
+        case withdraw
     }
 
     // MARK: - Action
@@ -37,9 +43,9 @@ public struct ProfileInfoEditFeature {
     // MARK: - Delegate
 
     public enum Delegate: Equatable {
-        case didTapNicknameEdit
-        case didTapLinkedAccounts
-        case didTapWithdraw
+        case nicknameEditRequested
+        case linkedAccountsRequested
+        case withdrawRequested
         case didLogout
     }
 
@@ -60,35 +66,37 @@ public struct ProfileInfoEditFeature {
                 return .none
 
             case .didTapNicknameEdit:
-                return .send(.delegate(.didTapNicknameEdit))
+                return .send(.delegate(.nicknameEditRequested))
 
             case .didTapLinkedAccounts:
-                return .send(.delegate(.didTapLinkedAccounts))
+                return .send(.delegate(.linkedAccountsRequested))
 
             case .didTapLogout:
-                state.isLogoutAlertPresented = true
+                state.activeAlert = .logout
                 return .none
 
             case .didCancelLogout:
-                state.isLogoutAlertPresented = false
+                state.activeAlert = nil
                 return .none
 
             case .didConfirmLogout:
-                state.isLogoutAlertPresented = false
-                sessionClient.resetSession()
-                return .send(.delegate(.didLogout))
+                state.activeAlert = nil
+                return .run { [sessionClient] send in
+                    sessionClient.resetSession()
+                    await send(.delegate(.didLogout))
+                }
 
             case .didTapWithdraw:
-                state.isWithdrawAlertPresented = true
+                state.activeAlert = .withdraw
                 return .none
 
             case .didCancelWithdraw:
-                state.isWithdrawAlertPresented = false
+                state.activeAlert = nil
                 return .none
 
             case .didConfirmWithdraw:
-                state.isWithdrawAlertPresented = false
-                return .send(.delegate(.didTapWithdraw))
+                state.activeAlert = nil
+                return .send(.delegate(.withdrawRequested))
 
             case .delegate:
                 return .none
