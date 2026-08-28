@@ -21,7 +21,8 @@ public struct PaginationState<Cursor: Equatable & Sendable>: Equatable, Sendable
     }
 
     /// 다음 페이지를 더 불러올 수 있는지(진행 중이 아니고 다음 커서가 남음).
-    public var canLoadNext: Bool { hasNext && !isLoadingNext }
+    /// 커서가 없으면(hasNext가 true여도) 다음 페이지를 요청할 수 없다 — nil 커서로 1페이지가 재요청되는 것을 막는다.
+    public var canLoadNext: Bool { hasNext && nextCursor != nil && !isLoadingNext }
 
     /// 1페이지 재조회 준비: 커서/플래그 초기화.
     public mutating func reset() {
