@@ -17,6 +17,8 @@ public struct NotificationSettingFeature {
         public var isAllNotificationOn: Bool
         public var isMyPolicyNotificationOn: Bool
         public var isChungBaziNotificationOn: Bool
+        /// 서버 조회가 성공하기 전에는 토글을 비활성화한다. (기본값 상태로 서버 설정을 덮어쓰지 않도록)
+        public var hasLoaded = false
 
         public init(
             isAllNotificationOn: Bool = true,
@@ -84,10 +86,12 @@ public struct NotificationSettingFeature {
                 state.isAllNotificationOn = settings.isAllOn
                 state.isMyPolicyNotificationOn = settings.isMyPolicyOn
                 state.isChungBaziNotificationOn = settings.isChungBaziOn
+                state.hasLoaded = true
                 return .none
 
             case .settingsResponse(.failure):
-                // TODO: 알림 설정 조회 실패 알림 UI가 정해지면 State에 반영.
+                // 실제 설정을 모르는 상태이므로 토글을 계속 비활성(hasLoaded=false)으로 두어 덮어쓰기를 막는다.
+                // TODO: 실패 안내/재시도 UI가 정해지면 State에 반영.
                 return .none
 
             case .didToggleAllNotification(let isOn):
