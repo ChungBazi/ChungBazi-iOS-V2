@@ -32,26 +32,23 @@ public struct CalendarFeature: Sendable {
         /// 시트가 실제로 떠 있는지. `selectedDate`와 분리해 두어, 메모/상세로 이동할 때는
         /// 시트만 내리고(`selectedDate`는 유지) 되돌아오면 같은 날짜 시트를 다시 띄울 수 있게 한다.
         public var isDaySheetPresented: Bool
-        /// 진입 시점 기준 날짜(내 정책 메인에서 선택돼 있던 날짜). 이 달을 중심으로 처음 열리고,
-        /// 무한스크롤은 이 달 기준 상하 24개월까지만 허용한다.
+        /// 진입 시점 기준 날짜(오늘). 이 달을 중심으로 ±2년이 그려지고, 진입 시 이 달로 스크롤한다.
         public let centerDate: Date
-        public let earliestMonth: Date
-        public let latestMonth: Date
+
+        /// centerDate가 속한 달의 첫날. 진입 시 이 달로 스크롤하기 위한 타깃(= CalendarMonth.id).
+        public var centerMonthID: Date {
+            let calendar = Calendar.current
+            return calendar.date(from: calendar.dateComponents([.year, .month], from: centerDate)) ?? centerDate
+        }
 
         public init(centerDate: Date = Date()) {
-            let calendar = Calendar.current
-            let base = calendar.startOfDay(for: centerDate)
-            let baseMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: base)) ?? base
-
             self.months = []
             self.deadlineDates = []
             self.selectedDate = nil
             self.selectedDatePolicies = []
             self.sortOrder = .deadline
             self.isDaySheetPresented = false
-            self.centerDate = base
-            self.earliestMonth = calendar.date(byAdding: .month, value: -CalendarMonth.scrollableMonthRange, to: baseMonthStart) ?? baseMonthStart
-            self.latestMonth = calendar.date(byAdding: .month, value: CalendarMonth.scrollableMonthRange, to: baseMonthStart) ?? baseMonthStart
+            self.centerDate = Calendar.current.startOfDay(for: centerDate)
         }
     }
 
@@ -60,8 +57,6 @@ public struct CalendarFeature: Sendable {
     public enum Action {
         // MARK: View
         case onAppear
-        case didAppearFirstMonth
-        case didAppearLastMonth
         case didSelectDate(Date)
         case didDismissSheet
         case didTapSortOrderInSheet
@@ -82,6 +77,7 @@ public struct CalendarFeature: Sendable {
 
     // MARK: - Dependencies
 
+    @Dependency(\.calendar) var calendar
     // TODO: BaziDomain의 내 정책 UseCase가 준비되면 추가
     // @Dependency(\.myPolicyClient) var myPolicyClient
     @Dependency(\.continuousClock) var clock
@@ -100,27 +96,13 @@ public struct CalendarFeature: Sendable {
                 if state.months.isEmpty {
                     state.months = CalendarMonth.mockMonths(centeredOn: state.centerDate)
                     state.deadlineDates = Set(PolicySummary.mockList.filter { !$0.isOpenEnded }.map {
-                        Calendar.current.startOfDay(for: $0.deadlineDate)
+                        calendar.startOfDay(for: $0.deadlineDate)
                     })
                 }
                 // 메모/상세로 이동했다 되돌아온 경우, 보고 있던 날짜의 시트를 다시 띄운다.
                 if state.selectedDate != nil {
                     state.isDaySheetPresented = true
                 }
-                return .none
-
-            case .didAppearFirstMonth:
-                guard let firstMonth = state.months.first?.firstDayOfMonth, firstMonth > state.earliestMonth else { return .none }
-                let newMonths = CalendarMonth.generate(before: firstMonth, monthCount: CalendarMonth.pageSize, notBefore: state.earliestMonth)
-                guard !newMonths.isEmpty else { return .none }
-                state.months = newMonths + state.months
-                return .none
-
-            case .didAppearLastMonth:
-                guard let lastMonth = state.months.last?.firstDayOfMonth, lastMonth < state.latestMonth else { return .none }
-                let newMonths = CalendarMonth.generate(after: lastMonth, monthCount: CalendarMonth.pageSize, notAfter: state.latestMonth)
-                guard !newMonths.isEmpty else { return .none }
-                state.months.append(contentsOf: newMonths)
                 return .none
 
             case .didSelectDate(let date):
@@ -172,9 +154,9 @@ public struct CalendarFeature: Sendable {
     // MARK: - Private
 
     private func policies(on date: Date, sortOrder: SortOrder) -> IdentifiedArrayOf<PolicySummary> {
-        let day = Calendar.current.startOfDay(for: date)
+        let day = calendar.startOfDay(for: date)
         let filtered = PolicySummary.mockList.filter {
-            !$0.isOpenEnded && Calendar.current.startOfDay(for: $0.deadlineDate) == day
+            !$0.isOpenEnded && calendar.startOfDay(for: $0.deadlineDate) == day
         }
         let sorted = sortOrder == .deadline
             ? filtered.sorted { $0.deadlineDate < $1.deadlineDate }
