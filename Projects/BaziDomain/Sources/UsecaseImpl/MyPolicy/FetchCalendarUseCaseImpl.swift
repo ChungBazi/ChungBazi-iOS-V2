@@ -10,7 +10,7 @@ public struct FetchCalendarUseCaseImpl: FetchCalendarUseCase {
         self.myPolicyRepository = myPolicyRepository
     }
 
-    public func execute(targetMonth: String) async throws -> [Date] {
+    public func execute(targetMonth: String) async throws -> [DateComponents] {
         try await myPolicyRepository.fetchCalendar(targetMonth: targetMonth)
     }
 }

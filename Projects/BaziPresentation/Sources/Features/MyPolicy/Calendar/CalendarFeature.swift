@@ -40,8 +40,8 @@ public struct CalendarFeature: Sendable {
     @ObservableState
     public struct State: Equatable {
         public var months: [CalendarMonth]
-        /// 서버에서 받은 마감일(달별로 lazy 조회해 합집합으로 누적).
-        public var deadlineDates: Set<Date>
+        /// 서버에서 받은 마감일(달별로 lazy 조회해 합집합으로 누적). 타임존 무관하게 yyyymmdd 정수 키로 보관한다.
+        public var deadlineDays: Set<Int>
         /// 이미 마감일을 조회한 달("yyyy-MM"). 중복 요청 방지.
         public var requestedMonths: Set<String>
         public var selectedDate: Date?
@@ -56,6 +56,8 @@ public struct CalendarFeature: Sendable {
         /// 마감일 캘린더 추가 결과 토스트.
         public var toastMessage: String
         public var isToastPresented: Bool
+        /// 마감일 추가 요청 진행 중 여부. 더블탭으로 이벤트가 중복 생성되는 것을 막는다.
+        public var isAddingDeadline: Bool
 
         /// centerDate가 속한 달의 첫날. 진입 시 이 달로 스크롤하기 위한 타깃(= CalendarMonth.id).
         public var centerMonthID: Date {
@@ -65,7 +67,7 @@ public struct CalendarFeature: Sendable {
 
         public init(centerDate: Date = Date()) {
             self.months = []
-            self.deadlineDates = []
+            self.deadlineDays = []
             self.requestedMonths = []
             self.selectedDate = nil
             self.selectedDatePolicies = .idle
@@ -75,6 +77,7 @@ public struct CalendarFeature: Sendable {
             self.centerDate = Calendar.current.startOfDay(for: centerDate)
             self.toastMessage = ""
             self.isToastPresented = false
+            self.isAddingDeadline = false
         }
     }
 
@@ -94,7 +97,7 @@ public struct CalendarFeature: Sendable {
         case dismissToast
 
         // MARK: Internal
-        case calendarResponse(month: String, Result<[Date], UseCaseError>)
+        case calendarResponse(month: String, Result<[DateComponents], UseCaseError>)
         case sheetPageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
         case addToCalendarSucceeded
         case addToCalendarFailed(EventKitError)
@@ -141,8 +144,9 @@ public struct CalendarFeature: Sendable {
                 state.requestedMonths.insert(month)
                 return fetchDeadlines(month: month)
 
-            case let .calendarResponse(_, .success(dates)):
-                state.deadlineDates.formUnion(dates.map { calendar.startOfDay(for: $0) })
+            case let .calendarResponse(_, .success(days)):
+                // 절대시각 변환 없이 yyyymmdd 키로 누적한다(타임존 무관).
+                state.deadlineDays.formUnion(days.compactMap(\.yyyymmddKey))
                 return .none
 
             case let .calendarResponse(month, .failure):
@@ -159,6 +163,10 @@ public struct CalendarFeature: Sendable {
                 state.isDaySheetPresented = false
                 state.selectedDate = nil
                 state.selectedDatePolicies = .idle
+                // 토스트/추가 진행 상태도 초기화(다음 시트 오픈 시 이전 토스트가 다시 뜨는 것 방지).
+                state.isToastPresented = false
+                state.toastMessage = ""
+                state.isAddingDeadline = false
                 return .none
 
             case .didTapSortOrderInSheet:
@@ -210,9 +218,11 @@ public struct CalendarFeature: Sendable {
                 }
 
             case .didTapAddToCalendar(let id):
-                // 시트는 그대로 두고(화면 유지), 선택 날짜를 마감일로 종일 이벤트를 추가한다.
-                guard let date = state.selectedDate,
+                // 시트는 그대로 두고(화면 유지), 선택 날짜를 마감일로 종일 이벤트를 추가한다. 진행 중이면 더블탭 무시.
+                guard !state.isAddingDeadline,
+                      let date = state.selectedDate,
                       let policy = state.selectedDatePolicies.value?[id: id] else { return .none }
+                state.isAddingDeadline = true
                 let title = policy.title
                 return .run { [calendarClient] send in
                     do {
@@ -226,11 +236,13 @@ public struct CalendarFeature: Sendable {
                 }
 
             case .addToCalendarSucceeded:
+                state.isAddingDeadline = false
                 state.toastMessage = "마감일을 캘린더에 추가했어요"
                 state.isToastPresented = true
                 return .none
 
             case .addToCalendarFailed(let error):
+                state.isAddingDeadline = false
                 switch error {
                 case .accessDenied:
                     state.toastMessage = "설정에서 캘린더 접근을 허용해주세요"
@@ -259,8 +271,8 @@ public struct CalendarFeature: Sendable {
     private func fetchDeadlines(month: String) -> Effect<Action> {
         .run { [calendarClient] send in
             do {
-                let dates = try await calendarClient.fetchCalendar(month)
-                await send(.calendarResponse(month: month, .success(dates)))
+                let days = try await calendarClient.fetchCalendar(month)
+                await send(.calendarResponse(month: month, .success(days)))
             } catch {
                 await send(.calendarResponse(month: month, .failure(UseCaseError.map(error))))
             }

@@ -39,9 +39,9 @@ public struct MyPolicyRepositoryImpl: MyPolicyRepository {
         return dto.toDomain()
     }
 
-    public func fetchCalendar(targetMonth: String) async throws -> [Date] {
+    public func fetchCalendar(targetMonth: String) async throws -> [DateComponents] {
         let dto: CalendarResponseDTO = try await networkProvider.request(MyPolicyAPI.getCalendar(targetMonth: targetMonth))
-        return dto.toDeadlineDates()
+        return dto.toDeadlineDayComponents()
     }
 
     public func fetchMemo(policyId: Int) async throws -> PolicyMemo {
