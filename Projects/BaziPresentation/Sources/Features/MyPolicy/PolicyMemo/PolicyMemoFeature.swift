@@ -1,8 +1,10 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import BaziDomain
 import ComposableArchitecture
 
 /// 정책 메모 화면 (22). 캘린더/내 정책 카드에서 진입해 신청 일정을 메모한다.
+/// 저장 버튼은 저장만(화면 유지), 뒤로가기는 변경분이 있으면 자동 저장 후 화면을 닫는다(메모앱 방식).
 @Reducer
 public struct PolicyMemoFeature {
 
@@ -11,17 +13,18 @@ public struct PolicyMemoFeature {
     @ObservableState
     public struct State: Equatable {
         public let policyId: Int
-        public var memo: PolicyMemo?
-        public var draftText: String
+        public var memo: LoadingState<PolicyMemoVO> = .idle
+        public var draftText: String = ""
+        public var isSaving = false
 
+        /// 저장 버튼 활성: 로드 완료 + 저장 중 아님 + 저장된 값과 다름.
         public var isSaveEnabled: Bool {
-            draftText != (memo?.memo ?? "")
+            guard let saved = memo.value?.memo else { return false }
+            return !isSaving && draftText != saved
         }
 
         public init(policyId: Int) {
             self.policyId = policyId
-            self.memo = nil
-            self.draftText = ""
         }
     }
 
@@ -32,6 +35,12 @@ public struct PolicyMemoFeature {
         case onAppear
         case didChangeDraftText(String)
         case didTapSave
+        case didTapBack
+
+        // MARK: Internal
+        case memoResponse(Result<PolicyMemoVO, UseCaseError>)
+        case saveSucceeded(dismissAfter: Bool)
+        case saveFailed
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -45,8 +54,8 @@ public struct PolicyMemoFeature {
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 내 정책 UseCase가 준비되면 추가
-    // @Dependency(\.myPolicyClient) var myPolicyClient
+    @Dependency(\.policyMemoClient) var policyMemoClient
+    @Dependency(\.dismiss) var dismiss
 
     // MARK: - Init
 
@@ -58,10 +67,24 @@ public struct PolicyMemoFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // TODO: myPolicyClient가 준비되면 MyPolicyAPI.getMemo 응답으로 교체한다.
-                let memo = PolicyMemo.mock(policyId: state.policyId)
-                state.memo = memo
+                guard state.memo.value == nil, !state.memo.isLoading else { return .none }
+                state.memo = .loading
+                return .run { [policyMemoClient, policyId = state.policyId] send in
+                    do {
+                        let memo = try await policyMemoClient.fetchMemo(policyId)
+                        await send(.memoResponse(.success(memo)))
+                    } catch {
+                        await send(.memoResponse(.failure(UseCaseError.map(error))))
+                    }
+                }
+
+            case .memoResponse(.success(let memo)):
+                state.memo = .loaded(memo)
                 state.draftText = memo.memo
+                return .none
+
+            case .memoResponse(.failure(let error)):
+                state.memo = .failed(error.loadFailureMessage)
                 return .none
 
             case .didChangeDraftText(let text):
@@ -69,13 +92,53 @@ public struct PolicyMemoFeature {
                 return .none
 
             case .didTapSave:
+                // 저장만 하고 화면은 유지한다(저장 이후에도 계속 편집 가능).
                 guard state.isSaveEnabled else { return .none }
-                let draftText = state.draftText
-                state.memo?.memo = draftText
-                return .send(.delegate(.didSaveMemo(policyId: state.policyId, memo: draftText)))
+                return save(&state, dismissAfter: false)
+
+            case .didTapBack:
+                // 변경분이 있으면 저장 후 닫고, 없으면 바로 닫는다.
+                guard state.isSaveEnabled else {
+                    return .run { [dismiss] _ in await dismiss() }
+                }
+                return save(&state, dismissAfter: true)
+
+            case let .saveSucceeded(dismissAfter):
+                state.isSaving = false
+                if var memo = state.memo.value {
+                    memo.memo = state.draftText
+                    state.memo = .loaded(memo)
+                }
+                let policyId = state.policyId
+                let text = state.draftText
+                return .run { [dismiss] send in
+                    await send(.delegate(.didSaveMemo(policyId: policyId, memo: text)))
+                    if dismissAfter { await dismiss() }
+                }
+
+            case .saveFailed:
+                state.isSaving = false
+                // TODO: 저장 실패 안내(토스트 등). 현재는 화면을 유지한다.
+                return .none
 
             case .delegate:
                 return .none
+            }
+        }
+    }
+
+    // MARK: - Private
+
+    private func save(_ state: inout State, dismissAfter: Bool) -> Effect<Action> {
+        state.isSaving = true
+        let policyId = state.policyId
+        let text = state.draftText
+        return .run { [policyMemoClient] send in
+            do {
+                try await policyMemoClient.updateMemo(policyId, text)
+                await send(.saveSucceeded(dismissAfter: dismissAfter))
+            } catch {
+                await send(.saveFailed)
             }
         }
     }

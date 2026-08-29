@@ -10,7 +10,6 @@ public struct PolicyMemoView: View {
     // MARK: - Properties
 
     @Bindable var store: StoreOf<PolicyMemoFeature>
-    @Environment(\.dismiss) private var dismiss
     @FocusState private var isFocused: Bool
 
     // MARK: - Init
@@ -27,14 +26,12 @@ public struct PolicyMemoView: View {
             .baziNavigationBar_backWithTitleAndSaveButton(
                 "메모",
                 isSaveEnabled: store.isSaveEnabled,
-                onBack: { dismiss() },
-                onSave: {
-                    store.send(.didTapSave)
-                    dismiss()
-                }
+                onBack: { store.send(.didTapBack) },
+                onSave: { store.send(.didTapSave) }
             )
-            .onAppear { isFocused = true }
             .toolbar(.hidden, for: .tabBar)
+            // 스와이프 백은 저장 훅을 우회하므로 막고, 커스텀 뒤로가기 버튼으로만 나가게 한다(뒤로가기=자동저장).
+            .swipeBackDisabled()
     }
 }
 
@@ -42,17 +39,26 @@ public struct PolicyMemoView: View {
 
 extension PolicyMemoView {
 
+    @ViewBuilder
     private var content: some View {
-        VStack(spacing: 0) {
-            if let memo = store.memo {
+        switch store.memo {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .baziBackground(.bgWhite)
+        case .failed:
+            BZRetryView { store.send(.onAppear) }
+                .baziBackground(.bgWhite)
+        case .loaded(let memo):
+            VStack(spacing: 0) {
                 header(memo)
+                memoEditor
             }
-            memoEditor
+            .baziBackground(.bgWhite)
         }
-        .baziBackground(.bgWhite)
     }
 
-    private func header(_ memo: PolicyMemo) -> some View {
+    private func header(_ memo: PolicyMemoVO) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 BZTag(memo.category.rawValue, type: .blue200)
@@ -94,6 +100,8 @@ extension PolicyMemoView {
             }
         }
         .padding(.top, 12)
+        // 로드되어 에디터가 나타날 때 자동 포커스. 저장 후에도 화면이 유지되므로 텍스트를 다시 탭하면 재포커스된다.
+        .onAppear { isFocused = true }
     }
 }
 
