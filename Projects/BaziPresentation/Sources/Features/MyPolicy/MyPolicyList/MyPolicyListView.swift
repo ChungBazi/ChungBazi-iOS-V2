@@ -35,61 +35,46 @@ public struct MyPolicyListView: View {
 extension MyPolicyListView {
 
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                categoryFilter
+        // 카테고리 필터 + 결과 툴바(갯수/정렬)까지는 상단 고정, 그 아래 정책 리스트만 스크롤한다.
+        VStack(spacing: 0) {
+            categoryFilter
+            if store.policies.isEmpty {
+                emptyView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
                 resultsToolbar
-                policyList
+                ScrollView {
+                    policyList
+                }
             }
         }
         .baziBackground(.bgGray)
     }
 
+    private static let allCategoryTitle = "전체"
+
     private var categoryFilter: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 20) {
-                categoryFilterItem(title: "전체", isSelected: store.selectedCategory == nil) {
-                    store.send(.didSelectCategory(nil))
-                }
-                ForEach(PolicyCategory.allCases) { category in
-                    categoryFilterItem(title: category.rawValue, isSelected: store.selectedCategory == category) {
-                        store.send(.didSelectCategory(category))
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-        }
-        .frame(height: 44)
+        BZSegmentControl(
+            options: [Self.allCategoryTitle] + PolicyCategory.allCases.map(\.rawValue),
+            selection: categorySelection
+        ) { _ in EmptyView() }
         .baziBackground(.bgWhite)
     }
 
-    private func categoryFilterItem(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .baziFont(isSelected ? .small14SB : .small14R)
-                .foregroundStyle(isSelected ? Color.grayBlack : Color.gray300)
+    private var emptyView: some View {
+        VStack(spacing: 20) {
+            BZEmptyView(message: "아직 찜한 정책이 없어요")
+            BZButton("찜할 정책 둘러보러 가기", type: .normal2, size: .medium) {
+                store.send(.didTapBrowsePolicies)
+            }
+            .padding(.horizontal, 20)
         }
-        .buttonStyle(.plain)
     }
 
     private var resultsToolbar: some View {
-        HStack {
-            Text("\(store.policies.count)개")
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray600)
-            Spacer()
-            Button {
-                store.send(.didTapSortOrder)
-            } label: {
-                Label(store.sortOrder.rawValue, systemImage: "arrow.up.arrow.down")
-                    .labelStyle(.titleAndIcon)
-            }
-            .buttonStyle(.plain)
-            .baziFont(.small14R)
-            .foregroundStyle(Color.gray600)
+        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.rawValue) {
+            store.send(.didTapSortOrder)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
     }
 
     private var policyList: some View {
@@ -106,13 +91,24 @@ extension MyPolicyListView {
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding([.horizontal, .bottom], 20)
     }
 }
 
 // MARK: - Bindings
 
 extension MyPolicyListView {
+
+    private var categorySelection: Binding<String> {
+        Binding(
+            get: { store.selectedCategory?.rawValue ?? Self.allCategoryTitle },
+            set: { newValue in
+                // "전체"는 PolicyCategory에 없어 rawValue 변환이 nil → 전체(필터 해제)로 처리된다.
+                store.send(.didSelectCategory(PolicyCategory(rawValue: newValue)))
+            }
+        )
+    }
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
