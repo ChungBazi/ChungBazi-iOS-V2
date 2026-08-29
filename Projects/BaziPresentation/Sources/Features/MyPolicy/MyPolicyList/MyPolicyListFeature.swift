@@ -39,6 +39,7 @@ public struct MyPolicyListFeature {
         case didTapSortOrder
         case didToggleLike(id: Int)
         case didTapPolicy(id: Int)
+        case didTapBrowsePolicies
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -84,6 +85,10 @@ public struct MyPolicyListFeature {
 
             case .didTapPolicy(let id):
                 return .send(.delegate(.didSelectPolicy(id: id)))
+
+            case .didTapBrowsePolicies:
+                // TODO: 정책 둘러보기(홈/검색 등)로 이동 연결.
+                return .none
 
             case .delegate:
                 return .none
