@@ -110,6 +110,8 @@ extension CalendarView {
                 }
             }
         }
+        // 달이 화면에 나타나면 그 달의 마감일을 조회한다(중복은 Reducer에서 무시).
+        .onAppear { store.send(.didAppearMonth(month.firstDayOfMonth)) }
     }
 
     /// 오늘은 강조 원(primary), 찜한 정책 마감이 있는 날만 하단 인디케이터 바 + 탭 선택 가능.
@@ -165,38 +167,66 @@ extension CalendarView {
                     .padding(.bottom, 18)
             }
 
-            sheetResultsToolbar
-
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(store.selectedDatePolicies) { policy in
-                        sheetCard(policy)
-                    }
-                }
-                .padding(.top, 8)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-            }
+            sheetContent
         }
         .baziBackground(.bgGray)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
+    @ViewBuilder
+    private var sheetContent: some View {
+        switch store.selectedDatePolicies {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .failed:
+            BZRetryView {
+                if let date = store.selectedDate { store.send(.didSelectDate(date)) }
+            }
+        case .loaded(let policies):
+            if policies.isEmpty {
+                BZEmptyView(message: "이 날짜에는 등록된 정책이 없어요")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                sheetResultsToolbar
+                ScrollView {
+                    sheetList(policies)
+                }
+            }
+        }
+    }
+
     private var sheetResultsToolbar: some View {
-        BZResultsToolbar(count: store.selectedDatePolicies.count, sortTitle: store.sortOrder.title) {
+        BZResultsToolbar(count: store.daySheetPagination.totalCount, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrderInSheet)
         }
     }
 
-    private func sheetCard(_ policy: PolicySummary) -> some View {
+    private func sheetList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
+        LazyVStack(spacing: 12) {
+            ForEach(policies) { policy in
+                sheetCard(policy)
+                    .onAppear {
+                        if policy.id == policies.last?.id {
+                            store.send(.didReachSheetListEnd)
+                        }
+                    }
+            }
+        }
+        .padding(.top, 8)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+    }
+
+    private func sheetCard(_ policy: PolicySummaryVO) -> some View {
         BZCard(
             size: .medium,
             category: policy.category.rawValue,
             dDay: policy.dDay,
             title: policy.title,
             viewCount: policy.viewCount,
-            isLiked: sheetLikeBinding(id: policy.id),
+            isLiked: .constant(policy.isLiked),
             accessory: .memo(action: { store.send(.didTapMemoIcon(id: policy.id)) })
         )
         .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
@@ -211,18 +241,6 @@ extension CalendarView {
 
     private func dayTitle(for date: Date) -> String {
         Self.dayTitleFormatter.string(from: date)
-    }
-}
-
-// MARK: - Bindings
-
-extension CalendarView {
-
-    private func sheetLikeBinding(id: Int) -> Binding<Bool> {
-        Binding(
-            get: { store.selectedDatePolicies[id: id]?.isLiked ?? false },
-            set: { _ in store.send(.didToggleLikeInSheet(id: id)) }
-        )
     }
 }
 

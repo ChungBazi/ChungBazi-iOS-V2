@@ -2,6 +2,7 @@
 
 import Foundation
 
+import BaziDomain
 import ComposableArchitecture
 
 /// 캘린더 화면 (21). 월별로 스크롤하며 마감일이 있는 날짜를 표시하고,
@@ -24,6 +25,13 @@ public struct CalendarFeature: Sendable {
             }
         }
 
+        var serverValue: String {
+            switch self {
+            case .deadline: return "DEADLINE"
+            case .latest: return "LATEST"
+            }
+        }
+
         var next: SortOrder { self == .deadline ? .latest : .deadline }
     }
 
@@ -32,9 +40,13 @@ public struct CalendarFeature: Sendable {
     @ObservableState
     public struct State: Equatable {
         public var months: [CalendarMonth]
+        /// 서버에서 받은 마감일(달별로 lazy 조회해 합집합으로 누적).
         public var deadlineDates: Set<Date>
+        /// 이미 마감일을 조회한 달("yyyy-MM"). 중복 요청 방지.
+        public var requestedMonths: Set<String>
         public var selectedDate: Date?
-        public var selectedDatePolicies: IdentifiedArrayOf<PolicySummary>
+        public var selectedDatePolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>>
+        public var daySheetPagination: PaginationState<String>
         public var sortOrder: SortOrder
         /// 시트가 실제로 떠 있는지. `selectedDate`와 분리해 두어, 메모/상세로 이동할 때는
         /// 시트만 내리고(`selectedDate`는 유지) 되돌아오면 같은 날짜 시트를 다시 띄울 수 있게 한다.
@@ -51,8 +63,10 @@ public struct CalendarFeature: Sendable {
         public init(centerDate: Date = Date()) {
             self.months = []
             self.deadlineDates = []
+            self.requestedMonths = []
             self.selectedDate = nil
-            self.selectedDatePolicies = []
+            self.selectedDatePolicies = .idle
+            self.daySheetPagination = PaginationState<String>()
             self.sortOrder = .deadline
             self.isDaySheetPresented = false
             self.centerDate = Calendar.current.startOfDay(for: centerDate)
@@ -64,12 +78,17 @@ public struct CalendarFeature: Sendable {
     public enum Action: Equatable {
         // MARK: View
         case onAppear
+        case didAppearMonth(Date)
         case didSelectDate(Date)
         case didDismissSheet
         case didTapSortOrderInSheet
-        case didToggleLikeInSheet(id: Int)
+        case didReachSheetListEnd
         case didTapPolicyInSheet(id: Int)
         case didTapMemoIcon(id: Int)
+
+        // MARK: Internal
+        case calendarResponse(month: String, Result<[Date], UseCaseError>)
+        case sheetPageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -84,9 +103,8 @@ public struct CalendarFeature: Sendable {
 
     // MARK: - Dependencies
 
+    @Dependency(\.calendarClient) var calendarClient
     @Dependency(\.calendar) var calendar
-    // TODO: BaziDomain의 내 정책 UseCase가 준비되면 추가
-    // @Dependency(\.myPolicyClient) var myPolicyClient
     @Dependency(\.continuousClock) var clock
 
     // MARK: - Init
@@ -99,12 +117,8 @@ public struct CalendarFeature: Sendable {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // TODO: myPolicyClient가 준비되면 MyPolicyAPI.getCalendar 응답으로 교체한다.
                 if state.months.isEmpty {
                     state.months = CalendarMonth.mockMonths(centeredOn: state.centerDate, calendar: calendar)
-                    state.deadlineDates = Set(PolicySummary.mockList.filter { !$0.isOpenEnded }.map {
-                        calendar.startOfDay(for: $0.deadlineDate)
-                    })
                 }
                 // 메모/상세로 이동했다 되돌아온 경우, 보고 있던 날짜의 시트를 다시 띄운다.
                 if state.selectedDate != nil {
@@ -112,26 +126,60 @@ public struct CalendarFeature: Sendable {
                 }
                 return .none
 
+            case .didAppearMonth(let monthDate):
+                let month = monthString(monthDate)
+                guard !state.requestedMonths.contains(month) else { return .none }
+                state.requestedMonths.insert(month)
+                return fetchDeadlines(month: month)
+
+            case let .calendarResponse(_, .success(dates)):
+                state.deadlineDates.formUnion(dates.map { calendar.startOfDay(for: $0) })
+                return .none
+
+            case let .calendarResponse(month, .failure):
+                // 실패 시 재조회 가능하도록 요청 기록에서 제거(다시 스크롤로 나타나면 재시도).
+                state.requestedMonths.remove(month)
+                return .none
+
             case .didSelectDate(let date):
                 state.selectedDate = date
-                state.selectedDatePolicies = policies(on: date, sortOrder: state.sortOrder)
                 state.isDaySheetPresented = true
-                return .none
+                return reloadSheetPolicies(&state)
 
             case .didDismissSheet:
                 state.isDaySheetPresented = false
                 state.selectedDate = nil
+                state.selectedDatePolicies = .idle
                 return .none
 
             case .didTapSortOrderInSheet:
                 state.sortOrder = state.sortOrder.next
-                if let date = state.selectedDate {
-                    state.selectedDatePolicies = policies(on: date, sortOrder: state.sortOrder)
+                return reloadSheetPolicies(&state)
+
+            case .didReachSheetListEnd:
+                guard state.daySheetPagination.canLoadNext, state.selectedDatePolicies.value != nil else { return .none }
+                state.daySheetPagination.isLoadingNext = true
+                return fetchSheetPolicies(state: state, isFirstPage: false)
+
+            case let .sheetPageResponse(.success(page), isFirstPage):
+                state.daySheetPagination.apply(page)
+                if isFirstPage {
+                    state.selectedDatePolicies = .loaded(page.policies)
+                } else {
+                    var current = state.selectedDatePolicies.value ?? []
+                    current.append(contentsOf: page.policies)
+                    state.selectedDatePolicies = .loaded(current)
                 }
                 return .none
 
-            case .didToggleLikeInSheet(let id):
-                state.selectedDatePolicies[id: id]?.isLiked.toggle()
+            case let .sheetPageResponse(.failure(error), isFirstPage):
+                if isFirstPage {
+                    if state.selectedDatePolicies.value == nil {
+                        state.selectedDatePolicies = .failed(error.loadFailureMessage)
+                    }
+                } else {
+                    state.daySheetPagination.isLoadingNext = false
+                }
                 return .none
 
             case .didTapPolicyInSheet(let id):
@@ -160,14 +208,53 @@ public struct CalendarFeature: Sendable {
 
     // MARK: - Private
 
-    private func policies(on date: Date, sortOrder: SortOrder) -> IdentifiedArrayOf<PolicySummary> {
-        let day = calendar.startOfDay(for: date)
-        let filtered = PolicySummary.mockList.filter {
-            !$0.isOpenEnded && calendar.startOfDay(for: $0.deadlineDate) == day
+    private enum CancelID: Hashable { case sheetPolicies }
+
+    private static let pageSize = 20
+
+    private func fetchDeadlines(month: String) -> Effect<Action> {
+        .run { [calendarClient] send in
+            do {
+                let dates = try await calendarClient.fetchCalendar(month)
+                await send(.calendarResponse(month: month, .success(dates)))
+            } catch {
+                await send(.calendarResponse(month: month, .failure(UseCaseError.map(error))))
+            }
         }
-        let sorted = sortOrder == .deadline
-            ? filtered.sorted { $0.deadlineDate < $1.deadlineDate }
-            : filtered.sorted { $0.id > $1.id }
-        return IdentifiedArray(uniqueElements: sorted)
+    }
+
+    /// 선택 날짜 시트 목록을 1페이지부터 재조회.
+    private func reloadSheetPolicies(_ state: inout State) -> Effect<Action> {
+        state.selectedDatePolicies = .loading
+        state.daySheetPagination.reset()
+        return fetchSheetPolicies(state: state, isFirstPage: true)
+    }
+
+    private func fetchSheetPolicies(state: State, isFirstPage: Bool) -> Effect<Action> {
+        guard let date = state.selectedDate else { return .none }
+        let targetDate = dayString(date)
+        let sort = state.sortOrder.serverValue
+        let cursor = isFirstPage ? nil : state.daySheetPagination.nextCursor
+        return .run { [calendarClient] send in
+            do {
+                let page = try await calendarClient.fetchDeadlineDate(targetDate, sort, cursor, Self.pageSize)
+                await send(.sheetPageResponse(.success(page), isFirstPage: isFirstPage))
+            } catch {
+                await send(.sheetPageResponse(.failure(UseCaseError.map(error)), isFirstPage: isFirstPage))
+            }
+        }
+        .cancellable(id: CancelID.sheetPolicies, cancelInFlight: true)
+    }
+
+    /// 주입된 calendar 기준 "yyyy-MM"(getCalendar targetMonth 파라미터용).
+    private func monthString(_ date: Date) -> String {
+        let components = calendar.dateComponents([.year, .month], from: date)
+        return String(format: "%04d-%02d", components.year ?? 0, components.month ?? 0)
+    }
+
+    /// 주입된 calendar 기준 "yyyy-MM-dd"(getDeadlineDatePolicies targetDate 파라미터용).
+    private func dayString(_ date: Date) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
     }
 }
