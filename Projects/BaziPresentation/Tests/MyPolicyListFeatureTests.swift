@@ -67,14 +67,14 @@ struct MyPolicyListFeatureTests {
         }
     }
 
-    @Test("찜 토글은 낙관적으로 반영된다")
-    func didToggleLike_optimistic() async {
-        var first = PolicySummaryVO.mockList[0]
-        first.isLiked = false
-        let state0 = IdentifiedArray(uniqueElements: [first])
+    @Test("찜 해제 시 목록에서 즉시 제거된다")
+    func didToggleLike_removesItem() async {
+        let items = Array(PolicySummaryVO.mockList.prefix(3))
+        let targetId = items[1].id
 
         var state = MyPolicyListFeature.State()
-        state.list = .loaded(state0)
+        state.list = .loaded(IdentifiedArray(uniqueElements: items))
+        state.pagination.totalCount = items.count
 
         let store = TestStore(initialState: state) {
             MyPolicyListFeature()
@@ -82,8 +82,11 @@ struct MyPolicyListFeatureTests {
             $0.policyLikeClient.setLike = { _, _ in }
         }
 
-        await store.send(.didToggleLike(id: first.id)) {
-            $0.list.value?[id: first.id]?.isLiked = true
+        await store.send(.didToggleLike(id: targetId)) {
+            var list = IdentifiedArray(uniqueElements: items)
+            list.remove(id: targetId)
+            $0.list = .loaded(list)
+            $0.pagination.totalCount = items.count - 1
         }
     }
 }
