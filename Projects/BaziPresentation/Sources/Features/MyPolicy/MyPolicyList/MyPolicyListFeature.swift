@@ -60,7 +60,7 @@ public struct MyPolicyListFeature {
 
         // MARK: Internal
         case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
-        case likeFailed(id: Int, liked: Bool)
+        case likeFailed(policy: PolicySummaryVO, index: Int)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -126,13 +126,25 @@ public struct MyPolicyListFeature {
                 return .none
 
             case .didToggleLike(let id):
-                guard let current = state.list.value?[id: id]?.isLiked else { return .none }
-                let newValue = !current
-                setLiked(&state, id: id, liked: newValue)
-                return likeEffect(id: id, liked: newValue)
+                // 내 정책(찜한 목록) — 좋아요 해제 시 목록에서 즉시 제거(낙관적). 실패 시 원위치 복구.
+                guard var list = state.list.value, let index = list.index(id: id) else { return .none }
+                let removed = list.remove(at: index)
+                state.list = .loaded(list)
+                state.pagination.totalCount = max(0, state.pagination.totalCount - 1)
+                return .run { [policyLikeClient] send in
+                    do {
+                        try await policyLikeClient.setLike(id, false)
+                    } catch {
+                        await send(.likeFailed(policy: removed, index: index))
+                    }
+                }
+                .cancellable(id: CancelID.like(id), cancelInFlight: true)
 
-            case let .likeFailed(id, liked):
-                setLiked(&state, id: id, liked: !liked)
+            case let .likeFailed(policy, index):
+                guard var list = state.list.value else { return .none }
+                list.insert(policy, at: min(index, list.count))
+                state.list = .loaded(list)
+                state.pagination.totalCount += 1
                 return .none
 
             case .didTapPolicy(let id):
@@ -153,23 +165,6 @@ public struct MyPolicyListFeature {
     private enum CancelID: Hashable { case list, like(Int) }
 
     private static let pageSize = 20
-
-    private func setLiked(_ state: inout State, id: Int, liked: Bool) {
-        guard var list = state.list.value, list[id: id] != nil else { return }
-        list[id: id]?.isLiked = liked
-        state.list = .loaded(list)
-    }
-
-    private func likeEffect(id: Int, liked: Bool) -> Effect<Action> {
-        .run { [policyLikeClient] send in
-            do {
-                try await policyLikeClient.setLike(id, liked)
-            } catch {
-                await send(.likeFailed(id: id, liked: liked))
-            }
-        }
-        .cancellable(id: CancelID.like(id), cancelInFlight: true)
-    }
 
     /// 1페이지부터 다시 조회한다. 진행 중인 요청은 취소한다.
     private func reloadFirstPage(_ state: inout State) -> Effect<Action> {
