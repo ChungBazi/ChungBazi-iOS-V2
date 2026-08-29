@@ -51,6 +51,8 @@ extension NotificationSettingView {
                     set: { store.send(.didToggleMyPolicyNotification($0)) }
                 )
             )
+            .disabled(!store.isAllNotificationOn)
+            .opacity(store.isAllNotificationOn ? 1 : 0.4)
             row(
                 title: "청바지 알림",
                 description: "새롭게 등록된 정책, 추천 정책, 인기 정책 등 다양한 청바지의 소식을 받아보세요.",
@@ -59,6 +61,8 @@ extension NotificationSettingView {
                     set: { store.send(.didToggleChungBaziNotification($0)) }
                 )
             )
+            .disabled(!store.isAllNotificationOn)
+            .opacity(store.isAllNotificationOn ? 1 : 0.4)
         }
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
