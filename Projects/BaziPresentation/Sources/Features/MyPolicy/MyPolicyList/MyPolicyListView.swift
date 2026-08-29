@@ -83,7 +83,7 @@ extension MyPolicyListView {
             BZButton("찜할 정책 둘러보러 가기", type: .normal2, size: .medium) {
                 store.send(.didTapBrowsePolicies)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 60)
         }
     }
 
