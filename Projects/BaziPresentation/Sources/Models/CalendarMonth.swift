@@ -2,11 +2,11 @@
 
 import Foundation
 
-/// 캘린더 화면(21번)의 한 달치 그리드. 일요일 시작 6주 그리드로 패딩한다.
+/// 캘린더 화면(21번)의 한 달치 그리드. 지역설정과 무관하게 일요일 시작 기준으로 첫 주의 앞 칸을 nil로 패딩한다.
 public struct CalendarMonth: Equatable, Identifiable, Sendable {
     public let firstDayOfMonth: Date
     public let title: String
-    /// 앞뒤 패딩을 포함한 일자 목록. `nil`은 해당 요일에 표시할 날짜가 없는 칸.
+    /// 첫 주의 앞 칸을 nil로 패딩한 일자 목록. `nil`은 해당 요일에 표시할 날짜가 없는 칸.
     public let days: [Date?]
 
     public var id: Date { firstDayOfMonth }
@@ -37,8 +37,9 @@ extension CalendarMonth {
     private static func month(containing monthStart: Date, calendar: Calendar) -> CalendarMonth? {
         guard let range = calendar.range(of: .day, in: .month, for: monthStart) else { return nil }
 
-        let leadingWeekday = calendar.component(.weekday, from: monthStart) - calendar.firstWeekday
-        let leadingPadding = (leadingWeekday + 7) % 7
+        // 헤더가 일요일~토요일 고정이므로, 지역설정(firstWeekday)과 무관하게 항상 일요일 시작으로 앞 칸을 패딩한다.
+        // .weekday는 firstWeekday와 무관하게 1(일)~7(토)로 고정이라 (weekday - 1)이 곧 일요일 시작 오프셋이다.
+        let leadingPadding = calendar.component(.weekday, from: monthStart) - 1
 
         let days: [Date?] = Array(repeating: nil, count: leadingPadding) + range.compactMap { day in
             calendar.date(byAdding: .day, value: day - 1, to: monthStart)
