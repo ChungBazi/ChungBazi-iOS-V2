@@ -9,7 +9,7 @@ public struct EventKitServiceImpl: EventKitService {
 
     public init() {}
 
-    public func addEvent(title: String, date: Date, notes: String?) async throws {
+    public func addEvent(title: String, date: Date, url: URL?) async throws {
         // EKEventStore는 Sendable이 아니라 저장하지 않고 호출마다 생성한다.
         // 시스템 권한은 앱 단위라 재요청해도 이미 허용됐으면 즉시 허용으로 돌아온다.
         let eventStore = EKEventStore()
@@ -22,7 +22,8 @@ public struct EventKitServiceImpl: EventKitService {
         event.isAllDay = true
         event.startDate = date
         event.endDate = date
-        event.notes = notes
+        // 정책 상세 딥링크. iOS 캘린더 앱에서 이벤트의 URL 필드로 노출돼 탭하면 앱으로 열린다.
+        event.url = url
         event.calendar = eventStore.defaultCalendarForNewEvents
         event.addAlarm(EKAlarm(relativeOffset: -60 * 60 * 24)) // 하루 전 알림
 

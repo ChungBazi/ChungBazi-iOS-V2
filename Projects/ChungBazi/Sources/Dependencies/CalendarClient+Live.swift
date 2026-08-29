@@ -24,9 +24,13 @@ extension CalendarClient: @retroactive DependencyKey {
                 let page = try await fetchDeadlineDateUseCase.execute(targetDate: targetDate, sort: sort, cursor: cursor, size: size)
                 return PolicyPageVO(page)
             },
-            // notes(딥링크)는 앱 커스텀 URL 스킴이 없어 v1에서는 nil. 스킴 추가 시 딥링크 문자열 전달 예정.
-            addDeadline: { title, date in
-                try await addCalendarEventUseCase.execute(title: title, date: date, notes: nil)
+            // 이벤트 URL에 정책 상세 딥링크(chungbazi://policy/{id})를 심는다. 탭하면 앱이 열려 상세로 이동.
+            addDeadline: { policyId, title, date in
+                try await addCalendarEventUseCase.execute(
+                    title: title,
+                    date: date,
+                    url: PolicyDeeplink.url(policyId: policyId)
+                )
             }
         )
     }()

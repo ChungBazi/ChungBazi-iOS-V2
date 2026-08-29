@@ -26,6 +26,9 @@ struct ChungBaziApp: App {
                     _ = AuthController.handleOpenUrl(url: url)
                 } else if let policyId = KakaoLinkParser.policyId(from: url) {
                     DeeplinkPublisher.policyDetail(id: policyId)
+                } else if let policyId = PolicyDeeplink.policyId(from: url) {
+                    // 캘린더 이벤트 URL(chungbazi://policy/{id}) 탭 → 정책 상세.
+                    DeeplinkPublisher.policyDetail(id: policyId)
                 }
             }
         }
