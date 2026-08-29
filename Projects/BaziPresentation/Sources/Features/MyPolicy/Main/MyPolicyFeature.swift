@@ -14,7 +14,7 @@ public struct MyPolicyFeature {
         case policyList(MyPolicyListFeature)
         case calendar(CalendarFeature)
         case memo(PolicyMemoFeature)
-        case detail(PlaceholderDetailFeature)
+        // TODO: 정책 목록이 서버에 연결되면 case detail(PolicyDetailFeature)로 상세 화면을 연결한다.
     }
 
     // MARK: - Tab
@@ -40,12 +40,14 @@ public struct MyPolicyFeature {
         public var path = StackState<Path.State>()
 
         public var deadlineTeaser: IdentifiedArrayOf<PolicySummary>
-        /// 주간 스트립의 중심(항상 오늘). 스트립 자체는 좌우로 움직이지 않고, 이 날짜 기준 고정된 7일만 보여준다.
-        public let today: Date
+        /// 주간 스트립의 중심(항상 오늘). onAppear에서 주입된 `date.now` 기준으로 설정된다. (init 값은 placeholder)
+        public var today: Date
         public var selectedDate: Date
         public var selectedTab: Tab
         public var sortOrder: SortOrder
         public var policies: IdentifiedArrayOf<PolicySummary>
+        /// onAppear에서 today/selectedDate를 주입된 오늘로 최초 1회만 맞추기 위한 가드.
+        public var didLoad = false
 
         /// 오늘을 중심으로 앞뒤 3일씩, 총 7일. 좌우 스크롤 없이 이 범위 안에서만 날짜를 고를 수 있다.
         public var weekDates: [Date] {
@@ -84,6 +86,8 @@ public struct MyPolicyFeature {
 
     // MARK: - Dependencies
 
+    @Dependency(\.date.now) var now
+    @Dependency(\.calendar) var calendar
     // TODO: BaziDomain의 내 정책 UseCase가 준비되면 추가
     // @Dependency(\.myPolicyClient) var myPolicyClient
 
@@ -97,6 +101,13 @@ public struct MyPolicyFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                // 주입된 date.now 기준으로 오늘을 최초 1회 설정한다. (재진입 시엔 선택된 날짜 유지)
+                if !state.didLoad {
+                    state.didLoad = true
+                    let today = calendar.startOfDay(for: now)
+                    state.today = today
+                    state.selectedDate = today
+                }
                 // TODO: myPolicyClient가 준비되면 MyPolicyAPI 응답으로 교체한다.
                 state.deadlineTeaser = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2)))
                 state.policies = policies(tab: state.selectedTab, date: state.selectedDate, sortOrder: state.sortOrder)
@@ -128,7 +139,7 @@ public struct MyPolicyFeature {
                 return .none
 
             case .didTapPolicy:
-                state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
+                // TODO: 정책 목록 서버 연결 후 PolicyDetailFeature(policyId:)로 상세를 연결한다. (현재는 상세 진입 차단)
                 return .none
 
             case .didTapMemo(let id):
@@ -141,7 +152,7 @@ public struct MyPolicyFeature {
 
             case .path(.element(_, .policyList(.delegate(.didSelectPolicy)))),
                  .path(.element(_, .calendar(.delegate(.didSelectPolicy)))):
-                state.path.append(.detail(PlaceholderDetailFeature.State(id: UUID())))
+                // TODO: 정책 목록 서버 연결 후 PolicyDetailFeature(policyId:)로 상세를 연결한다. (현재는 상세 진입 차단)
                 return .none
 
             case .path(.element(_, .calendar(.delegate(.didTapMemo(let policyId))))):
@@ -161,9 +172,9 @@ public struct MyPolicyFeature {
         let filtered: [PolicySummary]
         switch tab {
         case .policy:
-            let day = Calendar.current.startOfDay(for: date)
+            let day = calendar.startOfDay(for: date)
             filtered = PolicySummary.mockList.filter {
-                !$0.isOpenEnded && Calendar.current.startOfDay(for: $0.deadlineDate) == day
+                !$0.isOpenEnded && calendar.startOfDay(for: $0.deadlineDate) == day
             }
         case .openEnded:
             filtered = PolicySummary.mockList.filter(\.isOpenEnded)
