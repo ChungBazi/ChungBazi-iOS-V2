@@ -11,6 +11,10 @@ let project = Project.project(
             infoPlist: .extendingDefault(with: [
                 "BASE_URL": .string("$(BASE_URL)"),
                 "KAKAO_NATIVE_APP_KEY": .string("$(KAKAO_NATIVE_APP_KEY)"),
+                // 앱 표시 이름 / 마케팅 버전
+                "CFBundleDisplayName": .string("청바지"),
+                "CFBundleName": .string("청바지"),
+                "CFBundleShortVersionString": .string("2.0.0"),
                 "UILaunchScreen": .dictionary([:]),
                 "UISupportedInterfaceOrientations": .array([.string("UIInterfaceOrientationPortrait")]),
                 "UIApplicationSceneManifest": .dictionary([
