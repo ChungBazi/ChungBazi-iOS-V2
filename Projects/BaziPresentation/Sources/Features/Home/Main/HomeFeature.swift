@@ -17,6 +17,7 @@ public struct HomeFeature {
         case customPolicyList(CustomPolicyListFeature)
         case notification(NotificationFeature)
         case policyDetail(PolicyDetailFeature)
+        case policyProfileEdit(PolicyProfileEditFeature)
     }
 
     // MARK: - PolicySection
@@ -129,7 +130,7 @@ public struct HomeFeature {
                 return .none
 
             case .didTapPersonalizedEmptyCTA:
-                // TODO: SharedRoute.policyRecommendationEdit(맞춤 조건 다시 설정) Feature가 준비되면 연결한다.
+                state.path.append(.policyProfileEdit(PolicyProfileEditFeature.State()))
                 return .none
 
             case .didTapPopularMore:

@@ -42,6 +42,8 @@ public struct HomeView: View {
                 NotificationView(store: store)
             case .policyDetail(let store):
                 PolicyDetailView(store: store)
+            case .policyProfileEdit(let store):
+                PolicyProfileEditView(store: store)
             }
         }
     }
