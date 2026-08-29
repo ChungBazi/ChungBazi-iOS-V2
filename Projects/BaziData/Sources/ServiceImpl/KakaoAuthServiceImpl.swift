@@ -6,7 +6,7 @@ import BaziDomain
 import KakaoSDKAuth
 import KakaoSDKUser
 
-public struct KakaoLoginServiceImpl: KakaoLoginService {
+public struct KakaoAuthServiceImpl: KakaoAuthService {
 
     public init() {}
 
@@ -27,6 +27,20 @@ public struct KakaoLoginServiceImpl: KakaoLoginService {
                     UserApi.shared.loginWithKakaoTalk(completion: completion)
                 } else {
                     UserApi.shared.loginWithKakaoAccount(completion: completion)
+                }
+            }
+        }
+    }
+
+    public func unlink() async throws {
+        // 카카오로 로그인한 계정만 해제한다. 토큰이 없으면(애플 계정 등) no-op.
+        guard AuthApi.hasToken() else { return }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            UserApi.shared.unlink { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
                 }
             }
         }
