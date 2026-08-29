@@ -117,22 +117,9 @@ extension CategoryPolicyListView {
     }
 
     private var resultsToolbar: some View {
-        HStack {
-            Text("\(store.pagination.totalCount)개")
-            Spacer()
-            Button {
-                store.send(.didTapSortOrder)
-            } label: {
-                HStack(spacing: 3) {
-                    Image(systemName: "arrow.up.arrow.down")
-                    Text(store.sortOrder.rawValue)
-                }
-            }
+        BZResultsToolbar(count: store.pagination.totalCount, sortTitle: store.sortOrder.rawValue) {
+            store.send(.didTapSortOrder)
         }
-        .baziFont(.small14R)
-        .foregroundStyle(Color.gray600)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
     }
 
     private func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
@@ -154,6 +141,7 @@ extension CategoryPolicyListView {
                 }
             }
         }
+        .padding(.top, 8)
         .padding([.horizontal, .bottom], 20)
     }
 

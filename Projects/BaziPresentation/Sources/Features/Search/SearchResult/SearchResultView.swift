@@ -72,24 +72,9 @@ extension SearchResultView {
     }
 
     private var resultsToolbar: some View {
-        HStack {
-            Text("\(store.pagination.totalCount)개")
-            Spacer()
-            Button {
-                store.send(.didTapSortOrder)
-            } label: {
-                HStack(spacing: 3) {
-                    Image(systemName: "arrow.up.arrow.down")
-                    Text(store.sortOrder.rawValue)
-                }
-            }
-            .buttonStyle(.plain)
+        BZResultsToolbar(count: store.pagination.totalCount, sortTitle: store.sortOrder.rawValue) {
+            store.send(.didTapSortOrder)
         }
-        .baziFont(.small14R)
-        .foregroundStyle(Color.gray600)
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-        .padding(.bottom, 8)
     }
 
     @ViewBuilder
