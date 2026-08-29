@@ -21,4 +21,9 @@ public struct UserRepositoryImpl: UserRepository {
         let dto: OnboardingResponseDTO = try await networkProvider.request(UserAPI.onboarding(body: info.toRequestDTO()))
         return dto.nickname
     }
+
+    public func getProfile() async throws -> UserProfile {
+        let dto: UserInfoResponseDTO = try await networkProvider.request(UserAPI.getProfile)
+        return dto.toEntity()
+    }
 }
