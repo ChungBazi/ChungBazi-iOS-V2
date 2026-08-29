@@ -2,6 +2,8 @@
 
 import ComposableArchitecture
 
+import BaziDomain
+
 /// 프로필 > 내 정보 수정 > 탈퇴하기(32).
 /// 안내 확인 → 탈퇴 사유 선택 → "정말 탈퇴하시겠어요?" 확인 알럿 → 완료 알럿 순서로 진행된다.
 @Reducer
@@ -12,7 +14,7 @@ public struct WithdrawFeature {
     @ObservableState
     public struct State: Equatable {
         public var hasConfirmedNotice = false
-        public var selectedReasons: Set<String> = []
+        public var selectedReasons: Set<WithdrawReasonUI> = []
         public var detailText = ""
         public var isWithdrawing = false
         public var activeAlert: ActiveAlert?
@@ -29,6 +31,7 @@ public struct WithdrawFeature {
     public enum ActiveAlert: Equatable {
         case confirm
         case completion
+        case error
     }
 
     // MARK: - Action
@@ -36,15 +39,17 @@ public struct WithdrawFeature {
     public enum Action: Equatable {
         // MARK: View
         case didToggleConfirmedNotice
-        case didToggleReason(String)
+        case didToggleReason(WithdrawReasonUI)
         case didChangeDetailText(String)
         case didTapWithdrawButton
         case didCancelConfirm
         case didConfirmWithdraw
         case didTapCompletionConfirm
+        case didDismissError
 
         // MARK: Internal
         case didFinishWithdraw
+        case didFailWithdraw
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -59,8 +64,7 @@ public struct WithdrawFeature {
     // MARK: - Dependencies
 
     @Dependency(\.sessionClient) var sessionClient
-    // TODO: BaziDomain의 회원 탈퇴 UseCase가 준비되면 추가
-    // @Dependency(\.withdrawClient) var withdrawClient
+    @Dependency(\.withdrawClient) var withdrawClient
 
     // MARK: - Init
 
@@ -99,14 +103,34 @@ public struct WithdrawFeature {
             case .didConfirmWithdraw:
                 state.activeAlert = nil
                 state.isWithdrawing = true
-                // TODO: withdrawClient가 준비되면 UserAPI.withdraw(reasons:detail:) 호출로 교체한다.
-                return .run { send in
-                    await send(.didFinishWithdraw)
+                // 선택 순서와 무관하게 표시 순서(allCases)로 정렬해 서버 코드로 매핑한다.
+                let reasons = WithdrawReasonUI.allCases
+                    .filter { state.selectedReasons.contains($0) }
+                    .map { $0.toDomain() }
+                let trimmed = state.detailText.trimmingCharacters(in: .whitespacesAndNewlines)
+                let request = WithdrawRequest(reasons: reasons, detail: trimmed.isEmpty ? nil : trimmed)
+                return .run { [withdrawClient] send in
+                    // 서버 탈퇴가 성공해야 완료 처리한다.
+                    do {
+                        try await withdrawClient.withdraw(request)
+                        await send(.didFinishWithdraw)
+                    } catch {
+                        await send(.didFailWithdraw)
+                    }
                 }
 
             case .didFinishWithdraw:
                 state.isWithdrawing = false
                 state.activeAlert = .completion
+                return .none
+
+            case .didFailWithdraw:
+                state.isWithdrawing = false
+                state.activeAlert = .error
+                return .none
+
+            case .didDismissError:
+                state.activeAlert = nil
                 return .none
 
             case .didTapCompletionConfirm:
@@ -121,18 +145,4 @@ public struct WithdrawFeature {
             }
         }
     }
-}
-
-// MARK: - Reasons
-
-extension WithdrawFeature {
-
-    public static let reasons = [
-        "원하는 정책을 찾기 어려워요.",
-        "저에게 맞는 정책 추천이 부족해요.",
-        "이용할 일이 없어졌어요.",
-        "앱 사용이 불편했어요.",
-        "오류가 자주 발생했어요.",
-        "기타 이유가 있어요.",
-    ]
 }

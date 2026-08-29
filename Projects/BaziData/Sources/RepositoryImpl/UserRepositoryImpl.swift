@@ -35,4 +35,8 @@ public struct UserRepositoryImpl: UserRepository {
     public func updatePolicyProfile(_ info: OnboardingInfo) async throws {
         try await networkProvider.requestStatusCode(UserAPI.updatePolicyProfile(body: info.toRequestDTO()))
     }
+
+    public func withdraw(_ request: WithdrawRequest) async throws {
+        try await networkProvider.requestStatusCode(UserAPI.withdraw(body: request.toRequestDTO()))
+    }
 }

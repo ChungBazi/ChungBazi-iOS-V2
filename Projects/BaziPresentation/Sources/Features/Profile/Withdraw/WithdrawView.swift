@@ -47,6 +47,19 @@ public struct WithdrawView: View {
             ) {
                 Button("확인") { store.send(.didTapCompletionConfirm) }
             }
+            .alert(
+                "탈퇴에 실패했어요",
+                isPresented: Binding(
+                    get: { store.activeAlert == .error },
+                    set: { isPresented in
+                        if !isPresented { store.send(.didDismissError) }
+                    }
+                )
+            ) {
+                Button("확인") { store.send(.didDismissError) }
+            } message: {
+                Text("잠시 후 다시 시도해 주세요.")
+            }
     }
 }
 
@@ -152,8 +165,8 @@ extension WithdrawView {
                     .foregroundStyle(Color.gray500)
             }
 
-            ForEach(WithdrawFeature.reasons, id: \.self) { reason in
-                checkboxRow(title: reason, isSelected: store.selectedReasons.contains(reason)) {
+            ForEach(WithdrawReasonUI.allCases, id: \.self) { reason in
+                checkboxRow(title: reason.rawValue, isSelected: store.selectedReasons.contains(reason)) {
                     store.send(.didToggleReason(reason))
                 }
             }

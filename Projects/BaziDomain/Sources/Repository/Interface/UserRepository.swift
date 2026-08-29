@@ -9,4 +9,6 @@ public protocol UserRepository: Sendable {
     func getProfile() async throws -> UserProfile
     func getPolicyProfile() async throws -> OnboardingInfo
     func updatePolicyProfile(_ info: OnboardingInfo) async throws
+    /// 회원 탈퇴시, 서버가 Apple revoke까지 처리한다.
+    func withdraw(_ request: WithdrawRequest) async throws
 }
