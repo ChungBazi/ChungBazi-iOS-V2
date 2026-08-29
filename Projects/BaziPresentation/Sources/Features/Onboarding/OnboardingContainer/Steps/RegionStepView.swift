@@ -36,16 +36,22 @@ extension RegionStepView {
             BZSelectField(
                 title: "시/도 선택",
                 placeholder: "시/도 선택",
-                options: store.sidoList.map(\.name),
-                selection: $store.province
+                options: store.sidoOptions.map(\.name),
+                selection: Binding(
+                    get: { store.selectedSido?.name },
+                    set: { name in store.send(.didSelectSido(store.sidoOptions.first { $0.name == name })) }
+                )
             )
 
             BZSelectField(
                 title: "시/군/구 선택",
                 placeholder: "시/군/구 선택",
-                options: store.sigunguList.map(\.name),
-                selection: $store.district,
-                isDisabled: store.province == nil
+                options: store.sigunguOptions.map(\.name),
+                selection: Binding(
+                    get: { store.selectedSigungu?.name },
+                    set: { name in store.send(.didSelectSigungu(store.sigunguOptions.first { $0.name == name })) }
+                ),
+                isDisabled: store.selectedSido == nil
             )
         }
     }

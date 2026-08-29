@@ -6,8 +6,8 @@ import BaziCore
 import BaziDomain
 import ComposableArchitecture
 
-/// 프로필 > 정책 맞춤 조건 수정(24). 온보딩과 동일한 항목(생년월일/거주지역/학업단계/직업/소득분위/관심분야)을
-/// 한 화면에 모아 보여주고 한 번에 저장한다.
+/// 프로필 > 정책 맞춤 조건 수정. 서버 기존 값(getPolicyProfile)으로 프리필하고, 수정 후 저장(updatePolicyProfile)한다.
+/// State는 표시용 VO(`RegionVO`, `EducationUI` 등)를 보유하고, 저장/프리필 시에만 도메인 코드로 변환한다.
 @Reducer
 public struct PolicyProfileEditFeature {
 
@@ -21,52 +21,38 @@ public struct PolicyProfileEditFeature {
         public var day: Int
 
         // MARK: Region
-        public var sidoList: [RegionInfo] = []
-        public var sigunguList: [RegionInfo] = []
-        public var province: String?
-        public var district: String?
+        public var sidoOptions: [RegionVO] = []
+        public var sigunguOptions: [RegionVO] = []
+        public var selectedSido: RegionVO?
+        public var selectedSigungu: RegionVO?
+        /// 프리필 시 시군구 목록 로드 후 이 코드로 selectedSigungu를 채운다.
+        public var pendingSigunguCode: String?
 
         // MARK: Education / Employment / Income
-        public var education: String?
-        public var employment: String?
-        public var income: String?
+        public var education: EducationUI?
+        public var employment: EmploymentUI?
+        public var income: IncomeLevelUI?
 
         // MARK: Interest
-        public var selectedCategories: Set<String>
+        public var interests: Set<InterestCategoryUI> = []
 
         // MARK: Save
         public var isSaving = false
         public var isSuccessToastPresented = false
 
-        public init(
-            year: Int = 2000,
-            month: Int = 1,
-            day: Int = 1,
-            province: String? = nil,
-            district: String? = nil,
-            education: String? = nil,
-            employment: String? = nil,
-            income: String? = nil,
-            selectedCategories: Set<String> = []
-        ) {
+        public init(year: Int = 2000, month: Int = 1, day: Int = 1) {
             self.year = year
             self.month = month
             self.day = day
-            self.province = province
-            self.district = district
-            self.education = education
-            self.employment = employment
-            self.income = income
-            self.selectedCategories = selectedCategories
         }
 
         public var isSaveEnabled: Bool {
-            province != nil
-                && district != nil
+            selectedSido != nil
+                && selectedSigungu != nil
                 && education != nil
                 && employment != nil
                 && income != nil
-                && selectedCategories.count >= PolicyProfileEditFeature.minimumInterestCount
+                && interests.count >= PolicyProfileEditFeature.minimumInterestCount
                 && !isSaving
         }
     }
@@ -77,13 +63,20 @@ public struct PolicyProfileEditFeature {
         // MARK: View
         case onAppear
         case binding(BindingAction<State>)
-        case didTapCategory(String)
+        case didSelectSido(RegionVO?)
+        case didSelectSigungu(RegionVO?)
+        case didSelectEducation(EducationUI?)
+        case didSelectEmployment(EmploymentUI?)
+        case didSelectIncome(IncomeLevelUI?)
+        case didTapInterest(InterestCategoryUI)
         case didTapSaveButton
 
         // MARK: Internal
-        case sidoListResponse(Result<[RegionInfo], UseCaseError>)
-        case sigunguListResponse(Result<[RegionInfo], UseCaseError>)
+        case profileResponse(Result<OnboardingInfo, UseCaseError>)
+        case sidoResponse(Result<[RegionVO], UseCaseError>)
+        case sigunguResponse(Result<[RegionVO], UseCaseError>)
         case didSaveProfile
+        case didFailToSaveProfile(UseCaseError)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -96,10 +89,9 @@ public struct PolicyProfileEditFeature {
     // MARK: - Dependencies
 
     @Dependency(\.onboardingClient) var onboardingClient
+    @Dependency(\.policyProfileClient) var policyProfileClient
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
-    // TODO: BaziDomain의 정책 맞춤 조건 조회/수정 UseCase가 준비되면 추가
-    // @Dependency(\.policyProfileClient) var policyProfileClient
 
     // MARK: - Init
 
@@ -118,33 +110,77 @@ public struct PolicyProfileEditFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // TODO: policyProfileClient가 준비되면 getPolicyProfile 응답으로 현재 값을 채운다.
-                return .run { [onboardingClient] send in
+                // 시도 목록을 먼저 받은 뒤 프로필을 받아, sidoCode를 시도 VO로 역매핑할 수 있게 한다.
+                return .run { [onboardingClient, policyProfileClient] send in
                     do {
-                        let sidoList = try await onboardingClient.fetchSidoList()
-                        await send(.sidoListResponse(.success(sidoList)))
+                        let sido = try await onboardingClient.fetchSidoList()
+                        await send(.sidoResponse(.success(sido.map(RegionVO.init))))
                     } catch {
-                        await send(.sidoListResponse(.failure(UseCaseError.map(error))))
+                        await send(.sidoResponse(.failure(UseCaseError.map(error))))
+                    }
+                    do {
+                        let profile = try await policyProfileClient.getPolicyProfile()
+                        await send(.profileResponse(.success(profile)))
+                    } catch {
+                        await send(.profileResponse(.failure(UseCaseError.map(error))))
                     }
                 }
 
-            case .sidoListResponse(.success(let list)):
-                state.sidoList = list
+            case .sidoResponse(.success(let list)):
+                state.sidoOptions = list
                 return .none
 
-            case .sidoListResponse(.failure):
+            case .sidoResponse(.failure):
                 // TODO: 시도 목록 로드 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 
-            case .binding(\.province):
-                return fetchSigunguList(state: &state)
+            case .profileResponse(.success(let profile)):
+                applyProfile(profile, to: &state)
+                return fetchSigunguList(&state)
 
-            case .sigunguListResponse(.success(let list)):
-                state.sigunguList = list
+            case .profileResponse(.failure):
+                // TODO: 정책 맞춤 조건 조회 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 
-            case .sigunguListResponse(.failure):
+            case .didSelectSido(let sido):
+                state.selectedSido = sido
+                state.pendingSigunguCode = nil
+                return fetchSigunguList(&state)
+
+            case .sigunguResponse(.success(let list)):
+                state.sigunguOptions = list
+                if let code = state.pendingSigunguCode {
+                    state.selectedSigungu = list.first { $0.code == code }
+                    state.pendingSigunguCode = nil
+                }
+                return .none
+
+            case .sigunguResponse(.failure):
                 // TODO: 시군구 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+                return .none
+
+            case .didSelectSigungu(let sigungu):
+                state.selectedSigungu = sigungu
+                return .none
+
+            case .didSelectEducation(let value):
+                state.education = value
+                return .none
+
+            case .didSelectEmployment(let value):
+                state.employment = value
+                return .none
+
+            case .didSelectIncome(let value):
+                state.income = value
+                return .none
+
+            case .didTapInterest(let interest):
+                if state.interests.contains(interest) {
+                    state.interests.remove(interest)
+                } else {
+                    state.interests.insert(interest)
+                }
                 return .none
 
             case .binding(\.year), .binding(\.month):
@@ -154,25 +190,26 @@ public struct PolicyProfileEditFeature {
             case .binding:
                 return .none
 
-            case .didTapCategory(let category):
-                if state.selectedCategories.contains(category) {
-                    state.selectedCategories.remove(category)
-                } else {
-                    state.selectedCategories.insert(category)
-                }
-                return .none
-
             case .didTapSaveButton:
-                guard state.isSaveEnabled else { return .none }
+                guard state.isSaveEnabled, let info = makeOnboardingInfo(state) else { return .none }
                 state.isSaving = true
-                // TODO: policyProfileClient가 준비되면 실제 updatePolicyProfile 호출로 교체한다.
-                return .run { send in
-                    await send(.didSaveProfile)
+                return .run { [policyProfileClient] send in
+                    do {
+                        try await policyProfileClient.updatePolicyProfile(info)
+                        await send(.didSaveProfile)
+                    } catch {
+                        await send(.didFailToSaveProfile(UseCaseError.map(error)))
+                    }
                 }
 
             case .didSaveProfile:
                 state.isSaving = false
                 state.isSuccessToastPresented = true
+                return .none
+
+            case .didFailToSaveProfile:
+                state.isSaving = false
+                // TODO: 저장 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 
             case .delegate:
@@ -182,6 +219,44 @@ public struct PolicyProfileEditFeature {
     }
 
     // MARK: - Private
+
+    /// 서버 프로필(도메인 코드)을 화면 VO로 역매핑해 프리필한다. (시군구는 목록 로드 후 pendingSigunguCode로 해결)
+    private func applyProfile(_ profile: OnboardingInfo, to state: inout State) {
+        let parts = profile.birth.split(separator: "-").compactMap { Int($0) }
+        if parts.count == 3 {
+            state.year = parts[0]
+            state.month = parts[1]
+            state.day = parts[2]
+        }
+        state.selectedSido = state.sidoOptions.first { $0.code == profile.sidoCode }
+        state.pendingSigunguCode = profile.sigunguCode
+        state.education = EducationUI(domain: profile.educationCode)
+        state.employment = EmploymentUI(domain: profile.employmentCode)
+        state.income = IncomeLevelUI(domain: profile.incomeLevel)
+        state.interests = Set(profile.interestCategories.compactMap(InterestCategoryUI.init(domain:)))
+    }
+
+    /// 화면 VO를 도메인 코드로 조립한다. 필수 값이 없으면 nil.
+    private func makeOnboardingInfo(_ state: State) -> OnboardingInfo? {
+        guard
+            let sido = state.selectedSido,
+            let sigungu = state.selectedSigungu,
+            let education = state.education,
+            let employment = state.employment,
+            let income = state.income
+        else {
+            return nil
+        }
+        return OnboardingInfo(
+            birth: String(format: "%04d-%02d-%02d", state.year, state.month, state.day),
+            sidoCode: sido.code,
+            sigunguCode: sigungu.code,
+            educationCode: education.toDomain(),
+            employmentCode: employment.toDomain(),
+            incomeLevel: income.toDomain(),
+            interestCategories: state.interests.map { $0.toDomain() }
+        )
+    }
 
     /// 생년월일이 오늘을 넘지 않도록 연/월 변경 시 연·월·일을 보정한다. (미래 생일 방지)
     private func clampBirthDateToToday(_ state: inout State) {
@@ -197,18 +272,18 @@ public struct PolicyProfileEditFeature {
         state.day = clamped.day
     }
 
-    private func fetchSigunguList(state: inout State) -> Effect<Action> {
-        state.district = nil
-        state.sigunguList = []
-        guard let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code else {
+    private func fetchSigunguList(_ state: inout State) -> Effect<Action> {
+        state.selectedSigungu = nil
+        state.sigunguOptions = []
+        guard let sidoCode = state.selectedSido?.code else {
             return .cancel(id: CancelID.sigunguFetch)
         }
         return .run { [onboardingClient] send in
             do {
                 let list = try await onboardingClient.fetchSigunguList(sidoCode)
-                await send(.sigunguListResponse(.success(list)))
+                await send(.sigunguResponse(.success(list.map(RegionVO.init))))
             } catch {
-                await send(.sigunguListResponse(.failure(UseCaseError.map(error))))
+                await send(.sigunguResponse(.failure(UseCaseError.map(error))))
             }
         }
         .cancellable(id: CancelID.sigunguFetch, cancelInFlight: true)
@@ -218,10 +293,5 @@ public struct PolicyProfileEditFeature {
 // MARK: - Options
 
 extension PolicyProfileEditFeature {
-
-    public static let educationOptions = EducationCode.onboardingOptions.map(\.displayName)
-    public static let employmentOptions = EmploymentCode.onboardingOptions.map(\.displayName)
-    public static let incomeOptions = IncomeLevel.onboardingOptions.map(\.displayName)
     public static let minimumInterestCount = 3
-    public static let interestCategories = PolicySubCategoryType.allCases.map(\.displayName)
 }

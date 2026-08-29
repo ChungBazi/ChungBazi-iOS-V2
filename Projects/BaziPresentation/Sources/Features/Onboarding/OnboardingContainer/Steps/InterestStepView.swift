@@ -47,12 +47,12 @@ extension InterestStepView {
     
     private var categoryGrid: some View {
         LazyVGrid(columns: columns, spacing: 16) {
-            ForEach(OnboardingContainerFeature.interestCategories, id: \.self) { category in
+            ForEach(InterestCategoryUI.allCases, id: \.self) { interest in
                 BZChoiceChip(
-                    category,
-                    isSelected: store.selectedCategories.contains(category)
+                    interest.rawValue,
+                    isSelected: store.interests.contains(interest)
                 ) {
-                    store.send(.didTapCategory(category))
+                    store.send(.didTapInterest(interest))
                 }
             }
         }

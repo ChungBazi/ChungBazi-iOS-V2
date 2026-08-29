@@ -8,6 +8,7 @@ import ComposableArchitecture
 
 /// 온보딩의 "진행 중" 6단계(생년월일~관심분야)를 하나의 컨테이너로 관리한다.
 /// 진행바/하단 버튼이 화면 전환 없이 유지되어야 하므로 각 단계를 별도 push 화면이 아닌 `currentStep` 전환으로 다룬다.
+/// State는 표시용 VO(`RegionVO`, `EducationUI` 등)를 보유하고, 제출 시에만 도메인 코드로 변환한다.
 @Reducer
 public struct OnboardingContainerFeature {
 
@@ -40,22 +41,18 @@ public struct OnboardingContainerFeature {
         public var hasChangedDay = false
 
         // MARK: Region
-        public var sidoList: [RegionInfo] = []
-        public var sigunguList: [RegionInfo] = []
-        public var province: String?
-        public var district: String?
+        public var sidoOptions: [RegionVO] = []
+        public var sigunguOptions: [RegionVO] = []
+        public var selectedSido: RegionVO?
+        public var selectedSigungu: RegionVO?
 
-        // MARK: Education
-        public var education: String?
-
-        // MARK: Employment
-        public var employment: String?
-
-        // MARK: Income
-        public var income: String?
+        // MARK: Education / Employment / Income
+        public var education: EducationUI?
+        public var employment: EmploymentUI?
+        public var income: IncomeLevelUI?
 
         // MARK: Interest
-        public var selectedCategories: Set<String> = []
+        public var interests: Set<InterestCategoryUI> = []
 
         // MARK: Submit
         public var isSubmitting = false
@@ -65,11 +62,11 @@ public struct OnboardingContainerFeature {
         var isCurrentStepValid: Bool {
             switch currentStep {
             case .birthDate: return hasChangedYear && hasChangedMonth && hasChangedDay
-            case .region: return province != nil && district != nil
+            case .region: return selectedSido != nil && selectedSigungu != nil
             case .education: return education != nil
             case .employment: return employment != nil
             case .income: return income != nil
-            case .interest: return selectedCategories.count >= OnboardingContainerFeature.minimumInterestCount
+            case .interest: return interests.count >= OnboardingContainerFeature.minimumInterestCount
             }
         }
     }
@@ -80,13 +77,18 @@ public struct OnboardingContainerFeature {
         // MARK: View
         case onAppear
         case binding(BindingAction<State>)
-        case didTapCategory(String)
+        case didSelectSido(RegionVO?)
+        case didSelectSigungu(RegionVO?)
+        case didSelectEducation(EducationUI?)
+        case didSelectEmployment(EmploymentUI?)
+        case didSelectIncome(IncomeLevelUI?)
+        case didTapInterest(InterestCategoryUI)
         case didTapPreviousButton
         case didTapNextButton
 
         // MARK: Internal
-        case sidoListResponse(Result<[RegionInfo], UseCaseError>)
-        case sigunguListResponse(Result<[RegionInfo], UseCaseError>)
+        case sidoResponse(Result<[RegionVO], UseCaseError>)
+        case sigunguResponse(Result<[RegionVO], UseCaseError>)
         case didSubmitOnboarding(String)
         case didFailToSubmitOnboarding(UseCaseError)
 
@@ -111,6 +113,12 @@ public struct OnboardingContainerFeature {
 
     public init() {}
 
+    // MARK: - CancelID
+
+    private enum CancelID {
+        case sigunguFetch
+    }
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -120,30 +128,55 @@ public struct OnboardingContainerFeature {
             case .onAppear:
                 return .run { [onboardingClient] send in
                     do {
-                        let sidoList = try await onboardingClient.fetchSidoList()
-                        await send(.sidoListResponse(.success(sidoList)))
+                        let sido = try await onboardingClient.fetchSidoList()
+                        await send(.sidoResponse(.success(sido.map(RegionVO.init))))
                     } catch {
-                        await send(.sidoListResponse(.failure(UseCaseError.map(error))))
+                        await send(.sidoResponse(.failure(UseCaseError.map(error))))
                     }
                 }
 
-            case .sidoListResponse(.success(let list)):
-                state.sidoList = list
+            case .sidoResponse(.success(let list)):
+                state.sidoOptions = list
                 return .none
 
-            case .sidoListResponse(.failure):
+            case .sidoResponse(.failure):
                 // TODO: 시도 목록 로드 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 
-            case .binding(\.province):
-                return fetchSigunguList(state: &state)
+            case .didSelectSido(let sido):
+                state.selectedSido = sido
+                return fetchSigunguList(&state)
 
-            case .sigunguListResponse(.success(let list)):
-                state.sigunguList = list
+            case .sigunguResponse(.success(let list)):
+                state.sigunguOptions = list
                 return .none
 
-            case .sigunguListResponse(.failure):
+            case .sigunguResponse(.failure):
                 // TODO: 시군구 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+                return .none
+
+            case .didSelectSigungu(let sigungu):
+                state.selectedSigungu = sigungu
+                return .none
+
+            case .didSelectEducation(let value):
+                state.education = value
+                return .none
+
+            case .didSelectEmployment(let value):
+                state.employment = value
+                return .none
+
+            case .didSelectIncome(let value):
+                state.income = value
+                return .none
+
+            case .didTapInterest(let interest):
+                if state.interests.contains(interest) {
+                    state.interests.remove(interest)
+                } else {
+                    state.interests.insert(interest)
+                }
                 return .none
 
             case .binding(\.year):
@@ -161,14 +194,6 @@ public struct OnboardingContainerFeature {
                 return .none
 
             case .binding:
-                return .none
-
-            case .didTapCategory(let category):
-                if state.selectedCategories.contains(category) {
-                    state.selectedCategories.remove(category)
-                } else {
-                    state.selectedCategories.insert(category)
-                }
                 return .none
 
             case .didTapPreviousButton:
@@ -217,22 +242,18 @@ public struct OnboardingContainerFeature {
         state.day = clamped.day
     }
 
-    private enum CancelID {
-        case sigunguFetch
-    }
-
-    private func fetchSigunguList(state: inout State) -> Effect<Action> {
-        state.district = nil
-        state.sigunguList = []
-        guard let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code else {
+    private func fetchSigunguList(_ state: inout State) -> Effect<Action> {
+        state.selectedSigungu = nil
+        state.sigunguOptions = []
+        guard let sidoCode = state.selectedSido?.code else {
             return .cancel(id: CancelID.sigunguFetch)
         }
         return .run { [onboardingClient] send in
             do {
                 let list = try await onboardingClient.fetchSigunguList(sidoCode)
-                await send(.sigunguListResponse(.success(list)))
+                await send(.sigunguResponse(.success(list.map(RegionVO.init))))
             } catch {
-                await send(.sigunguListResponse(.failure(UseCaseError.map(error))))
+                await send(.sigunguResponse(.failure(UseCaseError.map(error))))
             }
         }
         .cancellable(id: CancelID.sigunguFetch, cancelInFlight: true)
@@ -240,26 +261,23 @@ public struct OnboardingContainerFeature {
 
     private func submitOnboarding(state: inout State) -> Effect<Action> {
         guard
-            let sidoCode = state.sidoList.first(where: { $0.name == state.province })?.code,
-            let sigunguCode = state.sigunguList.first(where: { $0.name == state.district })?.code,
-            let educationCode = EducationCode.onboardingOptions.first(where: { $0.displayName == state.education }),
-            let employmentCode = EmploymentCode.onboardingOptions.first(where: { $0.displayName == state.employment }),
-            let incomeLevel = IncomeLevel.onboardingOptions.first(where: { $0.displayName == state.income })
+            let sido = state.selectedSido,
+            let sigungu = state.selectedSigungu,
+            let education = state.education,
+            let employment = state.employment,
+            let income = state.income
         else {
             return .none
         }
 
-        let interestCategories = PolicySubCategoryType.allCases.filter {
-            state.selectedCategories.contains($0.displayName)
-        }
         let info = OnboardingInfo(
             birth: String(format: "%04d-%02d-%02d", state.year, state.month, state.day),
-            sidoCode: sidoCode,
-            sigunguCode: sigunguCode,
-            educationCode: educationCode,
-            employmentCode: employmentCode,
-            incomeLevel: incomeLevel,
-            interestCategories: interestCategories
+            sidoCode: sido.code,
+            sigunguCode: sigungu.code,
+            educationCode: education.toDomain(),
+            employmentCode: employment.toDomain(),
+            incomeLevel: income.toDomain(),
+            interestCategories: state.interests.map { $0.toDomain() }
         )
 
         state.isSubmitting = true
@@ -277,10 +295,5 @@ public struct OnboardingContainerFeature {
 // MARK: - Options
 
 extension OnboardingContainerFeature {
-
-    public static let educationOptions = EducationCode.onboardingOptions.map(\.displayName)
-    public static let employmentOptions = EmploymentCode.onboardingOptions.map(\.displayName)
-    public static let incomeOptions = IncomeLevel.onboardingOptions.map(\.displayName)
     public static let minimumInterestCount = 3
-    public static let interestCategories = PolicySubCategoryType.allCases.map(\.displayName)
 }
