@@ -16,6 +16,7 @@ public struct SessionStateRepositoryImpl: SessionStateRepository {
     public var hasSetNickname: Bool { storage.hasSetNickname }
     public var hasCompletedOnboarding: Bool { storage.hasCompletedOnboarding }
     public var userName: String? { storage.userName }
+    public var socialType: SocialType? { storage.socialType.flatMap(SocialType.init(rawValue:)) }
 
     public func setHasSetNickname(_ value: Bool) {
         storage.hasSetNickname = value
@@ -27,6 +28,10 @@ public struct SessionStateRepositoryImpl: SessionStateRepository {
 
     public func setUserName(_ value: String) {
         storage.userName = value
+    }
+
+    public func setSocialType(_ value: SocialType) {
+        storage.socialType = value.rawValue
     }
 
     public func reset() {
