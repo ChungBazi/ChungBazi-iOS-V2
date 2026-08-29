@@ -22,6 +22,7 @@ public struct NicknameEditView: View {
 
     public var body: some View {
         content
+            .task { store.send(.onAppear) }
             .baziNavigationBar_backWithTitle("닉네임 수정") {
                 dismiss()
             }
@@ -74,8 +75,10 @@ extension NicknameEditView {
 #Preview {
     NavigationStack {
         NicknameEditView(
-            store: Store(initialState: .init(currentNickname: "민재")) {
+            store: Store(initialState: .init()) {
                 NicknameEditFeature()
+            } withDependencies: {
+                $0.sessionClient.userName = { "민재" }
             }
         )
     }

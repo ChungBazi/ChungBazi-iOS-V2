@@ -24,8 +24,7 @@ public struct ProfileFeature {
     @ObservableState
     public struct State: Equatable {
         public var path = StackState<Path.State>()
-        // TODO: BaziDomain의 내 프로필 조회 UseCase가 준비되면 UserAPI.getProfile 응답으로 교체한다.
-        public var nickname = "김민재"
+        public var nickname = ""
 
         public init() {}
     }
@@ -40,6 +39,8 @@ public struct ProfileFeature {
         case didTapNotificationSettingRow
         case didTapTermsRow
         case didTapPrivacyRow
+        case didTapInquiry
+        case didTapAppStore
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -54,6 +55,11 @@ public struct ProfileFeature {
         case didLogout
     }
 
+    // MARK: - Dependencies
+
+    @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.openURL) var openURL
+
     // MARK: - Init
 
     public init() {}
@@ -64,7 +70,16 @@ public struct ProfileFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                state.nickname = sessionClient.displayName()
                 return .none
+
+            case .didTapInquiry:
+                guard let url = ProfileConstants.inquiryFormURL else { return .none }
+                return .run { [openURL] _ in _ = await openURL(url) }
+
+            case .didTapAppStore:
+                guard let url = ProfileConstants.appStoreURL else { return .none }
+                return .run { [openURL] _ in _ = await openURL(url) }
 
             case .didTapProfileHeader:
                 state.path.append(.infoEdit(ProfileInfoEditFeature.State()))
@@ -87,7 +102,7 @@ public struct ProfileFeature {
                 return .none
 
             case .path(.element(_, .infoEdit(.delegate(.nicknameEditRequested)))):
-                state.path.append(.nicknameEdit(NicknameEditFeature.State(currentNickname: state.nickname)))
+                state.path.append(.nicknameEdit(NicknameEditFeature.State()))
                 return .none
 
             case .path(.element(_, .infoEdit(.delegate(.linkedAccountsRequested)))):
