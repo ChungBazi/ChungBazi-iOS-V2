@@ -99,7 +99,7 @@ extension MyPolicyView {
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
-                            isBookmarked: .constant(policy.isBookmarked),
+                            isLiked: .constant(policy.isLiked),
                             accessory: .memo(action: { store.send(.didTapMemo(id: policy.id)) })
                         )
                         .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
@@ -285,7 +285,7 @@ extension MyPolicyView {
                     dDay: policy.dDay,
                     title: policy.title,
                     viewCount: policy.viewCount,
-                    isBookmarked: .constant(policy.isBookmarked),
+                    isLiked: .constant(policy.isLiked),
                     accessory: .memo(action: { store.send(.didTapMemo(id: policy.id)) })
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
