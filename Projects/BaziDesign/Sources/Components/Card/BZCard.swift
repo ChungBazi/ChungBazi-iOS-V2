@@ -31,9 +31,11 @@ public enum BZCardSize: Equatable {
 }
 
 /// `BZCard` 우측 상단 액세서리. 기본은 찜하기 별이고, `.memo`를 주면 같은 자리/크기에 메모 아이콘이 뜬다.
+/// `.calendarAndMemo`는 마감일 캘린더 추가 아이콘을 메모 왼쪽에 나란히 둔다(캘린더 상세 시트 카드 전용).
 public enum BZCardAccessory {
     case like
     case memo(action: () -> Void)
+    case calendarAndMemo(onAddCalendar: () -> Void, onMemo: () -> Void)
 }
 
 public struct BZCard: View {
@@ -135,15 +137,26 @@ extension BZCard {
             BZLikeButton(isLiked: $isLiked)
 
         case .memo(let action):
-            Button(action: action) {
-                Image.bazi(.memoIcon)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
+            iconButton(.memoIcon, label: "메모", action: action)
+
+        case let .calendarAndMemo(onAddCalendar, onMemo):
+            // 캘린더 추가 아이콘을 메모 왼쪽에 나란히(패딩 조금) 둔다.
+            HStack(spacing: 8) {
+                iconButton(.addCalendarIcon, label: "마감일 캘린더에 추가", size: 26, action: onAddCalendar)
+                iconButton(.memoIcon, label: "메모", action: onMemo)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("메모")
         }
+    }
+
+    private func iconButton(_ image: BaziImage, label: String, size: CGFloat = 24, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image.bazi(image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 
     private var titleText: some View {
