@@ -6,4 +6,5 @@ import Foundation
 public protocol UserRepository: Sendable {
     func updateName(_ name: String) async throws
     func submitOnboarding(_ info: OnboardingInfo) async throws -> String
+    func getProfile() async throws -> UserProfile
 }

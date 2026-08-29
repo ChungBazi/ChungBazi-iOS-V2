@@ -35,8 +35,8 @@ extension LinkedAccountsView {
 
     private var content: some View {
         VStack {
-            ForEach(store.accounts) { account in
-                accountRow(account)
+            if let profile = store.profile {
+                accountRow(profile)
             }
             Spacer()
         }
@@ -45,19 +45,19 @@ extension LinkedAccountsView {
         .baziBackground(.bgWhite)
     }
 
-    private func accountRow(_ account: SocialAccount) -> some View {
+    private func accountRow(_ profile: UserProfileVO) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image.bazi(.kakaoIcon)
+                profile.socialIcon
                     .resizable()
                     .scaledToFit()
                     .frame(width: 12)
-                
-                Text(account.provider.displayName)
+
+                Text(profile.socialDisplayName)
                     .baziFont(.small14R)
                     .foregroundStyle(Color.gray800)
             }
-            Text(account.email)
+            Text(profile.email)
                 .baziFont(.body16R)
                 .foregroundStyle(Color.gray900)
         }

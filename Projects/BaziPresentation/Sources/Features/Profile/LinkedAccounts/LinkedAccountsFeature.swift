@@ -2,8 +2,9 @@
 
 import ComposableArchitecture
 
-/// 프로필 > 내 정보 수정 > 로그인된 소셜 계정(35).
-/// 연동된 계정이 1개뿐이면 계정 해지 시 로그인 수단이 사라지는 것을 막기 위해 해지를 비활성화한다.
+import BaziDomain
+
+/// 현재 로그인된 소셜 계정을 프로필 조회로 받아 표시한다. (해지 기능 없음)
 @Reducer
 public struct LinkedAccountsFeature {
 
@@ -11,13 +12,9 @@ public struct LinkedAccountsFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public var accounts: IdentifiedArrayOf<SocialAccount>
+        public var profile: UserProfileVO?
 
-        public var isUnlinkEnabled: Bool { accounts.count >= 2 }
-
-        public init() {
-            self.accounts = []
-        }
+        public init() {}
     }
 
     // MARK: - Action
@@ -25,7 +22,9 @@ public struct LinkedAccountsFeature {
     public enum Action: Equatable {
         // MARK: View
         case onAppear
-        case didTapUnlink(id: SocialAccount.ID)
+
+        // MARK: Internal
+        case profileResponse(Result<UserProfile, UseCaseError>)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -37,8 +36,7 @@ public struct LinkedAccountsFeature {
 
     // MARK: - Dependencies
 
-    // TODO: BaziDomain의 연동 계정 조회/해지 UseCase가 준비되면 추가
-    // @Dependency(\.linkedAccountsClient) var linkedAccountsClient
+    @Dependency(\.linkedAccountsClient) var linkedAccountsClient
 
     // MARK: - Init
 
@@ -50,15 +48,21 @@ public struct LinkedAccountsFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // TODO: linkedAccountsClient가 준비되면 실제 서버 응답으로 교체한다.
-                if state.accounts.isEmpty {
-                    state.accounts = IdentifiedArray(uniqueElements: SocialAccount.mockList)
+                return .run { [linkedAccountsClient] send in
+                    do {
+                        let profile = try await linkedAccountsClient.getProfile()
+                        await send(.profileResponse(.success(profile)))
+                    } catch {
+                        await send(.profileResponse(.failure(UseCaseError.map(error))))
+                    }
                 }
+
+            case .profileResponse(.success(let profile)):
+                state.profile = UserProfileVO(profile)
                 return .none
 
-            case .didTapUnlink(let id):
-                guard state.isUnlinkEnabled else { return .none }
-                state.accounts.remove(id: id)
+            case .profileResponse(.failure):
+                // TODO: 소셜 계정 조회 실패 알림 UI가 정해지면 State에 반영.
                 return .none
 
             case .delegate:
