@@ -8,4 +8,6 @@ public protocol AuthRepository: Sendable {
     func appleLogin(idToken: String, name: String, fcmToken: String) async throws -> AccountStatus
     /// 현재 세션이 서버 기준 유효한지 검증한다. (인증 필요 요청 1회, non-throwing)
     func validateSession() async -> SessionValidity
+    /// 서버 로그아웃. 성공해야 로컬 세션을 초기화한다.
+    func logout() async throws
 }

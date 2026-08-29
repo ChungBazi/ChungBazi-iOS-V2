@@ -12,6 +12,8 @@ public struct SessionClient: Sendable {
     public var userName: @Sendable () -> String? = { nil }
     /// 화면 인사말 표시용 이름. 저장된 닉네임이 없으면 "회원"으로 대체한다.
     public var displayName: @Sendable () -> String = { "회원" }
+    /// 서버 로그아웃 후 로컬 세션을 초기화한다. 서버 실패 시 throw하며 로컬 세션은 유지된다.
+    public var logout: @Sendable () async throws -> Void
 }
 
 extension SessionClient: TestDependencyKey {
