@@ -106,7 +106,7 @@ extension WithdrawView {
             Text("탈퇴 시 처리되는 내용")
                 .baziFont(.body16SB)
                 .foregroundStyle(Color.gray900)
-            ForEach(Self.noticeItems, id: \.self) { item in
+            ForEach(ProfileConstants.Withdraw.noticeItems, id: \.self) { item in
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "circle.fill")
                         .resizable()
@@ -129,13 +129,6 @@ extension WithdrawView {
         )
         .baziRadius(.small)
     }
-
-    private static let noticeItems = [
-        "회원 정보와 프로필이 삭제됩니다.",
-        "찜한 정책, 메모, 활동 기록이 삭제됩니다.",
-        "저장된 알림 설정이 삭제됩니다.",
-        "탈퇴 후에는 동일한 계정으로 다시 로그인해도 이전 데이터는 복구되지 않습니다.",
-    ]
 
     private var confirmedCheckbox: some View {
         checkboxRow(
