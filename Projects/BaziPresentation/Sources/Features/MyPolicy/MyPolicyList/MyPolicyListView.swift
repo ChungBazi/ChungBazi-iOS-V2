@@ -72,7 +72,7 @@ extension MyPolicyListView {
     }
 
     private var resultsToolbar: some View {
-        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.rawValue) {
+        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrder)
         }
     }

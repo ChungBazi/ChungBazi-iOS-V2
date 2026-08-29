@@ -27,7 +27,7 @@ public struct PolicyMemoFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didChangeDraftText(String)

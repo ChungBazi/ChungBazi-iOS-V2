@@ -19,16 +19,30 @@ public struct MyPolicyFeature {
 
     // MARK: - Tab
 
-    public enum Tab: String, CaseIterable, Equatable {
-        case policy = "정책"
-        case openEnded = "상시모집"
+    public enum Tab: CaseIterable, Equatable {
+        case policy
+        case openEnded
+
+        var title: String {
+            switch self {
+            case .policy: return "정책"
+            case .openEnded: return "상시모집"
+            }
+        }
     }
 
     // MARK: - SortOrder
 
-    public enum SortOrder: String, Equatable {
-        case deadline = "마감순"
-        case latest = "최신순"
+    public enum SortOrder: Equatable {
+        case deadline
+        case latest
+
+        var title: String {
+            switch self {
+            case .deadline: return "마감순"
+            case .latest: return "최신순"
+            }
+        }
 
         var next: SortOrder { self == .deadline ? .latest : .deadline }
     }
@@ -68,7 +82,7 @@ public struct MyPolicyFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didTapHeaderMore
@@ -159,6 +173,10 @@ public struct MyPolicyFeature {
                 state.path.append(.memo(PolicyMemoFeature.State(policyId: policyId)))
                 return .none
 
+            case .path(.element(_, .memo(.delegate(.didSaveMemo)))):
+                // TODO: 서버 연결 시 저장된 메모를 목록/티저에 반영한다. (현재는 mock이라 별도 갱신 없음)
+                return .none
+
             case .path:
                 return .none
             }
@@ -188,3 +206,4 @@ public struct MyPolicyFeature {
 }
 
 extension MyPolicyFeature.Path.State: Equatable {}
+extension MyPolicyFeature.Path.Action: Equatable {}
