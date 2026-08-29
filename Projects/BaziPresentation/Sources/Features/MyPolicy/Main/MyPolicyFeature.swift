@@ -63,6 +63,8 @@ public struct MyPolicyFeature {
         public var path = StackState<Path.State>()
 
         public var deadlineTeaser: IdentifiedArrayOf<PolicySummaryVO>
+        /// 티저 조회 실패 여부. 실패 시 기존 티저를 지우지 않고 이 플래그로 빈-상태 배너 오표시를 막는다.
+        public var teaserLoadFailed = false
         /// 주간 스트립의 중심(항상 오늘). onAppear에서 주입된 `date.now` 기준으로 설정된다. (init 값은 placeholder)
         public var today: Date
         public var selectedDate: Date
@@ -116,6 +118,7 @@ public struct MyPolicyFeature {
         case didSelectWeekDate(Date)
         case didSelectTab(Tab)
         case didTapSortOrder
+        case didTapRetry
         case pullToRefresh
         case didReachListEnd
         case didTapPolicy(id: Int)
@@ -146,14 +149,20 @@ public struct MyPolicyFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // 주입된 date.now 기준으로 오늘을 최초 1회 설정한다. (재진입 시엔 선택된 날짜 유지)
-                if !state.didLoad {
-                    state.didLoad = true
-                    let today = calendar.startOfDay(for: now)
-                    state.today = today
-                    state.selectedDate = today
-                }
+                // 최초 1회만 로드한다. 재진입 시엔 State에 남은 데이터를 유지해 스피너 깜빡임/불필요한 재요청을 막는다(새로고침은 당겨서).
+                guard !state.didLoad else { return .none }
+                state.didLoad = true
+                let today = calendar.startOfDay(for: now)
+                state.today = today
+                state.selectedDate = today
                 return .merge(loadTeaser(), reloadDatePolicies(&state))
+
+            case .didTapRetry:
+                // 실패 화면의 재시도 — 현재 탭에 맞춰 재조회한다(상시모집 탭 복구 포함).
+                switch state.selectedTab {
+                case .policy: return reloadDatePolicies(&state)
+                case .openEnded: return reloadOpenEnded(&state)
+                }
 
             case .didTapHeaderMore:
                 state.path.append(.policyList(MyPolicyListFeature.State()))
@@ -210,11 +219,13 @@ public struct MyPolicyFeature {
                 }
 
             case .teaserResponse(.success(let policies)):
+                state.teaserLoadFailed = false
                 state.deadlineTeaser = IdentifiedArray(deduplicating: policies)
                 return .none
 
             case .teaserResponse(.failure):
-                state.deadlineTeaser = []
+                // 네트워크 실패 시 기존 티저를 유지하고 플래그만 세운다(찜 없음 오표시 방지).
+                state.teaserLoadFailed = true
                 return .none
 
             case let .pageResponse(.success(page), tab, isFirstPage):

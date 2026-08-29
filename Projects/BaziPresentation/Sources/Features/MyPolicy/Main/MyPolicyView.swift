@@ -87,10 +87,11 @@ private extension MyPolicyView {
 
     @ViewBuilder
     var teaser: some View {
-        if store.deadlineTeaser.isEmpty {
-            emptyTeaserBanner
-        } else {
+        if !store.deadlineTeaser.isEmpty {
             teaserBanner
+        } else if !store.teaserLoadFailed {
+            // 실제로 찜한 정책이 없을 때만 빈 배너 표시. 조회 실패 시엔 아무것도 그리지 않는다(오표시 방지).
+            emptyTeaserBanner
         }
     }
 
@@ -101,7 +102,7 @@ private extension MyPolicyView {
             BZLoadingView()
                 .frame(maxWidth: .infinity, minHeight: 200)
         case .failed:
-            BZRetryView { store.send(.onAppear) }
+            BZRetryView { store.send(.didTapRetry) }
         case .loaded(let policies):
             if policies.isEmpty {
                 emptyPolicyList
