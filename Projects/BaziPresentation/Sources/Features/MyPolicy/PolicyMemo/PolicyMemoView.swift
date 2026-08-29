@@ -32,6 +32,7 @@ public struct PolicyMemoView: View {
             .toolbar(.hidden, for: .tabBar)
             // 스와이프 백은 저장 훅을 우회하므로 막고, 커스텀 뒤로가기 버튼으로만 나가게 한다(뒤로가기=자동저장).
             .swipeBackDisabled()
+            .alert($store.scope(state: \.alert, action: \.alert))
     }
 }
 
