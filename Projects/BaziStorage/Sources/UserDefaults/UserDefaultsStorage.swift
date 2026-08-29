@@ -12,6 +12,7 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         case hasCompletedOnboarding
         case sessionMarker
         case userName
+        case socialType
         case customPolicyGuideSeen
     }
 
@@ -40,6 +41,12 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         set { defaults.set(newValue, forKey: Key.userName.rawValue) }
     }
 
+    /// 로그인한 소셜 제공자(원시값). 탈퇴 시 카카오 계정만 연결 해제하기 위해 사용한다.
+    public var socialType: String? {
+        get { defaults.string(forKey: Key.socialType.rawValue) }
+        set { defaults.set(newValue, forKey: Key.socialType.rawValue) }
+    }
+
     /// 맞춤정책 가이드 오버레이를 본 적 있는지. 세션과 무관하게 앱 삭제 전까지 유지된다(resetSessionState에서 지우지 않음).
     public var hasSeenCustomPolicyGuide: Bool {
         get { defaults.bool(forKey: Key.customPolicyGuideSeen.rawValue) }
@@ -50,6 +57,7 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         defaults.removeObject(forKey: Key.hasSetNickname.rawValue)
         defaults.removeObject(forKey: Key.hasCompletedOnboarding.rawValue)
         defaults.removeObject(forKey: Key.userName.rawValue)
+        defaults.removeObject(forKey: Key.socialType.rawValue)
     }
 
     // MARK: - Session Marker

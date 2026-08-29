@@ -23,6 +23,7 @@ public struct AppleLoginUseCaseImpl: AppleLoginUseCase {
         let result = try await authRepository.appleLogin(idToken: idToken, name: name ?? "", fcmToken: fcmToken)
         sessionStateRepository.setHasSetNickname(result.hasNickname)
         sessionStateRepository.setHasCompletedOnboarding(result.hasCompletedOnboarding)
+        sessionStateRepository.setSocialType(.apple)
         return result
     }
 }

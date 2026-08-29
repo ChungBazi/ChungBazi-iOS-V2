@@ -27,6 +27,7 @@ public struct KakaoLoginUseCaseImpl: KakaoLoginUseCase {
         let result = try await authRepository.kakaoLogin(accessToken: accessToken, fcmToken: fcmToken)
         sessionStateRepository.setHasSetNickname(result.hasNickname)
         sessionStateRepository.setHasCompletedOnboarding(result.hasCompletedOnboarding)
+        sessionStateRepository.setSocialType(.kakao)
         return result
     }
 }
