@@ -78,20 +78,21 @@ extension PolicyMemoView {
         )
         .focused($isFocused)
         .baziFont(.body16R)
-        .foregroundStyle(Color.grayBlack)
+        .foregroundStyle(Color.gray900)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
+        // 텍스트 콘텐츠만 좌우로 인셋하고, 스크롤 인디케이터는 가장자리(맨 오른쪽)에 붙게 둔다.
+        .contentMargins(.horizontal, 15, for: .scrollContent)
         .overlay(alignment: .topLeading) {
             if store.draftText.isEmpty {
                 Text("신청 일정이나 준비할 내용을 메모해보세요")
                     .baziFont(.body16R)
                     .foregroundStyle(Color.gray300)
                     .padding(.top, 8)
-                    .padding(.leading, 5)
+                    .padding(.leading, 20) // 콘텐츠 인셋(15) + TextEditor 내부 여백(5)에 맞춰 텍스트 시작점 정렬
                     .allowsHitTesting(false)
             }
         }
-        .padding(.horizontal, 15)
         .padding(.top, 12)
     }
 }
