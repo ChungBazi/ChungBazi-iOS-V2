@@ -27,6 +27,7 @@ struct MyPolicyListFeatureTests {
 
         await store.send(.task) {
             $0.list = .loading
+            $0.reloadGeneration = 1
         }
         await store.receive(\.pageResponse.success) {
             $0.list = .loaded(IdentifiedArray(uniqueElements: items))
@@ -60,6 +61,7 @@ struct MyPolicyListFeatureTests {
             $0.sortOrder = .latest
             $0.list = .loading
             $0.pagination.reset()
+            $0.reloadGeneration = 1
         }
         await store.receive(\.pageResponse.success) {
             $0.list = .loaded(IdentifiedArray(uniqueElements: sortedItems))

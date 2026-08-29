@@ -40,6 +40,8 @@ public struct MyPolicyListFeature {
         public var sortOrder: SortOrder = .deadline
         public var list: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
         public var pagination = PaginationState<String>()
+        /// 목록 새로고침 세대. 찜 해제 롤백이 지난 조회 결과(정렬·카테고리·새로고침으로 교체됨)에 잘못 적용되지 않도록 검증한다.
+        public var reloadGeneration = 0
 
         public init() {}
     }
@@ -60,7 +62,7 @@ public struct MyPolicyListFeature {
 
         // MARK: Internal
         case pageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
-        case likeFailed(policy: PolicySummaryVO, index: Int)
+        case likeFailed(policy: PolicySummaryVO, index: Int, generation: Int)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -96,7 +98,8 @@ public struct MyPolicyListFeature {
                 return reloadFirstPage(&state)
 
             case .pullToRefresh:
-                // 당김 새로고침: .loading으로 바꾸지 않고 1페이지만 다시 가져온다.
+                // 당김 새로고침: .loading으로 바꾸지 않고 1페이지만 다시 가져온다. (진행 중 낙관적 롤백은 세대 교체로 무효화)
+                state.reloadGeneration += 1
                 return fetchPage(state: state, isFirstPage: true)
 
             case .didSelectCategory(let category):
@@ -133,17 +136,19 @@ public struct MyPolicyListFeature {
                 let removed = list.remove(at: index)
                 state.list = .loaded(list)
                 state.pagination.totalCount = max(0, state.pagination.totalCount - 1)
+                let generation = state.reloadGeneration
                 return .run { [policyLikeClient] send in
                     do {
                         try await policyLikeClient.setLike(id, false)
                     } catch {
-                        await send(.likeFailed(policy: removed, index: index))
+                        await send(.likeFailed(policy: removed, index: index, generation: generation))
                     }
                 }
                 .cancellable(id: CancelID.like(id), cancelInFlight: true)
 
-            case let .likeFailed(policy, index):
-                guard var list = state.list.value else { return .none }
+            case let .likeFailed(policy, index, generation):
+                // 그 사이 목록이 새로 조회(정렬·카테고리·새로고침)됐으면 롤백하지 않는다(다른 조회 결과 오염 방지).
+                guard generation == state.reloadGeneration, var list = state.list.value else { return .none }
                 list.insert(policy, at: min(index, list.count))
                 state.list = .loaded(list)
                 state.pagination.totalCount += 1
@@ -169,6 +174,7 @@ public struct MyPolicyListFeature {
 
     /// 1페이지부터 다시 조회한다. 진행 중인 요청은 취소한다.
     private func reloadFirstPage(_ state: inout State) -> Effect<Action> {
+        state.reloadGeneration += 1
         state.list = .loading
         state.pagination.reset()
         return fetchPage(state: state, isFirstPage: true)
