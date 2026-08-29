@@ -7,8 +7,8 @@ import ComposableArchitecture
 /// 캘린더 화면(21) 전용 Client. 월별 마감일 + 특정 날짜의 마감 정책을 담당한다.
 @DependencyClient
 public struct CalendarClient: Sendable {
-    /// 특정 달의 마감일들(캘린더 인디케이터용).
-    public var fetchCalendar: @Sendable (_ targetMonth: String) async throws -> [Date]
+    /// 특정 달의 마감일들(캘린더 인디케이터용). 타임존 없는 달력 날짜(연·월·일)로 반환한다.
+    public var fetchCalendar: @Sendable (_ targetMonth: String) async throws -> [DateComponents]
     /// 특정 마감일의 정책 목록(정렬 + 커서 페이지네이션).
     public var fetchDeadlineDate: @Sendable (_ targetDate: String, _ sort: String, _ cursor: String?, _ size: Int) async throws -> PolicyPageVO
     /// 정책 마감일을 기기 캘린더(EventKit)에 종일 이벤트로 추가한다.

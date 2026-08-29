@@ -120,7 +120,8 @@ extension CalendarView {
     private func dayCell(_ date: Date) -> some View {
         // centerDate는 진입 시점의 오늘(= MyPolicy의 state.today)이라 오늘 표시 기준으로 쓴다.
         let isToday = Calendar.current.isDate(date, inSameDayAs: store.centerDate)
-        let hasDeadline = store.deadlineDates.contains(Calendar.current.startOfDay(for: date))
+        let dayKey = Calendar.current.dateComponents([.year, .month, .day], from: date).yyyymmddKey
+        let hasDeadline = dayKey.map { store.deadlineDays.contains($0) } ?? false
 
         return VStack(spacing: 4) {
             Text("\(Calendar.current.component(.day, from: date))")

@@ -25,20 +25,19 @@ struct CalendarFeatureTests {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Asia/Seoul") ?? cal.timeZone
         let monthDate = cal.date(from: DateComponents(year: 2026, month: 5, day: 1)) ?? Date()
-        let deadline = cal.date(from: DateComponents(year: 2026, month: 5, day: 18)) ?? Date()
 
         let store = TestStore(initialState: CalendarFeature.State(centerDate: monthDate)) {
             CalendarFeature()
         } withDependencies: {
             $0.calendar = cal
-            $0.calendarClient.fetchCalendar = { _ in [deadline] }
+            $0.calendarClient.fetchCalendar = { _ in [DateComponents(year: 2026, month: 5, day: 18)] }
         }
 
         await store.send(.didAppearMonth(monthDate)) {
             $0.requestedMonths.insert("2026-05")
         }
         await store.receive(\.calendarResponse.success) {
-            $0.deadlineDates = [cal.startOfDay(for: deadline)]
+            $0.deadlineDays = [20260518]
         }
     }
 
