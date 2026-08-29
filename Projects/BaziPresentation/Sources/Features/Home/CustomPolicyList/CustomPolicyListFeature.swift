@@ -3,6 +3,7 @@
 import BaziDesign
 import BaziDomain
 import ComposableArchitecture
+import Foundation
 
 /// 진입한 쪽(홈/분야별)이 넘겨준 맞춤 정책 id들의 카드(getPolicyCard)를 병렬로 조회한다.
 @Reducer
