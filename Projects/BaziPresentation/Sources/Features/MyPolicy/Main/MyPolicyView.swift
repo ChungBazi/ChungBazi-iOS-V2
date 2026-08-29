@@ -36,6 +36,10 @@ public struct MyPolicyView: View {
                 CalendarView(store: store)
             case .memo(let store):
                 PolicyMemoView(store: store)
+            case .detail(let store):
+                PolicyDetailView(store: store)
+            case .categoryPolicyList(let store):
+                CategoryPolicyListView(store: store)
             }
         }
     }

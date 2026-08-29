@@ -15,7 +15,8 @@ public struct MyPolicyFeature {
         case policyList(MyPolicyListFeature)
         case calendar(CalendarFeature)
         case memo(PolicyMemoFeature)
-        // TODO: 정책 목록이 서버에 연결되면 case detail(PolicyDetailFeature)로 상세 화면을 연결한다.
+        case detail(PolicyDetailFeature)
+        case categoryPolicyList(CategoryPolicyListFeature)
     }
 
     // MARK: - Tab
@@ -106,7 +107,8 @@ public struct MyPolicyFeature {
 
     // MARK: - Action
 
-    public enum Action: Equatable {
+    // PolicyDetailFeature.Action이 Equatable이 아니어서(Home Path와 동일) Action에는 Equatable을 채택하지 않는다.
+    public enum Action {
         // MARK: View
         case onAppear
         case didTapHeaderMore
@@ -223,8 +225,8 @@ public struct MyPolicyFeature {
                 handlePageFailure(error, tab: tab, isFirstPage: isFirstPage, state: &state)
                 return .none
 
-            case .didTapPolicy:
-                // TODO: 정책 목록 서버 연결 후 PolicyDetailFeature(policyId:)로 상세를 연결한다. (현재는 상세 진입 차단)
+            case .didTapPolicy(let id):
+                state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
                 return .none
 
             case .didTapMemo(let id):
@@ -232,12 +234,15 @@ public struct MyPolicyFeature {
                 return .none
 
             case .didTapEmptyBannerCTA:
-                // TODO: SharedRoute.policyRecommendationEdit(맞춤 조건 다시 설정) Feature가 준비되면 연결한다.
+                // 찜한 정책이 없을 때 → 분야별 정책(취업·창업)으로 둘러보러 이동.
+                state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: .job)))
                 return .none
 
-            case .path(.element(_, .policyList(.delegate(.didSelectPolicy)))),
-                 .path(.element(_, .calendar(.delegate(.didSelectPolicy)))):
-                // TODO: 정책 목록 서버 연결 후 PolicyDetailFeature(policyId:)로 상세를 연결한다. (현재는 상세 진입 차단)
+            case let .path(.element(_, .policyList(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .calendar(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .detail(.delegate(.didSelectPolicy(id))))),
+                 let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))):
+                state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
                 return .none
 
             case .path(.element(_, .calendar(.delegate(.didTapMemo(let policyId))))):
@@ -246,6 +251,11 @@ public struct MyPolicyFeature {
 
             case .path(.element(_, .memo(.delegate(.didSaveMemo)))):
                 // TODO: 서버 연결 시 저장된 메모를 목록/티저에 반영한다. (현재는 별도 갱신 없음)
+                return .none
+
+            case .path(.element(_, .policyList(.delegate(.browsePolicies)))):
+                // 전체보기 빈 상태 "둘러보러 가기" → 분야별 정책(취업·창업).
+                state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: .job)))
                 return .none
 
             case .path:
@@ -363,4 +373,3 @@ public struct MyPolicyFeature {
 }
 
 extension MyPolicyFeature.Path.State: Equatable {}
-extension MyPolicyFeature.Path.Action: Equatable {}
