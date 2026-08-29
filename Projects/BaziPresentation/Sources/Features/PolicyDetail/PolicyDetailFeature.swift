@@ -29,6 +29,7 @@ public struct PolicyDetailFeature {
         case onAppear
         case didTapRetry
         case didTapLike
+        case didTapApply
         case didTapShare
         case didToggleRecommendationLike(section: RecommendationSection, id: Int)
         case didTapPolicy(id: Int)
@@ -58,6 +59,7 @@ public struct PolicyDetailFeature {
     @Dependency(\.policyDetailClient) var policyDetailClient
     @Dependency(\.policyLikeClient) var policyLikeClient
     @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.openURL) var openURL
 
     // MARK: - Init
 
@@ -92,6 +94,10 @@ public struct PolicyDetailFeature {
                 let newValue = !current
                 setDetailLiked(&state, liked: newValue)
                 return likeEffect(id: state.policyId, liked: newValue) { .likeFailed(liked: newValue) }
+
+            case .didTapApply:
+                guard let url = state.detail.value?.applyURL else { return .none }
+                return .run { [openURL] _ in _ = await openURL(url) }
 
             case let .likeFailed(liked):
                 setDetailLiked(&state, liked: !liked)

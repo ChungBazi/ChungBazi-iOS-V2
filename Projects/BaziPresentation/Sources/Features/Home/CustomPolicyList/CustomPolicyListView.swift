@@ -11,7 +11,6 @@ public struct CustomPolicyListView: View {
 
     @Bindable var store: StoreOf<CustomPolicyListFeature>
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @State private var selectedPolicyID: Int?
 
     // MARK: - Init
@@ -127,7 +126,8 @@ extension CustomPolicyListView {
     private var ctaButtons: some View {
         VStack(spacing: 12) {
             BZButton("바로 신청하러 가기", type: .cta) {
-                if let applyURL { openURL(applyURL) }
+                guard let selectedPolicyID else { return }
+                store.send(.didTapApply(id: selectedPolicyID))
             }
             .disabled(applyURL == nil)
             BZButton("자세한 정보 더 보기", type: .normal2) {
