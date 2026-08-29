@@ -11,7 +11,6 @@ public struct PolicyDetailView: View {
 
     @Bindable var store: StoreOf<PolicyDetailFeature>
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
 
     // MARK: - Init
 
@@ -222,7 +221,7 @@ extension PolicyDetailView {
                 store.send(.didTapLike)
             }
             BZButton("바로 신청하러 가기", type: .cta, size: .medium) {
-                if let applyURL { openURL(applyURL) }
+                store.send(.didTapApply)
             }
             .disabled(applyURL == nil)
         }

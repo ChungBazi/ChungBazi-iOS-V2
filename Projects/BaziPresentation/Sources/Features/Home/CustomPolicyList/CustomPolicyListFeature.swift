@@ -51,6 +51,7 @@ public struct CustomPolicyListFeature {
         case didTapRetry
         case didToggleLike(id: Int)
         case didTapDetail(id: Int)
+        case didTapApply(id: Int)
         case didShowCard(id: Int)
         case didTapGuideNext
 
@@ -76,6 +77,7 @@ public struct CustomPolicyListFeature {
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.policyLikeClient) var policyLikeClient
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.openURL) var openURL
 
     // MARK: - Init
 
@@ -96,6 +98,13 @@ public struct CustomPolicyListFeature {
 
             case .didTapRetry:
                 return loadCards(&state)
+
+            case .didTapApply(let id):
+                guard
+                    let urlString = state.cards.value?[id: id]?.applyUrl,
+                    let url = URL(string: urlString)
+                else { return .none }
+                return .run { [openURL] _ in _ = await openURL(url) }
 
             case let .cardsResponse(.success(cards)):
                 state.cards = .loaded(IdentifiedArray(deduplicating: cards))
