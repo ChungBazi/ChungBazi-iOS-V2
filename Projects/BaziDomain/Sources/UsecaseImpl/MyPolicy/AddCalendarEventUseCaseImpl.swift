@@ -10,7 +10,7 @@ public struct AddCalendarEventUseCaseImpl: AddCalendarEventUseCase {
         self.eventKitService = eventKitService
     }
 
-    public func execute(title: String, date: Date, notes: String?) async throws {
-        try await eventKitService.addEvent(title: title, date: date, notes: notes)
+    public func execute(title: String, date: Date, url: URL?) async throws {
+        try await eventKitService.addEvent(title: title, date: date, url: url)
     }
 }

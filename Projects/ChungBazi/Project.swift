@@ -22,6 +22,11 @@ let project = Project.project(
                     .dictionary([
                         "CFBundleURLSchemes": .array([.string("kakao$(KAKAO_NATIVE_APP_KEY)")]),
                     ]),
+                    // 캘린더 이벤트/앱 딥링크용 커스텀 스킴(chungbazi://policy/{id}).
+                    .dictionary([
+                        "CFBundleURLName": .string("\(Project.bundleID).deeplink"),
+                        "CFBundleURLSchemes": .array([.string("chungbazi")]),
+                    ]),
                 ]),
                 "LSApplicationQueriesSchemes": .array([
                     .string("kakaokompassauth"),

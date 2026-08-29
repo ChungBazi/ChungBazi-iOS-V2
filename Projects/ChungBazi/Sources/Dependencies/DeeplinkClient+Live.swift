@@ -34,6 +34,24 @@ enum KakaoLinkParser {
     }
 }
 
+/// 앱 커스텀 스킴 딥링크(chungbazi://policy/{id}) 빌드/파싱.
+/// 캘린더 이벤트의 URL 필드에 심고, 탭해서 앱이 열릴 때 다시 policyId로 되돌린다.
+enum PolicyDeeplink {
+    static let scheme = "chungbazi"
+    static let host = "policy"
+
+    /// 정책 상세로 여는 딥링크 URL(예: chungbazi://policy/123).
+    static func url(policyId: Int) -> URL? {
+        URL(string: "\(scheme)://\(host)/\(policyId)")
+    }
+
+    /// chungbazi://policy/{id} → policyId.
+    static func policyId(from url: URL) -> Int? {
+        guard url.scheme == scheme, url.host == host else { return nil }
+        return Int(url.lastPathComponent)
+    }
+}
+
 /// Composition Root 바깥(onOpenURL, AppDelegate)에서 딥링크를 발행하는 진입점.
 /// 이들이 BaziPresentation의 DeeplinkClient를 직접 다루지 않도록 NotificationCenter로 브리지한다.
 enum DeeplinkPublisher {
