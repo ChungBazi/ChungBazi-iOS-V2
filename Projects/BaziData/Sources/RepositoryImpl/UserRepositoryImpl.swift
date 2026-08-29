@@ -26,4 +26,13 @@ public struct UserRepositoryImpl: UserRepository {
         let dto: UserInfoResponseDTO = try await networkProvider.request(UserAPI.getProfile)
         return dto.toEntity()
     }
+
+    public func getPolicyProfile() async throws -> OnboardingInfo {
+        let dto: PolicyProfileResponseDTO = try await networkProvider.request(UserAPI.getPolicyProfile)
+        return dto.toEntity()
+    }
+
+    public func updatePolicyProfile(_ info: OnboardingInfo) async throws {
+        try await networkProvider.requestStatusCode(UserAPI.updatePolicyProfile(body: info.toRequestDTO()))
+    }
 }
