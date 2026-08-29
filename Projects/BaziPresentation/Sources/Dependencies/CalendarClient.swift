@@ -12,7 +12,8 @@ public struct CalendarClient: Sendable {
     /// 특정 마감일의 정책 목록(정렬 + 커서 페이지네이션).
     public var fetchDeadlineDate: @Sendable (_ targetDate: String, _ sort: String, _ cursor: String?, _ size: Int) async throws -> PolicyPageVO
     /// 정책 마감일을 기기 캘린더(EventKit)에 종일 이벤트로 추가한다.
-    public var addDeadline: @Sendable (_ title: String, _ date: Date) async throws -> Void
+    /// `policyId`는 이벤트에 심을 정책 상세 딥링크 구성에 쓰인다.
+    public var addDeadline: @Sendable (_ policyId: Int, _ title: String, _ date: Date) async throws -> Void
 }
 
 extension CalendarClient: TestDependencyKey {
@@ -29,7 +30,7 @@ extension CalendarClient: TestDependencyKey {
                 totalCount: items.count
             )
         },
-        addDeadline: { _, _ in }
+        addDeadline: { _, _, _ in }
     )
 }
 
