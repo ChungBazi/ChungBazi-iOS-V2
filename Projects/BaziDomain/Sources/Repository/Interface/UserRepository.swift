@@ -7,4 +7,6 @@ public protocol UserRepository: Sendable {
     func updateName(_ name: String) async throws
     func submitOnboarding(_ info: OnboardingInfo) async throws -> String
     func getProfile() async throws -> UserProfile
+    func getPolicyProfile() async throws -> OnboardingInfo
+    func updatePolicyProfile(_ info: OnboardingInfo) async throws
 }

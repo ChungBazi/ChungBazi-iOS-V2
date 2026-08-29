@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct PolicyProfileResponseDTO: Decodable {
+public struct PolicyProfileResponseDTO: Decodable, Sendable {
     public let birth: String
     public let sidoCode: String
     public let sigunguCode: String
