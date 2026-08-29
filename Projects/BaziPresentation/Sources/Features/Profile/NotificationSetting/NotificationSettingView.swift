@@ -36,16 +36,14 @@ extension NotificationSettingView {
     private var content: some View {
         VStack(spacing: 0) {
             row(
-                title: "전체 알림",
-                description: "내 정책 알림과 청바지 알림을 포함한 앱 내 모든 알림을 받아볼 수 있어요.",
+                ProfileConstants.NotificationText.all,
                 isOn: Binding(
                     get: { store.isAllNotificationOn },
                     set: { store.send(.didToggleAllNotification($0)) }
                 )
             )
             row(
-                title: "내 정책 알림",
-                description: "내가 찜한 정책의 신청 일정, 마감일, 정책 변경 사항 등 필요한 알림을 받아보세요.",
+                ProfileConstants.NotificationText.myPolicy,
                 isOn: Binding(
                     get: { store.isMyPolicyNotificationOn },
                     set: { store.send(.didToggleMyPolicyNotification($0)) }
@@ -54,8 +52,7 @@ extension NotificationSettingView {
             .disabled(!store.isAllNotificationOn)
             .opacity(store.isAllNotificationOn ? 1 : 0.4)
             row(
-                title: "청바지 알림",
-                description: "새롭게 등록된 정책, 추천 정책, 인기 정책 등 다양한 청바지의 소식을 받아보세요.",
+                ProfileConstants.NotificationText.chungBazi,
                 isOn: Binding(
                     get: { store.isChungBaziNotificationOn },
                     set: { store.send(.didToggleChungBaziNotification($0)) }
@@ -69,21 +66,21 @@ extension NotificationSettingView {
         .baziBackground(.bgWhite)
     }
 
-    private func row(title: String, description: String, isOn: Binding<Bool>) -> some View {
+    private func row(_ text: ProfileConstants.NotificationText.Item, isOn: Binding<Bool>) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 6) {
-                Text(title)
+                Text(text.title)
                     .baziFont(.body16SB)
                     .foregroundStyle(Color.gray900)
-                Text(description)
+                Text(text.description)
                     .baziFont(.small14R)
                     .foregroundStyle(Color.gray500)
             }
             Spacer(minLength: 30)
-            Toggle(title, isOn: isOn)
+            Toggle(text.title, isOn: isOn)
                 .labelsHidden()
                 .tint(Color.bazi(.primary))
-                .accessibilityLabel(title)
+                .accessibilityLabel(text.title)
         }
         .padding(.vertical, 18)
     }
