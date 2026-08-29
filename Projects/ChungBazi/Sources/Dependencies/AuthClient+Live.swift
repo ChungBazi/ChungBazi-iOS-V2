@@ -18,10 +18,10 @@ extension AuthClient: @retroactive DependencyKey {
             networkProvider: AppDependencies.networkProvider,
             tokenStorage: tokenStorage
         )
-        let kakaoLoginService: any KakaoLoginService = KakaoLoginServiceImpl()
+        let kakaoAuthService: any KakaoAuthService = KakaoAuthServiceImpl()
 
         let kakaoLoginUseCase: any KakaoLoginUseCase = KakaoLoginUseCaseImpl(
-            kakaoLoginService: kakaoLoginService,
+            kakaoAuthService: kakaoAuthService,
             authRepository: authRepository,
             pushTokenRepository: AppDependencies.pushTokenRepository,
             sessionStateRepository: sessionStateRepository
