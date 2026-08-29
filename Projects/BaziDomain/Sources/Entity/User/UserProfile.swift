@@ -6,9 +6,10 @@ import Foundation
 public struct UserProfile: Equatable, Sendable {
     public let nickname: String
     public let email: String
-    public let socialType: SocialType
+    /// 서버가 알려지지 않은 소셜 제공자 값을 주면 nil. (임의로 특정 제공자로 단정하지 않는다)
+    public let socialType: SocialType?
 
-    public init(nickname: String, email: String, socialType: SocialType) {
+    public init(nickname: String, email: String, socialType: SocialType?) {
         self.nickname = nickname
         self.email = email
         self.socialType = socialType
