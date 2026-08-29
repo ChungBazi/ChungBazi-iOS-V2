@@ -53,6 +53,9 @@ public struct CalendarFeature: Sendable {
         public var isDaySheetPresented: Bool
         /// 진입 시점 기준 날짜(오늘). 이 달을 중심으로 ±2년이 그려지고, 진입 시 이 달로 스크롤한다.
         public let centerDate: Date
+        /// 마감일 캘린더 추가 결과 토스트.
+        public var toastMessage: String
+        public var isToastPresented: Bool
 
         /// centerDate가 속한 달의 첫날. 진입 시 이 달로 스크롤하기 위한 타깃(= CalendarMonth.id).
         public var centerMonthID: Date {
@@ -70,6 +73,8 @@ public struct CalendarFeature: Sendable {
             self.sortOrder = .deadline
             self.isDaySheetPresented = false
             self.centerDate = Calendar.current.startOfDay(for: centerDate)
+            self.toastMessage = ""
+            self.isToastPresented = false
         }
     }
 
@@ -85,10 +90,14 @@ public struct CalendarFeature: Sendable {
         case didReachSheetListEnd
         case didTapPolicyInSheet(id: Int)
         case didTapMemoIcon(id: Int)
+        case didTapAddToCalendar(id: Int)
+        case dismissToast
 
         // MARK: Internal
         case calendarResponse(month: String, Result<[Date], UseCaseError>)
         case sheetPageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
+        case addToCalendarSucceeded
+        case addToCalendarFailed(EventKitError)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -199,6 +208,41 @@ public struct CalendarFeature: Sendable {
                     try await clock.sleep(for: .milliseconds(350))
                     await send(.delegate(.didTapMemo(policyId: id)))
                 }
+
+            case .didTapAddToCalendar(let id):
+                // 시트는 그대로 두고(화면 유지), 선택 날짜를 마감일로 종일 이벤트를 추가한다.
+                guard let date = state.selectedDate,
+                      let policy = state.selectedDatePolicies.value?[id: id] else { return .none }
+                let title = policy.title
+                return .run { [calendarClient] send in
+                    do {
+                        try await calendarClient.addDeadline(id, title, date)
+                        await send(.addToCalendarSucceeded)
+                    } catch let error as EventKitError {
+                        await send(.addToCalendarFailed(error))
+                    } catch {
+                        await send(.addToCalendarFailed(.saveFailed))
+                    }
+                }
+
+            case .addToCalendarSucceeded:
+                state.toastMessage = "마감일을 캘린더에 추가했어요"
+                state.isToastPresented = true
+                return .none
+
+            case .addToCalendarFailed(let error):
+                switch error {
+                case .accessDenied:
+                    state.toastMessage = "설정에서 캘린더 접근을 허용해주세요"
+                case .saveFailed:
+                    state.toastMessage = "캘린더에 추가하지 못했어요"
+                }
+                state.isToastPresented = true
+                return .none
+
+            case .dismissToast:
+                state.isToastPresented = false
+                return .none
 
             case .delegate:
                 return .none

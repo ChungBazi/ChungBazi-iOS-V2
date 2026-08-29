@@ -157,6 +157,15 @@ extension CalendarView {
         )
     }
 
+    private var isToastPresented: Binding<Bool> {
+        Binding(
+            get: { store.isToastPresented },
+            set: { isPresented in
+                if !isPresented { store.send(.dismissToast) }
+            }
+        )
+    }
+
     private var dayDetailSheet: some View {
         VStack(spacing: 0) {
             if let date = store.selectedDate {
@@ -172,6 +181,7 @@ extension CalendarView {
         .baziBackground(.bgGray)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .baziToast(isPresented: isToastPresented, message: store.toastMessage)
     }
 
     @ViewBuilder
@@ -227,7 +237,10 @@ extension CalendarView {
             title: policy.title,
             viewCount: policy.viewCount,
             isLiked: .constant(policy.isLiked),
-            accessory: .memo(action: { store.send(.didTapMemoIcon(id: policy.id)) })
+            accessory: .calendarAndMemo(
+                onAddCalendar: { store.send(.didTapAddToCalendar(id: policy.id)) },
+                onMemo: { store.send(.didTapMemoIcon(id: policy.id)) }
+            )
         )
         .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
     }
