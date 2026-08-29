@@ -61,6 +61,7 @@ extension NotificationSettingView {
             .disabled(!store.isAllNotificationOn)
             .opacity(store.isAllNotificationOn ? 1 : 0.4)
         }
+        .disabled(!store.hasLoaded)
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .baziBackground(.bgWhite)
