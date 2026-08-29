@@ -15,16 +15,4 @@ public enum EmploymentCode: String, CaseIterable, Sendable {
     public static var onboardingOptions: [EmploymentCode] {
         allCases.filter { $0 != .noneRestrict }
     }
-
-    public var displayName: String {
-        switch self {
-        case .employed: return "재직 중이에요 (정규직/계약직 포함)"
-        case .temporaryDailyWorker: return "단기·일용 근로 중이에요"
-        case .selfEmployed: return "자영업/사업을 하고 있어요"
-        case .freelancer: return "프리랜서로 일하고 있어요"
-        case .unemployed: return "현재 일하고 있지 않아요"
-        case .etcOrNone: return "기타 / 해당 없어요"
-        case .noneRestrict: return "제한 없음"
-        }
-    }
 }

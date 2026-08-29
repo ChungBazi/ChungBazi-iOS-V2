@@ -19,20 +19,4 @@ public enum IncomeLevel: String, CaseIterable, Sendable {
     public static var onboardingOptions: [IncomeLevel] {
         [.level1, .level2, .level3, .level4, .level5, .level6, .level7, .level8, .level9, .level10, .unknown]
     }
-
-    public var displayName: String {
-        switch self {
-        case .level1: return "1분위"
-        case .level2: return "2분위"
-        case .level3: return "3분위"
-        case .level4: return "4분위"
-        case .level5: return "5분위"
-        case .level6: return "6분위"
-        case .level7: return "7분위"
-        case .level8: return "8분위"
-        case .level9: return "9분위"
-        case .level10: return "10분위"
-        case .unknown: return "잘 모르겠어요"
-        }
-    }
 }

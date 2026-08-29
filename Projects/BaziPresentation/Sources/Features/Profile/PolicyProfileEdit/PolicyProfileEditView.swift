@@ -50,7 +50,8 @@ extension PolicyProfileEditView {
                 interestSection
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 95)
         }
         .safeAreaInset(edge: .bottom) {
             saveButton
@@ -91,15 +92,21 @@ extension PolicyProfileEditView {
                 BZSelectField(
                     title: "시/도 선택",
                     placeholder: "시/도 선택",
-                    options: store.sidoList.map(\.name),
-                    selection: $store.province
+                    options: store.sidoOptions.map(\.name),
+                    selection: Binding(
+                        get: { store.selectedSido?.name },
+                        set: { name in store.send(.didSelectSido(store.sidoOptions.first { $0.name == name })) }
+                    )
                 )
                 BZSelectField(
                     title: "시/군/구 선택",
                     placeholder: "시/군/구 선택",
-                    options: store.sigunguList.map(\.name),
-                    selection: $store.district,
-                    isDisabled: store.province == nil
+                    options: store.sigunguOptions.map(\.name),
+                    selection: Binding(
+                        get: { store.selectedSigungu?.name },
+                        set: { name in store.send(.didSelectSigungu(store.sigunguOptions.first { $0.name == name })) }
+                    ),
+                    isDisabled: store.selectedSido == nil
                 )
             }
         }
@@ -110,8 +117,11 @@ extension PolicyProfileEditView {
             questionTitle(3, "현재 어떤 학업 단계에 있나요?")
             BZSelectField(
                 title: "학업 단계 선택",
-                options: PolicyProfileEditFeature.educationOptions,
-                selection: $store.education
+                options: EducationUI.allCases.map(\.rawValue),
+                selection: Binding(
+                    get: { store.education?.rawValue },
+                    set: { store.send(.didSelectEducation($0.flatMap(EducationUI.init(rawValue:)))) }
+                )
             )
         }
     }
@@ -121,8 +131,11 @@ extension PolicyProfileEditView {
             questionTitle(4, "현재 하고 있는 일이 있나요?")
             BZSelectField(
                 title: "직업 형태 선택",
-                options: PolicyProfileEditFeature.employmentOptions,
-                selection: $store.employment
+                options: EmploymentUI.allCases.map(\.rawValue),
+                selection: Binding(
+                    get: { store.employment?.rawValue },
+                    set: { store.send(.didSelectEmployment($0.flatMap(EmploymentUI.init(rawValue:)))) }
+                )
             )
         }
     }
@@ -136,8 +149,11 @@ extension PolicyProfileEditView {
             }
             BZSelectField(
                 title: "소득 분위 선택",
-                options: PolicyProfileEditFeature.incomeOptions,
-                selection: $store.income
+                options: IncomeLevelUI.allCases.map(\.rawValue),
+                selection: Binding(
+                    get: { store.income?.rawValue },
+                    set: { store.send(.didSelectIncome($0.flatMap(IncomeLevelUI.init(rawValue:)))) }
+                )
             )
         }
     }
@@ -157,12 +173,12 @@ extension PolicyProfileEditView {
             }
             
             LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(PolicyProfileEditFeature.interestCategories, id: \.self) { category in
+                ForEach(InterestCategoryUI.allCases, id: \.self) { interest in
                     BZChoiceChip(
-                        category,
-                        isSelected: store.selectedCategories.contains(category)
+                        interest.rawValue,
+                        isSelected: store.interests.contains(interest)
                     ) {
-                        store.send(.didTapCategory(category))
+                        store.send(.didTapInterest(interest))
                     }
                 }
             }

@@ -34,8 +34,11 @@ extension EmploymentStepView {
     private var selectField: some View {
         BZSelectField(
             title: "취업 상태 선택",
-            options: OnboardingContainerFeature.employmentOptions,
-            selection: $store.employment
+            options: EmploymentUI.allCases.map(\.rawValue),
+            selection: Binding(
+                get: { store.employment?.rawValue },
+                set: { store.send(.didSelectEmployment($0.flatMap(EmploymentUI.init(rawValue:)))) }
+            )
         )
     }
 }

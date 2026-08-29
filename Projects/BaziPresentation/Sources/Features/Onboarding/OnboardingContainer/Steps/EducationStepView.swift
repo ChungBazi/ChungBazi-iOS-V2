@@ -34,8 +34,11 @@ extension EducationStepView {
     private var selectField: some View {
         BZSelectField(
             title: "학업 단계 선택",
-            options: OnboardingContainerFeature.educationOptions,
-            selection: $store.education
+            options: EducationUI.allCases.map(\.rawValue),
+            selection: Binding(
+                get: { store.education?.rawValue },
+                set: { store.send(.didSelectEducation($0.flatMap(EducationUI.init(rawValue:)))) }
+            )
         )
     }
 }

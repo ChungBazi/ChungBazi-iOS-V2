@@ -38,8 +38,11 @@ extension IncomeStepView {
     private var selectField: some View {
         BZSelectField(
             title: "소득 분위 선택",
-            options: OnboardingContainerFeature.incomeOptions,
-            selection: $store.income
+            options: IncomeLevelUI.allCases.map(\.rawValue),
+            selection: Binding(
+                get: { store.income?.rawValue },
+                set: { store.send(.didSelectIncome($0.flatMap(IncomeLevelUI.init(rawValue:)))) }
+            )
         )
     }
 }
