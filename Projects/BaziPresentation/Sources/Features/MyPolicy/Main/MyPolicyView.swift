@@ -28,7 +28,6 @@ public struct MyPolicyView: View {
                 content
             }
             .task { store.send(.onAppear) }
-            .toolbar(.hidden, for: .navigationBar)
         } destination: { store in
             switch store.case {
             case .policyList(let store):
@@ -239,7 +238,7 @@ private extension MyPolicyView {
         return Button {
             store.send(.didSelectTab(tab))
         } label: {
-            Text(tab.rawValue)
+            Text(tab.title)
                 .baziFont(isSelected ? .small14SB : .small14R)
                 .foregroundStyle(isSelected ? Color.bazi(.primary) : Color.gray500)
                 .frame(maxWidth: .infinity)
@@ -262,7 +261,7 @@ private extension MyPolicyView {
 private extension MyPolicyView {
 
     var resultsToolbar: some View {
-        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.rawValue) {
+        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrder)
         }
         .baziBackground(.bgGray)

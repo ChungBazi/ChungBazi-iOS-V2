@@ -13,9 +13,16 @@ public struct CalendarFeature: Sendable {
 
     // MARK: - SortOrder
 
-    public enum SortOrder: String, Equatable {
-        case deadline = "마감순"
-        case latest = "최신순"
+    public enum SortOrder: Equatable {
+        case deadline
+        case latest
+
+        var title: String {
+            switch self {
+            case .deadline: return "마감순"
+            case .latest: return "최신순"
+            }
+        }
 
         var next: SortOrder { self == .deadline ? .latest : .deadline }
     }
@@ -54,7 +61,7 @@ public struct CalendarFeature: Sendable {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didSelectDate(Date)
@@ -94,7 +101,7 @@ public struct CalendarFeature: Sendable {
             case .onAppear:
                 // TODO: myPolicyClient가 준비되면 MyPolicyAPI.getCalendar 응답으로 교체한다.
                 if state.months.isEmpty {
-                    state.months = CalendarMonth.mockMonths(centeredOn: state.centerDate)
+                    state.months = CalendarMonth.mockMonths(centeredOn: state.centerDate, calendar: calendar)
                     state.deadlineDates = Set(PolicySummary.mockList.filter { !$0.isOpenEnded }.map {
                         calendar.startOfDay(for: $0.deadlineDate)
                     })

@@ -184,7 +184,7 @@ extension CalendarView {
     }
 
     private var sheetResultsToolbar: some View {
-        BZResultsToolbar(count: store.selectedDatePolicies.count, sortTitle: store.sortOrder.rawValue) {
+        BZResultsToolbar(count: store.selectedDatePolicies.count, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrderInSheet)
         }
     }

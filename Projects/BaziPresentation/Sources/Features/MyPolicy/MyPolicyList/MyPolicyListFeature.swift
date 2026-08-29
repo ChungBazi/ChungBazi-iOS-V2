@@ -8,9 +8,16 @@ public struct MyPolicyListFeature {
 
     // MARK: - SortOrder
 
-    public enum SortOrder: String, Equatable {
-        case deadline = "마감순"
-        case latest = "최신순"
+    public enum SortOrder: Equatable {
+        case deadline
+        case latest
+
+        var title: String {
+            switch self {
+            case .deadline: return "마감순"
+            case .latest: return "최신순"
+            }
+        }
 
         var next: SortOrder { self == .deadline ? .latest : .deadline }
     }
@@ -21,18 +28,28 @@ public struct MyPolicyListFeature {
     public struct State: Equatable {
         public var selectedCategory: PolicyCategory?
         public var sortOrder: SortOrder
-        public var policies: IdentifiedArrayOf<PolicySummary>
+        /// 원본 목록(찜 상태 보유). 서버 응답으로 교체될 값. 필터/정렬은 파생(`policies`)으로 계산한다.
+        public var allPolicies: IdentifiedArrayOf<PolicySummary>
+
+        /// 파생: 카테고리 필터 + 정렬 적용 결과.
+        public var policies: IdentifiedArrayOf<PolicySummary> {
+            let filtered = allPolicies.filter { selectedCategory == nil || $0.category == selectedCategory }
+            let sorted = sortOrder == .deadline
+                ? filtered.sorted { $0.deadlineDate < $1.deadlineDate }
+                : filtered.sorted { $0.id > $1.id }
+            return IdentifiedArray(uniqueElements: sorted)
+        }
 
         public init() {
             self.selectedCategory = nil
             self.sortOrder = .deadline
-            self.policies = []
+            self.allPolicies = []
         }
     }
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didSelectCategory(PolicyCategory?)
@@ -66,21 +83,22 @@ public struct MyPolicyListFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.policies = policies(for: state.selectedCategory, sortOrder: state.sortOrder)
+                // TODO: myPolicyClient가 준비되면 MyPolicyAPI 응답으로 교체한다.
+                if state.allPolicies.isEmpty {
+                    state.allPolicies = IdentifiedArray(uniqueElements: PolicySummary.mockList)
+                }
                 return .none
 
             case .didSelectCategory(let category):
                 state.selectedCategory = category
-                state.policies = policies(for: category, sortOrder: state.sortOrder)
                 return .none
 
             case .didTapSortOrder:
                 state.sortOrder = state.sortOrder.next
-                state.policies = policies(for: state.selectedCategory, sortOrder: state.sortOrder)
                 return .none
 
             case .didToggleLike(let id):
-                state.policies[id: id]?.isLiked.toggle()
+                state.allPolicies[id: id]?.isLiked.toggle()
                 return .none
 
             case .didTapPolicy(let id):
@@ -94,15 +112,5 @@ public struct MyPolicyListFeature {
                 return .none
             }
         }
-    }
-
-    // MARK: - Private
-
-    private func policies(for category: PolicyCategory?, sortOrder: SortOrder) -> IdentifiedArrayOf<PolicySummary> {
-        let filtered = PolicySummary.mockList.filter { category == nil || $0.category == category }
-        let sorted = sortOrder == .deadline
-            ? filtered.sorted { $0.deadlineDate < $1.deadlineDate }
-            : filtered.sorted { $0.id > $1.id }
-        return IdentifiedArray(uniqueElements: sorted)
     }
 }

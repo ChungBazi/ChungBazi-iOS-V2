@@ -26,7 +26,6 @@ public struct ProfileView: View {
         ) {
             content
                 .task { store.send(.onAppear) }
-                .toolbar(.hidden, for: .navigationBar)
         } destination: { store in
             Group {
                 switch store.case {
