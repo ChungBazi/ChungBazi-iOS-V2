@@ -54,11 +54,12 @@ extension MyPolicyListView {
             BZRetryView { store.send(.didTapRetry) }
 
         case .loaded(let policies):
+            // 정책이 없어도 결과바(갯수/정렬)는 항상 표시한다(내 정책 메인과 동일).
+            resultsToolbar
             if policies.isEmpty {
                 emptyView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                resultsToolbar
                 ScrollView {
                     policyList(policies)
                 }
