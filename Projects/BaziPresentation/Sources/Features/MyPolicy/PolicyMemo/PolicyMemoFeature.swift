@@ -16,6 +16,8 @@ public struct PolicyMemoFeature {
         public var memo: LoadingState<PolicyMemoVO> = .idle
         public var draftText: String = ""
         public var isSaving = false
+        /// 저장 실패 안내 알림(자동저장 실패 시 재시도/폐기 후 나가기 경로 제공).
+        @Presents public var alert: AlertState<Action.Alert>?
 
         /// 저장 버튼 활성: 로드 완료 + 저장 중 아님 + 저장된 값과 다름.
         public var isSaveEnabled: Bool {
@@ -40,10 +42,16 @@ public struct PolicyMemoFeature {
         // MARK: Internal
         case memoResponse(Result<PolicyMemoVO, UseCaseError>)
         case saveSucceeded(dismissAfter: Bool)
-        case saveFailed
+        case saveFailed(dismissAfter: Bool)
+        case alert(PresentationAction<Alert>)
 
         // MARK: Delegate
         case delegate(Delegate)
+
+        public enum Alert: Equatable {
+            case retrySave
+            case discardAndLeave
+        }
     }
 
     // MARK: - Delegate
@@ -116,15 +124,26 @@ public struct PolicyMemoFeature {
                     if dismissAfter { await dismiss() }
                 }
 
-            case .saveFailed:
+            case let .saveFailed(dismissAfter):
                 state.isSaving = false
-                // TODO: 저장 실패 안내(토스트 등). 현재는 화면을 유지한다.
+                // 뒤로가기(자동저장) 실패면 재시도/폐기 후 나가기 선택지를 주고, 저장 버튼 실패면 안내만 한다.
+                state.alert = dismissAfter ? .saveFailedOnExit : .saveFailed
+                return .none
+
+            case .alert(.presented(.retrySave)):
+                return save(&state, dismissAfter: true)
+
+            case .alert(.presented(.discardAndLeave)):
+                return .run { [dismiss] _ in await dismiss() }
+
+            case .alert:
                 return .none
 
             case .delegate:
                 return .none
             }
         }
+        .ifLet(\.$alert, action: \.alert)
     }
 
     // MARK: - Private
@@ -138,8 +157,37 @@ public struct PolicyMemoFeature {
                 try await policyMemoClient.updateMemo(policyId, text)
                 await send(.saveSucceeded(dismissAfter: dismissAfter))
             } catch {
-                await send(.saveFailed)
+                await send(.saveFailed(dismissAfter: dismissAfter))
             }
+        }
+    }
+}
+
+// MARK: - Alerts
+
+extension AlertState where Action == PolicyMemoFeature.Action.Alert {
+
+    /// 저장 버튼으로 저장하다 실패(화면 유지) — 안내만.
+    static var saveFailed: Self {
+        AlertState {
+            TextState("저장에 실패했어요")
+        } actions: {
+            ButtonState(role: .cancel) { TextState("확인") }
+        } message: {
+            TextState("잠시 후 다시 시도해주세요.")
+        }
+    }
+
+    /// 뒤로가기(자동저장) 중 실패 — 재시도 또는 저장 없이 나가기.
+    static var saveFailedOnExit: Self {
+        AlertState {
+            TextState("저장에 실패했어요")
+        } actions: {
+            ButtonState(action: .retrySave) { TextState("다시 시도") }
+            ButtonState(role: .destructive, action: .discardAndLeave) { TextState("저장하지 않고 나가기") }
+            ButtonState(role: .cancel) { TextState("계속 편집") }
+        } message: {
+            TextState("변경사항을 저장하지 못했어요.")
         }
     }
 }
