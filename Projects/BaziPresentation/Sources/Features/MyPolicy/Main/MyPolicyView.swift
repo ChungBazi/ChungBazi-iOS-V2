@@ -91,10 +91,18 @@ private extension MyPolicyView {
 
     @ViewBuilder
     var results: some View {
-        if store.policies.isEmpty {
-            emptyPolicyList
-        } else {
-            policyList
+        switch store.currentPolicies {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, minHeight: 200)
+        case .failed:
+            BZRetryView { store.send(.onAppear) }
+        case .loaded(let policies):
+            if policies.isEmpty {
+                emptyPolicyList
+            } else {
+                policyList(policies)
+            }
         }
     }
 }
@@ -261,16 +269,28 @@ private extension MyPolicyView {
 private extension MyPolicyView {
 
     var resultsToolbar: some View {
-        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.title) {
-            store.send(.didTapSortOrder)
+        // 정책 탭은 갯수+정렬, 상시모집 탭은 정렬 없이 갯수만 표시한다.
+        Group {
+            if store.selectedTab == .policy {
+                BZResultsToolbar(count: store.currentTotalCount, sortTitle: store.sortOrder.title) {
+                    store.send(.didTapSortOrder)
+                }
+            } else {
+                BZResultsToolbar(count: store.currentTotalCount)
+            }
         }
         .baziBackground(.bgGray)
     }
 
-    var policyList: some View {
+    func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         LazyVStack(spacing: 12) {
-            ForEach(store.policies) { policy in
+            ForEach(policies) { policy in
                 policyCard(policy, size: .medium)
+                    .onAppear {
+                        if policy.id == policies.last?.id {
+                            store.send(.didReachListEnd)
+                        }
+                    }
             }
         }
         .padding(.top, 8)
@@ -283,7 +303,7 @@ private extension MyPolicyView {
     }
 
     /// teaser(가로 스크롤)와 목록에서 공통으로 쓰는 정책 카드. 탭하면 상세로, 메모 액세서리로 메모 진입.
-    func policyCard(_ policy: PolicySummary, size: BZCardSize) -> some View {
+    func policyCard(_ policy: PolicySummaryVO, size: BZCardSize) -> some View {
         BZCard(
             size: size,
             category: policy.category.rawValue,
@@ -329,7 +349,7 @@ private extension MyPolicyView {
 #Preview("찜한 정책 없음") {
     var state = MyPolicyFeature.State()
     state.deadlineTeaser = []
-    state.policies = []
+    state.datePolicies = .loaded([])
 
     return MyPolicyView(
         store: Store(initialState: state) {

@@ -2,6 +2,7 @@
 
 import Foundation
 
+import BaziDomain
 import ComposableArchitecture
 
 @Reducer
@@ -19,7 +20,7 @@ public struct MyPolicyFeature {
 
     // MARK: - Tab
 
-    public enum Tab: CaseIterable, Equatable {
+    public enum Tab: CaseIterable, Equatable, Sendable {
         case policy
         case openEnded
 
@@ -44,6 +45,13 @@ public struct MyPolicyFeature {
             }
         }
 
+        var serverValue: String {
+            switch self {
+            case .deadline: return "DEADLINE"
+            case .latest: return "LATEST"
+            }
+        }
+
         var next: SortOrder { self == .deadline ? .latest : .deadline }
     }
 
@@ -53,15 +61,32 @@ public struct MyPolicyFeature {
     public struct State: Equatable {
         public var path = StackState<Path.State>()
 
-        public var deadlineTeaser: IdentifiedArrayOf<PolicySummary>
+        public var deadlineTeaser: IdentifiedArrayOf<PolicySummaryVO>
         /// 주간 스트립의 중심(항상 오늘). onAppear에서 주입된 `date.now` 기준으로 설정된다. (init 값은 placeholder)
         public var today: Date
         public var selectedDate: Date
         public var selectedTab: Tab
         public var sortOrder: SortOrder
-        public var policies: IdentifiedArrayOf<PolicySummary>
+
+        // 탭별 목록을 각각 State에 보관해 탭 왕복 시 재조회하지 않는다(UI 상태).
+        // 정책 탭: 선택 날짜/정렬 기준. 상시모집 탭: 날짜 무관, 최초 1회만.
+        public var datePolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
+        public var datePagination = PaginationState<String>()
+        /// datePolicies가 로드된 날짜. 선택 날짜가 이와 다르면 정책 탭 진입 시 재조회한다.
+        public var loadedDate: Date?
+        public var openEndedPolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
+        public var openEndedPagination = PaginationState<String>()
+
         /// onAppear에서 today/selectedDate를 주입된 오늘로 최초 1회만 맞추기 위한 가드.
         public var didLoad = false
+
+        /// 현재 탭 기준 목록/총개수(뷰용 파생).
+        public var currentPolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> {
+            selectedTab == .policy ? datePolicies : openEndedPolicies
+        }
+        public var currentTotalCount: Int {
+            selectedTab == .policy ? datePagination.totalCount : openEndedPagination.totalCount
+        }
 
         /// 오늘을 중심으로 앞뒤 3일씩, 총 7일. 좌우 스크롤 없이 이 범위 안에서만 날짜를 고를 수 있다.
         public var weekDates: [Date] {
@@ -76,7 +101,6 @@ public struct MyPolicyFeature {
             self.selectedDate = today
             self.selectedTab = .policy
             self.sortOrder = .deadline
-            self.policies = []
         }
     }
 
@@ -90,9 +114,14 @@ public struct MyPolicyFeature {
         case didSelectWeekDate(Date)
         case didSelectTab(Tab)
         case didTapSortOrder
+        case didReachListEnd
         case didTapPolicy(id: Int)
         case didTapMemo(id: Int)
         case didTapEmptyBannerCTA
+
+        // MARK: Internal
+        case teaserResponse(Result<[PolicySummaryVO], UseCaseError>)
+        case pageResponse(Result<PolicyPageVO, UseCaseError>, tab: Tab, isFirstPage: Bool)
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -100,10 +129,9 @@ public struct MyPolicyFeature {
 
     // MARK: - Dependencies
 
+    @Dependency(\.myPolicyClient) var myPolicyClient
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
-    // TODO: BaziDomain의 내 정책 UseCase가 준비되면 추가
-    // @Dependency(\.myPolicyClient) var myPolicyClient
 
     // MARK: - Init
 
@@ -122,10 +150,7 @@ public struct MyPolicyFeature {
                     state.today = today
                     state.selectedDate = today
                 }
-                // TODO: myPolicyClient가 준비되면 MyPolicyAPI 응답으로 교체한다.
-                state.deadlineTeaser = IdentifiedArray(uniqueElements: Array(PolicySummary.mockList.prefix(2)))
-                state.policies = policies(tab: state.selectedTab, date: state.selectedDate, sortOrder: state.sortOrder)
-                return .none
+                return .merge(loadTeaser(), reloadDatePolicies(&state))
 
             case .didTapHeaderMore:
                 state.path.append(.policyList(MyPolicyListFeature.State()))
@@ -138,18 +163,56 @@ public struct MyPolicyFeature {
                 return .none
 
             case .didSelectWeekDate(let date):
+                guard date != state.selectedDate else { return .none }
                 state.selectedDate = date
-                state.policies = policies(tab: state.selectedTab, date: date, sortOrder: state.sortOrder)
-                return .none
+                // 상시모집은 날짜와 무관하므로 정책 탭에서만 재조회한다.
+                return state.selectedTab == .policy ? reloadDatePolicies(&state) : .none
 
             case .didSelectTab(let tab):
+                guard tab != state.selectedTab else { return .none }
                 state.selectedTab = tab
-                state.policies = policies(tab: tab, date: state.selectedDate, sortOrder: state.sortOrder)
-                return .none
+                switch tab {
+                case .policy:
+                    // 로드된 날짜와 선택 날짜가 다르거나 아직 없으면 재조회, 아니면 캐시(State) 사용.
+                    guard state.loadedDate != state.selectedDate || state.datePolicies.value == nil else { return .none }
+                    return reloadDatePolicies(&state)
+                case .openEnded:
+                    // 상시모집은 최초 1회만 조회. 이미 있으면 재요청하지 않는다.
+                    guard state.openEndedPolicies.value == nil, !state.openEndedPolicies.isLoading else { return .none }
+                    return reloadOpenEnded(&state)
+                }
 
             case .didTapSortOrder:
+                // 정렬은 정책 탭 전용.
                 state.sortOrder = state.sortOrder.next
-                state.policies = policies(tab: state.selectedTab, date: state.selectedDate, sortOrder: state.sortOrder)
+                return reloadDatePolicies(&state)
+
+            case .didReachListEnd:
+                switch state.selectedTab {
+                case .policy:
+                    guard state.datePagination.canLoadNext, state.datePolicies.value != nil else { return .none }
+                    state.datePagination.isLoadingNext = true
+                    return fetchDatePolicies(state: state, isFirstPage: false)
+                case .openEnded:
+                    guard state.openEndedPagination.canLoadNext, state.openEndedPolicies.value != nil else { return .none }
+                    state.openEndedPagination.isLoadingNext = true
+                    return fetchOpenEnded(state: state, isFirstPage: false)
+                }
+
+            case .teaserResponse(.success(let policies)):
+                state.deadlineTeaser = IdentifiedArray(deduplicating: policies)
+                return .none
+
+            case .teaserResponse(.failure):
+                state.deadlineTeaser = []
+                return .none
+
+            case let .pageResponse(.success(page), tab, isFirstPage):
+                handlePage(page, tab: tab, isFirstPage: isFirstPage, state: &state)
+                return .none
+
+            case let .pageResponse(.failure(error), tab, isFirstPage):
+                handlePageFailure(error, tab: tab, isFirstPage: isFirstPage, state: &state)
                 return .none
 
             case .didTapPolicy:
@@ -174,7 +237,7 @@ public struct MyPolicyFeature {
                 return .none
 
             case .path(.element(_, .memo(.delegate(.didSaveMemo)))):
-                // TODO: 서버 연결 시 저장된 메모를 목록/티저에 반영한다. (현재는 mock이라 별도 갱신 없음)
+                // TODO: 서버 연결 시 저장된 메모를 목록/티저에 반영한다. (현재는 별도 갱신 없음)
                 return .none
 
             case .path:
@@ -186,22 +249,108 @@ public struct MyPolicyFeature {
 
     // MARK: - Private
 
-    private func policies(tab: Tab, date: Date, sortOrder: SortOrder) -> IdentifiedArrayOf<PolicySummary> {
-        let filtered: [PolicySummary]
+    private enum CancelID: Hashable { case datePolicies, openEnded }
+
+    private static let pageSize = 20
+
+    private func loadTeaser() -> Effect<Action> {
+        .run { [myPolicyClient] send in
+            do {
+                let policies = try await myPolicyClient.fetchDeadlineTeaser()
+                await send(.teaserResponse(.success(policies)))
+            } catch {
+                await send(.teaserResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+    }
+
+    /// 정책 탭: 선택 날짜/정렬 기준 1페이지부터 재조회.
+    private func reloadDatePolicies(_ state: inout State) -> Effect<Action> {
+        state.datePolicies = .loading
+        state.datePagination.reset()
+        return fetchDatePolicies(state: state, isFirstPage: true)
+    }
+
+    private func fetchDatePolicies(state: State, isFirstPage: Bool) -> Effect<Action> {
+        let targetDate = targetDateString(state.selectedDate)
+        let sort = state.sortOrder.serverValue
+        let cursor = isFirstPage ? nil : state.datePagination.nextCursor
+        return .run { [myPolicyClient] send in
+            do {
+                let page = try await myPolicyClient.fetchDeadlineDate(targetDate, sort, cursor, Self.pageSize)
+                await send(.pageResponse(.success(page), tab: .policy, isFirstPage: isFirstPage))
+            } catch {
+                await send(.pageResponse(.failure(UseCaseError.map(error)), tab: .policy, isFirstPage: isFirstPage))
+            }
+        }
+        .cancellable(id: CancelID.datePolicies, cancelInFlight: true)
+    }
+
+    /// 상시모집 탭: 1페이지부터 재조회.
+    private func reloadOpenEnded(_ state: inout State) -> Effect<Action> {
+        state.openEndedPolicies = .loading
+        state.openEndedPagination.reset()
+        return fetchOpenEnded(state: state, isFirstPage: true)
+    }
+
+    private func fetchOpenEnded(state: State, isFirstPage: Bool) -> Effect<Action> {
+        let cursor = isFirstPage ? nil : state.openEndedPagination.nextCursor
+        return .run { [myPolicyClient] send in
+            do {
+                let page = try await myPolicyClient.fetchOpenEnded(cursor, Self.pageSize)
+                await send(.pageResponse(.success(page), tab: .openEnded, isFirstPage: isFirstPage))
+            } catch {
+                await send(.pageResponse(.failure(UseCaseError.map(error)), tab: .openEnded, isFirstPage: isFirstPage))
+            }
+        }
+        .cancellable(id: CancelID.openEnded, cancelInFlight: true)
+    }
+
+    private func handlePage(_ page: PolicyPageVO, tab: Tab, isFirstPage: Bool, state: inout State) {
         switch tab {
         case .policy:
-            let day = calendar.startOfDay(for: date)
-            filtered = PolicySummary.mockList.filter {
-                !$0.isOpenEnded && calendar.startOfDay(for: $0.deadlineDate) == day
+            state.datePagination.apply(page)
+            if isFirstPage {
+                state.datePolicies = .loaded(page.policies)
+                state.loadedDate = state.selectedDate
+            } else {
+                var current = state.datePolicies.value ?? []
+                current.append(contentsOf: page.policies)
+                state.datePolicies = .loaded(current)
             }
         case .openEnded:
-            filtered = PolicySummary.mockList.filter(\.isOpenEnded)
+            state.openEndedPagination.apply(page)
+            if isFirstPage {
+                state.openEndedPolicies = .loaded(page.policies)
+            } else {
+                var current = state.openEndedPolicies.value ?? []
+                current.append(contentsOf: page.policies)
+                state.openEndedPolicies = .loaded(current)
+            }
         }
+    }
 
-        let sorted = sortOrder == .deadline
-            ? filtered.sorted { $0.deadlineDate < $1.deadlineDate }
-            : filtered.sorted { $0.id > $1.id }
-        return IdentifiedArray(uniqueElements: sorted)
+    private func handlePageFailure(_ error: UseCaseError, tab: Tab, isFirstPage: Bool, state: inout State) {
+        switch tab {
+        case .policy:
+            if isFirstPage {
+                if state.datePolicies.value == nil { state.datePolicies = .failed(error.loadFailureMessage) }
+            } else {
+                state.datePagination.isLoadingNext = false
+            }
+        case .openEnded:
+            if isFirstPage {
+                if state.openEndedPolicies.value == nil { state.openEndedPolicies = .failed(error.loadFailureMessage) }
+            } else {
+                state.openEndedPagination.isLoadingNext = false
+            }
+        }
+    }
+
+    /// 주입된 calendar 기준으로 "yyyy-MM-dd" 문자열을 만든다(서버 targetDate 파라미터용).
+    private func targetDateString(_ date: Date) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
     }
 }
 
