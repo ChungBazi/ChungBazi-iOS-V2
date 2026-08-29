@@ -15,9 +15,8 @@ public struct CalendarView: View {
 
     @Bindable var store: StoreOf<CalendarFeature>
     @Environment(\.dismiss) private var dismiss
-    /// 특정 달이 로드 트리거 위치(index 1 / count-2)에 다시 나타나도 중복으로 더 불러오지 않도록 막는다.
-    @State private var prependTriggeredMonthID: Date?
-    @State private var appendTriggeredMonthID: Date?
+    /// 진입 시 centerDate(오늘) 달로 최초 1회만 스크롤하기 위한 가드.
+    @State private var didInitialScroll = false
 
     // MARK: - Init
 
@@ -71,36 +70,23 @@ extension CalendarView {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 32) {
-                    ForEach(Array(store.months.enumerated()), id: \.element.id) { index, month in
+                    ForEach(store.months) { month in
                         monthSection(month)
                             .id(month.id)
-                            .onAppear {
-                                // 맨 끝(index 0/마지막)이 아니라 그 다음 칸에서 미리 불러와,
-                                // 새로 끼워진 달이 렌더 버퍼에 걸려 다시 즉시 onAppear가 발동하는 걸 막는다.
-                                // + 같은 프레임 안에서 여러 번 상태를 바꾸면 SwiftUI가 크래시하므로,
-                                // 이미 트리거한 달이면 무시하고 상태 변경은 다음 런루프로 미룬다.
-                                if index == 1, prependTriggeredMonthID != month.id {
-                                    prependTriggeredMonthID = month.id
-                                    Task { @MainActor in store.send(.didAppearFirstMonth) }
-                                }
-                                if index == store.months.count - 2, appendTriggeredMonthID != month.id {
-                                    appendTriggeredMonthID = month.id
-                                    Task { @MainActor in store.send(.didAppearLastMonth) }
-                                }
-                            }
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
-            // 위로 무한스크롤 시 새 달이 앞에 끼워지며 화면이 튀지 않도록, 기존 첫 달로 즉시(애니메이션 없이) 되돌린다.
-            .onChange(of: store.months.first?.firstDayOfMonth) { oldValue, newValue in
-                guard let oldValue, newValue != oldValue else { return }
+            // 진입 시(months가 채워지는 순간) centerDate(오늘) 달로 즉시(애니메이션 없이) 이동한다.
+            .onChange(of: store.months.isEmpty) { _, isEmpty in
+                guard !isEmpty, !didInitialScroll else { return }
+                didInitialScroll = true
                 Task { @MainActor in
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
                     withTransaction(transaction) {
-                        proxy.scrollTo(oldValue, anchor: .top)
+                        proxy.scrollTo(store.centerMonthID, anchor: .top)
                     }
                 }
             }
@@ -126,28 +112,33 @@ extension CalendarView {
         }
     }
 
+    /// 오늘은 강조 원(primary), 찜한 정책 마감이 있는 날만 하단 인디케이터 바 + 탭 선택 가능.
+    /// - 인디케이터 바: blue300, 단 오늘+마감이면 primary.
+    /// - 인디케이터가 없는(마감 없는) 날짜는 선택할 수 없다.
     private func dayCell(_ date: Date) -> some View {
-        let isSelected = store.selectedDate.map { Calendar.current.isDate($0, inSameDayAs: date) } ?? false
+        // centerDate는 진입 시점의 오늘(= MyPolicy의 state.today)이라 오늘 표시 기준으로 쓴다.
+        let isToday = Calendar.current.isDate(date, inSameDayAs: store.centerDate)
         let hasDeadline = store.deadlineDates.contains(Calendar.current.startOfDay(for: date))
 
-        return Button {
-            store.send(.didSelectDate(date))
-        } label: {
-            VStack(spacing: 4) {
-                Text("\(Calendar.current.component(.day, from: date))")
-                    .baziFont(.small14R)
-                    .foregroundStyle(isSelected ? Color.grayWhite : Color.gray700)
-                    .frame(width: 36, height: 36)
-                    .background(isSelected ? Color.bazi(.primary) : Color.clear)
-                    .clipShape(Circle())
+        return VStack(spacing: 4) {
+            Text("\(Calendar.current.component(.day, from: date))")
+                .baziFont(.small14R)
+                .foregroundStyle(isToday ? Color.grayWhite : Color.gray700)
+                .frame(width: 36, height: 36)
+                .background(isToday ? Color.bazi(.primary) : Color.clear)
+                .clipShape(Circle())
 
-                Capsule()
-                    .fill(hasDeadline ? (isSelected ? Color.bazi(.primary) : Color.blue100) : Color.clear)
-                    .frame(width: 20, height: 2)
-            }
-            .animation(.easeInOut(duration: 0.2), value: isSelected)
+            Capsule()
+                .fill(hasDeadline ? (isToday ? Color.bazi(.primary) : Color.blue300) : Color.clear)
+                .frame(width: 20, height: 2)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // 인디케이터(마감)가 있는 날짜만 선택 가능.
+            guard hasDeadline else { return }
+            store.send(.didSelectDate(date))
+        }
     }
 }
 
@@ -182,6 +173,7 @@ extension CalendarView {
                         sheetCard(policy)
                     }
                 }
+                .padding(.top, 8)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
@@ -192,23 +184,9 @@ extension CalendarView {
     }
 
     private var sheetResultsToolbar: some View {
-        HStack {
-            Text("\(store.selectedDatePolicies.count)개")
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray600)
-            Spacer()
-            Button {
-                store.send(.didTapSortOrderInSheet)
-            } label: {
-                Label(store.sortOrder.rawValue, systemImage: "arrow.up.arrow.down")
-                    .labelStyle(.titleAndIcon)
-            }
-            .buttonStyle(.plain)
-            .baziFont(.small14R)
-            .foregroundStyle(Color.gray600)
+        BZResultsToolbar(count: store.selectedDatePolicies.count, sortTitle: store.sortOrder.rawValue) {
+            store.send(.didTapSortOrderInSheet)
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 12)
     }
 
     private func sheetCard(_ policy: PolicySummary) -> some View {
@@ -224,11 +202,15 @@ extension CalendarView {
         .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
     }
 
-    private func dayTitle(for date: Date) -> String {
+    private static let dayTitleFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "M월 d일 (E)"
         formatter.locale = Locale(identifier: "ko_KR")
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    private func dayTitle(for date: Date) -> String {
+        Self.dayTitleFormatter.string(from: date)
     }
 }
 

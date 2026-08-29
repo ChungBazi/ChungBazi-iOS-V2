@@ -8,6 +8,7 @@ extension Color {
     public static var blue50: Color { BaziDesignAsset.blue50.swiftUIColor }
     public static var blue100: Color { BaziDesignAsset.blue100.swiftUIColor }
     public static var blue200: Color { BaziDesignAsset.blue200.swiftUIColor }
+    public static var blue300: Color { BaziDesignAsset.blue300.swiftUIColor }
     public static var blue700: Color { BaziDesignAsset.blue700.swiftUIColor }
     public static var blue800: Color { BaziDesignAsset.blue800.swiftUIColor }
 
