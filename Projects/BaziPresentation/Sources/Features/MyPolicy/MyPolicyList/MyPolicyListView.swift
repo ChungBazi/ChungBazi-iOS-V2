@@ -22,7 +22,7 @@ public struct MyPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.onAppear) }
+            .task { store.send(.task) }
             .baziNavigationBar_backWithTitle("내 정책 전체보기") {
                 dismiss()
             }
@@ -35,27 +35,43 @@ public struct MyPolicyListView: View {
 extension MyPolicyListView {
 
     private var content: some View {
-        // 카테고리 필터 + 결과 툴바(갯수/정렬)까지는 상단 고정, 그 아래 정책 리스트만 스크롤한다.
+        // 카테고리 필터는 상단 고정, 그 아래 상태(로딩/에러/빈/리스트)를 그린다.
         VStack(spacing: 0) {
             categoryFilter
-            if store.policies.isEmpty {
+            stateContent
+        }
+        .baziBackground(.bgGray)
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        switch store.list {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        case .failed:
+            BZRetryView { store.send(.didTapRetry) }
+
+        case .loaded(let policies):
+            if policies.isEmpty {
                 emptyView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 resultsToolbar
                 ScrollView {
-                    policyList
+                    policyList(policies)
                 }
+                .refreshable { await store.send(.pullToRefresh).finish() }
             }
         }
-        .baziBackground(.bgGray)
     }
 
     private static let allCategoryTitle = "전체"
 
     private var categoryFilter: some View {
         BZSegmentControl(
-            options: [Self.allCategoryTitle] + PolicyCategory.allCases.map(\.rawValue),
+            options: [Self.allCategoryTitle] + PolicyCategoryUI.allCases.map(\.rawValue),
             selection: categorySelection
         ) { _ in EmptyView() }
         .baziBackground(.bgWhite)
@@ -72,14 +88,14 @@ extension MyPolicyListView {
     }
 
     private var resultsToolbar: some View {
-        BZResultsToolbar(count: store.policies.count, sortTitle: store.sortOrder.title) {
+        BZResultsToolbar(count: store.pagination.totalCount, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrder)
         }
     }
 
-    private var policyList: some View {
+    private func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
         LazyVStack(spacing: 12) {
-            ForEach(store.policies) { policy in
+            ForEach(policies) { policy in
                 BZCard(
                     size: .medium,
                     category: policy.category.rawValue,
@@ -89,6 +105,11 @@ extension MyPolicyListView {
                     isLiked: likeBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                .onAppear {
+                    if policy.id == policies.last?.id {
+                        store.send(.didReachListEnd)
+                    }
+                }
             }
         }
         .padding(.top, 8)
@@ -104,15 +125,15 @@ extension MyPolicyListView {
         Binding(
             get: { store.selectedCategory?.rawValue ?? Self.allCategoryTitle },
             set: { newValue in
-                // "전체"는 PolicyCategory에 없어 rawValue 변환이 nil → 전체(필터 해제)로 처리된다.
-                store.send(.didSelectCategory(PolicyCategory(rawValue: newValue)))
+                // "전체"는 PolicyCategoryUI에 없어 rawValue 변환이 nil → 전체(필터 해제)로 처리된다.
+                store.send(.didSelectCategory(PolicyCategoryUI(rawValue: newValue)))
             }
         )
     }
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.policies[id: id]?.isLiked ?? false },
+            get: { store.list.value?[id: id]?.isLiked ?? false },
             set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
