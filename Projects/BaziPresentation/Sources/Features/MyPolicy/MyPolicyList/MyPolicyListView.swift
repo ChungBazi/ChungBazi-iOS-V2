@@ -27,6 +27,9 @@ public struct MyPolicyListView: View {
                 dismiss()
             }
             .toolbar(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 0)
+            }
     }
 }
 

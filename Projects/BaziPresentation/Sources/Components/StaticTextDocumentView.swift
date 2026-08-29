@@ -22,6 +22,7 @@ struct StaticTextDocumentView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
             }
+            .hiddenTabBarSafeBottom()
         }
         .baziBackground(.bgWhite)
         .task { onAppear() }
