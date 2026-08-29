@@ -90,6 +90,7 @@ extension CalendarView {
                     }
                 }
             }
+            .hiddenTabBarSafeBottom()
         }
         .baziBackground(.bgWhite)
     }
