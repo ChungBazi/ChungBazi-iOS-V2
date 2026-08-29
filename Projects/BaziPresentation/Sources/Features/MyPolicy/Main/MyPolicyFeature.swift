@@ -114,6 +114,7 @@ public struct MyPolicyFeature {
         case didSelectWeekDate(Date)
         case didSelectTab(Tab)
         case didTapSortOrder
+        case pullToRefresh
         case didReachListEnd
         case didTapPolicy(id: Int)
         case didTapMemo(id: Int)
@@ -186,6 +187,13 @@ public struct MyPolicyFeature {
                 // 정렬은 정책 탭 전용.
                 state.sortOrder = state.sortOrder.next
                 return reloadDatePolicies(&state)
+
+            case .pullToRefresh:
+                // 당김 새로고침: .loading으로 바꾸지 않고 티저 + 현재 탭 1페이지를 다시 가져온다.
+                let listReload: Effect<Action> = state.selectedTab == .policy
+                    ? fetchDatePolicies(state: state, isFirstPage: true)
+                    : fetchOpenEnded(state: state, isFirstPage: true)
+                return .merge(loadTeaser(), listReload)
 
             case .didReachListEnd:
                 switch state.selectedTab {

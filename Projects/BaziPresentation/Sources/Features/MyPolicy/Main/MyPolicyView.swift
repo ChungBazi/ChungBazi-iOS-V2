@@ -59,6 +59,7 @@ private extension MyPolicyView {
                 }
             }
         }
+        .refreshable { await store.send(.pullToRefresh).finish() }
         .baziBackground(.bgGray)
     }
 
