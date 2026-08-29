@@ -60,7 +60,7 @@ public struct BZCard: View {
         title: String,
         viewCount: Int,
         image: Image? = nil,
-        isLiked: Binding<Bool>
+        isLiked: Binding<Bool>,
         accessory: BZCardAccessory = .bookmark
     ) {
         self.size = size
