@@ -39,6 +39,9 @@ public struct PolicyProfileEditFeature {
         // MARK: Save
         public var isSaving = false
         public var isSuccessToastPresented = false
+        /// onAppear 프리필을 최초 1회만 수행하기 위한 플래그. (탭 전환 등으로 화면이 재등장할 때
+        /// 저장하지 않은 편집이 서버 값으로 되돌아가는 것을 막는다)
+        public var hasLoaded = false
 
         public init(year: Int = 2000, month: Int = 1, day: Int = 1) {
             self.year = year
@@ -110,6 +113,9 @@ public struct PolicyProfileEditFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                // 재등장(탭 전환 등) 시 프리필이 저장 안 한 편집을 덮어쓰지 않도록 최초 1회만 로드한다.
+                guard !state.hasLoaded else { return .none }
+                state.hasLoaded = true
                 // 시도 목록을 먼저 받은 뒤 프로필을 받아, sidoCode를 시도 VO로 역매핑할 수 있게 한다.
                 return .run { [onboardingClient, policyProfileClient] send in
                     do {

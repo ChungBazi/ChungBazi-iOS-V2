@@ -16,6 +16,9 @@ public struct NicknameEditFeature {
         public var draftNickname = ""
         public var isSaving = false
         public var isSuccessToastPresented = false
+        /// onAppear 초기화를 최초 1회만 수행하기 위한 플래그. (탭 전환 등으로 화면이 재등장할 때
+        /// 입력 중이던 draftNickname이 세션 값으로 초기화되는 것을 막는다)
+        public var hasLoaded = false
 
         /// 공백을 제거한 정규화 닉네임. 저장 요청·활성화 비교·성공 반영에 모두 이 값을 사용한다.
         public var normalizedNickname: String {
@@ -78,6 +81,9 @@ public struct NicknameEditFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                // 재등장(탭 전환 등) 시 입력 중이던 값이 세션 값으로 초기화되지 않도록 최초 1회만 로드한다.
+                guard !state.hasLoaded else { return .none }
+                state.hasLoaded = true
                 let name = sessionClient.userName() ?? ""
                 state.currentNickname = name
                 state.draftNickname = name
