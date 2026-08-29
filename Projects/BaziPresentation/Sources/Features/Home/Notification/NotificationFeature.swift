@@ -134,7 +134,12 @@ public struct NotificationFeature {
             case .didConfirmDeleteAll:
                 state.notifications = .loaded([])
                 state.pagination.reset()
-                return deleteAllEffect()
+                // 진행 중인 목록 요청(새로고침/다음 페이지)을 취소한다.
+                // 취소하지 않으면 뒤늦게 도착한 pageResponse가 비운 목록에 삭제된 알림을 되살린다.
+                return .merge(
+                    .cancel(id: CancelID.list),
+                    deleteAllEffect()
+                )
 
             case .commandFailed:
                 // 삭제 실패 → 현재 탭 1페이지로 재동기화(로딩 표시 없이 목록만 교체).
