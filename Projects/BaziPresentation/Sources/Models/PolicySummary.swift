@@ -9,7 +9,7 @@ public struct PolicySummary: Equatable, Identifiable, Sendable {
     public let dDay: String
     public let title: String
     public let viewCount: Int
-    public var isBookmarked: Bool
+    public var isLiked: Bool
     /// 신청 마감일. 캘린더 표시/날짜별 필터링에 쓴다.
     public let deadlineDate: Date
     /// 상시모집(마감일 없음) 여부.
@@ -21,7 +21,7 @@ public struct PolicySummary: Equatable, Identifiable, Sendable {
         dDay: String,
         title: String,
         viewCount: Int,
-        isBookmarked: Bool = true,
+        isLiked: Bool = true,
         deadlineDate: Date,
         isOpenEnded: Bool = false
     ) {
@@ -30,7 +30,7 @@ public struct PolicySummary: Equatable, Identifiable, Sendable {
         self.dDay = dDay
         self.title = title
         self.viewCount = viewCount
-        self.isBookmarked = isBookmarked
+        self.isLiked = isLiked
         self.deadlineDate = deadlineDate
         self.isOpenEnded = isOpenEnded
     }

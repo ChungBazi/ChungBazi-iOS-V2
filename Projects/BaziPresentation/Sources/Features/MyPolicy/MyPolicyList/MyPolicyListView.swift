@@ -101,7 +101,7 @@ extension MyPolicyListView {
                     dDay: policy.dDay,
                     title: policy.title,
                     viewCount: policy.viewCount,
-                    isBookmarked: bookmarkBinding(id: policy.id)
+                    isLiked: likeBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
             }
@@ -114,10 +114,10 @@ extension MyPolicyListView {
 
 extension MyPolicyListView {
 
-    private func bookmarkBinding(id: Int) -> Binding<Bool> {
+    private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.policies[id: id]?.isBookmarked ?? false },
-            set: { _ in store.send(.didToggleBookmark(id: id)) }
+            get: { store.policies[id: id]?.isLiked ?? false },
+            set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
 }

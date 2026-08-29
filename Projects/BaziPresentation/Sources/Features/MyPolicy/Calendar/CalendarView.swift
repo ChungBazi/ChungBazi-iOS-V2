@@ -218,7 +218,7 @@ extension CalendarView {
             dDay: policy.dDay,
             title: policy.title,
             viewCount: policy.viewCount,
-            isBookmarked: sheetBookmarkBinding(id: policy.id),
+            isLiked: sheetLikeBinding(id: policy.id),
             accessory: .memo(action: { store.send(.didTapMemoIcon(id: policy.id)) })
         )
         .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
@@ -236,10 +236,10 @@ extension CalendarView {
 
 extension CalendarView {
 
-    private func sheetBookmarkBinding(id: Int) -> Binding<Bool> {
+    private func sheetLikeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.selectedDatePolicies[id: id]?.isBookmarked ?? false },
-            set: { _ in store.send(.didToggleBookmarkInSheet(id: id)) }
+            get: { store.selectedDatePolicies[id: id]?.isLiked ?? false },
+            set: { _ in store.send(.didToggleLikeInSheet(id: id)) }
         )
     }
 }

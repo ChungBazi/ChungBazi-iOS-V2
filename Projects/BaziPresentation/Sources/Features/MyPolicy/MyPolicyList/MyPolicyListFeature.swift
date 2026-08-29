@@ -37,7 +37,7 @@ public struct MyPolicyListFeature {
         case onAppear
         case didSelectCategory(PolicyCategory?)
         case didTapSortOrder
-        case didToggleBookmark(id: Int)
+        case didToggleLike(id: Int)
         case didTapPolicy(id: Int)
 
         // MARK: Delegate
@@ -78,8 +78,8 @@ public struct MyPolicyListFeature {
                 state.policies = policies(for: state.selectedCategory, sortOrder: state.sortOrder)
                 return .none
 
-            case .didToggleBookmark(let id):
-                state.policies[id: id]?.isBookmarked.toggle()
+            case .didToggleLike(let id):
+                state.policies[id: id]?.isLiked.toggle()
                 return .none
 
             case .didTapPolicy(let id):

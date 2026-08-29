@@ -65,7 +65,7 @@ public struct CalendarFeature: Sendable {
         case didSelectDate(Date)
         case didDismissSheet
         case didTapSortOrderInSheet
-        case didToggleBookmarkInSheet(id: Int)
+        case didToggleLikeInSheet(id: Int)
         case didTapPolicyInSheet(id: Int)
         case didTapMemoIcon(id: Int)
 
@@ -141,8 +141,8 @@ public struct CalendarFeature: Sendable {
                 }
                 return .none
 
-            case .didToggleBookmarkInSheet(let id):
-                state.selectedDatePolicies[id: id]?.isBookmarked.toggle()
+            case .didToggleLikeInSheet(let id):
+                state.selectedDatePolicies[id: id]?.isLiked.toggle()
                 return .none
 
             case .didTapPolicyInSheet(let id):
