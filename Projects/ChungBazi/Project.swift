@@ -17,6 +17,7 @@ let project = Project.project(
                     "UIApplicationSupportsMultipleScenes": .boolean(false),
                 ]),
                 "UIBackgroundModes": .array([.string("remote-notification")]),
+                "NSCalendarsWriteOnlyAccessUsageDescription": .string("찜한 정책의 마감일을 기기 캘린더에 추가하기 위해 캘린더 접근이 필요해요."),
                 "CFBundleURLTypes": .array([
                     .dictionary([
                         "CFBundleURLSchemes": .array([.string("kakao$(KAKAO_NATIVE_APP_KEY)")]),
