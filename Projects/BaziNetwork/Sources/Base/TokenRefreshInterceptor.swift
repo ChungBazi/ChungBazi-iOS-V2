@@ -101,14 +101,16 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(refreshToken)", forHTTPHeaderField: "Authorization")
-        // 서버 계약(ReissueRequestDTO / AuthAPI.reissue)은 refreshToken을 body로 받는다.
-        // 헤더는 서버가 헤더 기반일 경우까지 커버하려고 함께 둔다.
+        // 서버 계약: refreshToken은 body로만 받는다. Authorization 헤더에 refreshToken을 실으면
+        // 서버 인증 필터가 이를 access token으로 검증하려다 401을 내어 강제 로그아웃되므로 붙이지 않는다.
         urlRequest.httpBody = try JSONEncoder().encode(ReissueRequestDTO(refreshToken: refreshToken))
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let body = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
+            Log.error("토큰 재발급 실패: status=\(status) body=\(body)", category: .auth)
             throw NetworkError.unauthorized
         }
 
