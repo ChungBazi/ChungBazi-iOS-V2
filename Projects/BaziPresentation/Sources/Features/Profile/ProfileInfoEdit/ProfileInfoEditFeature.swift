@@ -20,6 +20,7 @@ public struct ProfileInfoEditFeature {
     public enum ActiveAlert: Equatable {
         case logout
         case withdraw
+        case error
     }
 
     // MARK: - Action
@@ -35,6 +36,11 @@ public struct ProfileInfoEditFeature {
         case didTapWithdraw
         case didCancelWithdraw
         case didConfirmWithdraw
+        case didDismissError
+
+        // MARK: Internal
+        case didCompleteLogout
+        case didFailLogout
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -82,9 +88,25 @@ public struct ProfileInfoEditFeature {
             case .didConfirmLogout:
                 state.activeAlert = nil
                 return .run { [sessionClient] send in
-                    sessionClient.resetSession()
-                    await send(.delegate(.didLogout))
+                    // 서버 로그아웃이 성공해야 로컬 세션을 초기화한다(logout 내부). 실패 시 에러 알럿.
+                    do {
+                        try await sessionClient.logout()
+                        await send(.didCompleteLogout)
+                    } catch {
+                        await send(.didFailLogout)
+                    }
                 }
+
+            case .didCompleteLogout:
+                return .send(.delegate(.didLogout))
+
+            case .didFailLogout:
+                state.activeAlert = .error
+                return .none
+
+            case .didDismissError:
+                state.activeAlert = nil
+                return .none
 
             case .didTapWithdraw:
                 state.activeAlert = .withdraw

@@ -21,6 +21,12 @@ extension SessionClient: @retroactive DependencyKey {
         let userNameUseCase: any UserNameUseCase = UserNameUseCaseImpl(
             sessionStateRepository: sessionStateRepository
         )
+        let logoutUseCase: any LogoutUseCase = LogoutUseCaseImpl(
+            authRepository: AuthRepositoryImpl(
+                networkProvider: AppDependencies.networkProvider,
+                tokenStorage: KeychainTokenStorage()
+            )
+        )
 
         return SessionClient(
             forceLogoutEvents: {
@@ -40,7 +46,11 @@ extension SessionClient: @retroactive DependencyKey {
             },
             resetSession: { resetSessionUseCase.execute() },
             userName: { userNameUseCase.get() },
-            displayName: { userNameUseCase.get() ?? "회원" }
+            displayName: { userNameUseCase.get() ?? "회원" },
+            logout: {
+                try await logoutUseCase.execute()  // 서버 로그아웃 (성공해야 진행)
+                resetSessionUseCase.execute()       // 로컬 토큰/세션 초기화
+            }
         )
     }()
 }

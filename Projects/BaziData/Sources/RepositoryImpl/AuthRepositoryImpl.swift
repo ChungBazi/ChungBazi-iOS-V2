@@ -55,4 +55,8 @@ public struct AuthRepositoryImpl: AuthRepository {
             return .indeterminate
         }
     }
+
+    public func logout() async throws {
+        try await networkProvider.requestStatusCode(AuthAPI.logout)
+    }
 }

@@ -46,6 +46,19 @@ public struct ProfileInfoEditView: View {
                 confirmTitle: "확인",
                 onConfirm: { store.send(.didConfirmWithdraw) }
             )
+            .alert(
+                "로그아웃에 실패했어요",
+                isPresented: Binding(
+                    get: { store.activeAlert == .error },
+                    set: { isPresented in
+                        if !isPresented { store.send(.didDismissError) }
+                    }
+                )
+            ) {
+                Button("확인") { store.send(.didDismissError) }
+            } message: {
+                Text("잠시 후 다시 시도해 주세요.")
+            }
     }
 }
 
