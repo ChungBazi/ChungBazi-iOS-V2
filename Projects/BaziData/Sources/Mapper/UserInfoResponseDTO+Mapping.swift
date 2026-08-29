@@ -10,7 +10,7 @@ extension UserInfoResponseDTO {
         UserProfile(
             nickname: name,
             email: email,
-            socialType: SocialType(rawValue: socialType) ?? .kakao
+            socialType: SocialType(rawValue: socialType)
         )
     }
 }

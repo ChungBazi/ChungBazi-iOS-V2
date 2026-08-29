@@ -10,7 +10,7 @@ public struct UserProfileVO: Equatable, Sendable {
 
     public let nickname: String
     public let email: String
-    public let socialType: SocialType
+    public let socialType: SocialType?
 
     public init(_ entity: UserProfile) {
         self.nickname = entity.nickname
@@ -18,19 +18,21 @@ public struct UserProfileVO: Equatable, Sendable {
         self.socialType = entity.socialType
     }
 
-    /// 소셜 제공자 표시명.
+    /// 소셜 제공자 표시명. (알 수 없으면 "-")
     public var socialDisplayName: String {
         switch socialType {
         case .kakao: return "카카오톡"
         case .apple: return "Apple"
+        case .none: return "-"
         }
     }
 
-    /// 소셜 제공자 아이콘. (kakao=디자인 에셋, apple=SF Symbol)
+    /// 소셜 제공자 아이콘. (kakao=디자인 에셋, apple/알 수 없음=SF Symbol)
     public var socialIcon: Image {
         switch socialType {
         case .kakao: return Image.bazi(.kakaoIcon)
         case .apple: return Image(systemName: "applelogo")
+        case .none: return Image(systemName: "person.crop.circle")
         }
     }
 }
