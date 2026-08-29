@@ -12,8 +12,8 @@ public struct NicknameEditFeature {
 
     @ObservableState
     public struct State: Equatable {
-        public var currentNickname: String
-        public var draftNickname: String
+        public var currentNickname = ""
+        public var draftNickname = ""
         public var isSaving = false
         public var isSuccessToastPresented = false
 
@@ -31,16 +31,14 @@ public struct NicknameEditFeature {
             isNicknameValid && normalizedNickname != currentNickname
         }
 
-        public init(currentNickname: String) {
-            self.currentNickname = currentNickname
-            self.draftNickname = currentNickname
-        }
+        public init() {}
     }
 
     // MARK: - Action
 
     public enum Action: BindableAction, Equatable {
         // MARK: View
+        case onAppear
         case binding(BindingAction<State>)
         case didTapSaveButton
 
@@ -61,6 +59,7 @@ public struct NicknameEditFeature {
     // MARK: - Dependencies
 
     @Dependency(\.nicknameClient) var nicknameClient
+    @Dependency(\.sessionClient) var sessionClient
 
     // MARK: - Init
 
@@ -78,6 +77,12 @@ public struct NicknameEditFeature {
         BindingReducer()
         Reduce { state, action in
             switch action {
+            case .onAppear:
+                let name = sessionClient.userName() ?? ""
+                state.currentNickname = name
+                state.draftNickname = name
+                return .none
+
             case .binding:
                 return .none
 

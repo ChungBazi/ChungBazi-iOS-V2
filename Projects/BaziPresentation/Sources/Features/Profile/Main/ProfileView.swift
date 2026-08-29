@@ -2,6 +2,7 @@
 
 import SwiftUI
 
+import BaziCore
 import BaziDesign
 import ComposableArchitecture
 
@@ -93,8 +94,8 @@ extension ProfileView {
             ProfileRow("정책 맞춤 조건 수정") { store.send(.didTapPolicyProfileRow) }
             ProfileRow("서비스 이용약관") { store.send(.didTapTermsRow) }
             ProfileRow("개인정보 처리방침") { store.send(.didTapPrivacyRow) }
-            ProfileRow("문의하기") { }
-            ProfileRow("현재 버전 2.0") { }
+            ProfileRow("문의하기") { store.send(.didTapInquiry) }
+            ProfileRow("현재 버전 \(AppInfo.version)") { store.send(.didTapAppStore) }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 24)
