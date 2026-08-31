@@ -45,6 +45,13 @@ public struct MyPolicyListFeature {
         /// 다른 화면에서 찜 해제된 정책도 목록에서 제외하기 위한 공유 오버레이(id → liked).
         @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
+        /// 서버 총개수에서 다른 화면발 찜 해제(overlay == false)로 숨겨진 로드분을 뺀 값.
+        /// 이 화면의 직접 해제는 list에서 항목을 이미 제거하므로 중복 차감되지 않는다.
+        public var visibleTotalCount: Int {
+            let hidden = (list.value ?? []).filter { likeOverrides[$0.id] == false }.count
+            return max(0, pagination.totalCount - hidden)
+        }
+
         public init() {}
     }
 
