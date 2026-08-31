@@ -152,7 +152,8 @@ public struct RankedPolicyListFeature {
                 return likeEffect(id: id, liked: newValue)
 
             case let .likeFailed(id, liked):
-                setLiked(&state, id: id, liked: !liked)
+                // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
+                setLiked(&state, id: id, liked: !liked, writeOverlay: state.likeOverrides[id] == liked)
                 return .none
 
             case .didTapPolicy(let id):
@@ -172,8 +173,8 @@ public struct RankedPolicyListFeature {
     private static let teaserSize = 10
 
     /// 찜 상태를 teaser·list 양쪽에 반영한다.
-    private func setLiked(_ state: inout State, id: Int, liked: Bool) {
-        state.$likeOverrides.withLock { $0[id] = liked }
+    private func setLiked(_ state: inout State, id: Int, liked: Bool, writeOverlay: Bool = true) {
+        if writeOverlay { state.$likeOverrides.withLock { $0[id] = liked } }
         if state.teaser[id: id] != nil {
             state.teaser[id: id]?.isLiked = liked
         }

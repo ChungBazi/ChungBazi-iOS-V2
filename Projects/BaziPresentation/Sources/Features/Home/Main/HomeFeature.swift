@@ -158,7 +158,8 @@ public struct HomeFeature {
                 return likeEffect(id: id, liked: newValue)
 
             case let .likeFailed(id, liked):
-                setLiked(id: id, liked: !liked, state: &state)
+                // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
+                setLiked(id: id, liked: !liked, state: &state, writeOverlay: state.likeOverrides[id] == liked)
                 return .none
 
             // 알림·리스트·정책상세(추천 카드) 등 스택 내 모든 정책 선택은 정책 상세로 push한다.
@@ -214,8 +215,8 @@ public struct HomeFeature {
     }
 
     /// 찜 상태를 모든 섹션에 반영한다(같은 정책이 여러 섹션에 겹칠 수 있음).
-    private func setLiked(id: Int, liked: Bool, state: inout State) {
-        state.$likeOverrides.withLock { $0[id] = liked }
+    private func setLiked(id: Int, liked: Bool, state: inout State, writeOverlay: Bool = true) {
+        if writeOverlay { state.$likeOverrides.withLock { $0[id] = liked } }
         guard var feed = state.feed.value else { return }
         feed.setLiked(id: id, liked: liked)
         state.feed = .loaded(feed)

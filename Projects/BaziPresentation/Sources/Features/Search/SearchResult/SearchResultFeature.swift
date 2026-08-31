@@ -124,7 +124,8 @@ public struct SearchResultFeature {
                 return likeEffect(id: id, liked: newValue)
 
             case let .likeFailed(id, liked):
-                setLiked(&state, id: id, liked: !liked)
+                // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
+                setLiked(&state, id: id, liked: !liked, writeOverlay: state.likeOverrides[id] == liked)
                 return .none
 
             case .didTapPolicy(let id):
@@ -165,8 +166,8 @@ public struct SearchResultFeature {
         .cancellable(id: CancelID.list, cancelInFlight: true)
     }
 
-    private func setLiked(_ state: inout State, id: Int, liked: Bool) {
-        state.$likeOverrides.withLock { $0[id] = liked }
+    private func setLiked(_ state: inout State, id: Int, liked: Bool, writeOverlay: Bool = true) {
+        if writeOverlay { state.$likeOverrides.withLock { $0[id] = liked } }
         guard var list = state.results.value else { return }
         list[id: id]?.isLiked = liked
         state.results = .loaded(list)

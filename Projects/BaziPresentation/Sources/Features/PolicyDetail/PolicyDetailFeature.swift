@@ -104,7 +104,8 @@ public struct PolicyDetailFeature {
                 return .run { [openURL] _ in _ = await openURL(url) }
 
             case let .likeFailed(liked):
-                setDetailLiked(&state, liked: !liked)
+                // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
+                setDetailLiked(&state, liked: !liked, writeOverlay: state.likeOverrides[state.policyId] == liked)
                 return .none
 
             case let .didToggleRecommendationLike(section, id):
@@ -118,7 +119,8 @@ public struct PolicyDetailFeature {
                 }
 
             case let .recommendationLikeFailed(section, id, liked):
-                setRecommendationLiked(&state, section: section, id: id, liked: !liked)
+                // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
+                setRecommendationLiked(&state, section: section, id: id, liked: !liked, writeOverlay: state.likeOverrides[id] == liked)
                 return .none
 
             case .didTapShare:
@@ -169,8 +171,8 @@ public struct PolicyDetailFeature {
         .cancellable(id: CancelID.like(id), cancelInFlight: true)
     }
 
-    private func setDetailLiked(_ state: inout State, liked: Bool) {
-        state.$likeOverrides.withLock { $0[state.policyId] = liked }
+    private func setDetailLiked(_ state: inout State, liked: Bool, writeOverlay: Bool = true) {
+        if writeOverlay { state.$likeOverrides.withLock { $0[state.policyId] = liked } }
         guard var detail = state.detail.value else { return }
         detail.isLiked = liked
         state.detail = .loaded(detail)
@@ -184,8 +186,8 @@ public struct PolicyDetailFeature {
         }
     }
 
-    private func setRecommendationLiked(_ state: inout State, section: RecommendationSection, id: Int, liked: Bool) {
-        state.$likeOverrides.withLock { $0[id] = liked }
+    private func setRecommendationLiked(_ state: inout State, section: RecommendationSection, id: Int, liked: Bool, writeOverlay: Bool = true) {
+        if writeOverlay { state.$likeOverrides.withLock { $0[id] = liked } }
         guard var detail = state.detail.value else { return }
         switch section {
         case .personalized: detail.personalized[id: id]?.isLiked = liked

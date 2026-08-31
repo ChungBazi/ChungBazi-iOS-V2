@@ -162,7 +162,8 @@ public struct CustomPolicyListFeature {
                 guard var cards = state.cards.value else { return .none }
                 cards[id: id]?.isLiked = !liked
                 state.cards = .loaded(cards)
-                state.$likeOverrides.withLock { $0[id] = !liked }
+                // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
+                if state.likeOverrides[id] == liked { state.$likeOverrides.withLock { $0[id] = !liked } }
                 return .none
 
             case .didTapDetail(let id):
