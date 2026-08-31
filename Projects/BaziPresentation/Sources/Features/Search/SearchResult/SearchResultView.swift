@@ -139,7 +139,7 @@ extension SearchResultView {
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.results.value?[id: id]?.isLiked ?? false },
+            get: { store.likeOverrides[id] ?? (store.results.value?[id: id]?.isLiked ?? false) },
             set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }

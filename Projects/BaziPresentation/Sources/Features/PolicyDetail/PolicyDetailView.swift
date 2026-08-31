@@ -84,7 +84,7 @@ extension PolicyDetailView {
                         .foregroundStyle(Color.gray700)
                 }
                 Spacer()
-                likeButton(isLiked: detail.isLiked)
+                likeButton(isLiked: store.likeOverrides[store.policyId] ?? detail.isLiked)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -241,10 +241,13 @@ extension PolicyDetailView {
     ) -> Binding<Bool> {
         Binding(
             get: {
+                let liked: Bool
                 switch section {
-                case .personalized: return store.detail.value?.personalized[id: id]?.isLiked ?? false
-                case .popular: return store.detail.value?.popular[id: id]?.isLiked ?? false
+                case .personalized: liked = store.detail.value?.personalized[id: id]?.isLiked ?? false
+                case .popular: liked = store.detail.value?.popular[id: id]?.isLiked ?? false
                 }
+                // 다른 화면에서 바뀐 찜 상태를 오버레이로 덮어 반영한다.
+                return store.likeOverrides[id] ?? liked
             },
             set: { _ in store.send(.didToggleRecommendationLike(section: section, id: id)) }
         )
