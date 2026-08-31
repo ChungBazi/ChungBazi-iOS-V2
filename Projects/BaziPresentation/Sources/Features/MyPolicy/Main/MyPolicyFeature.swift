@@ -90,7 +90,10 @@ public struct MyPolicyFeature {
             selectedTab == .policy ? datePolicies : openEndedPolicies
         }
         public var currentTotalCount: Int {
-            selectedTab == .policy ? datePagination.totalCount : openEndedPagination.totalCount
+            let base = selectedTab == .policy ? datePagination.totalCount : openEndedPagination.totalCount
+            // 다른 화면에서 찜 해제(overlay == false)돼 목록에서 숨겨진 카드 수만큼 뺀다.
+            let hidden = (currentPolicies.value ?? []).filter { likeOverrides[$0.id] == false }.count
+            return max(0, base - hidden)
         }
 
         /// 오늘을 중심으로 앞뒤 3일씩, 총 7일. 좌우 스크롤 없이 이 범위 안에서만 날짜를 고를 수 있다.
