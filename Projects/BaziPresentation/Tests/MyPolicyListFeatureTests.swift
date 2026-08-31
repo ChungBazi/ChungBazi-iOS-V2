@@ -90,6 +90,7 @@ struct MyPolicyListFeatureTests {
             $0.list = .loaded(list)
             $0.pagination.totalCount = items.count - 1
             $0.$likeOverrides.withLock { $0[targetId] = false }
+            $0.lastSyncedLikeOverrides = [targetId: false]
         }
     }
 }
