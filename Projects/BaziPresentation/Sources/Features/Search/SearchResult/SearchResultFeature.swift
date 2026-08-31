@@ -27,6 +27,8 @@ public struct SearchResultFeature {
         public var sortOrder: SortOrder = .deadline
         public var results: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
         public var pagination = PaginationState<String>()
+        /// 홈·내정책이 반영하는 공유 찜 오버레이(id → liked).
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
         public init(query: String) {
             self.query = query
@@ -162,6 +164,7 @@ public struct SearchResultFeature {
     }
 
     private func setLiked(_ state: inout State, id: Int, liked: Bool) {
+        state.$likeOverrides.withLock { $0[id] = liked }
         guard var list = state.results.value else { return }
         list[id: id]?.isLiked = liked
         state.results = .loaded(list)

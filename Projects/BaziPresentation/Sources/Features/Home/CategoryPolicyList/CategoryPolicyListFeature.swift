@@ -33,6 +33,9 @@ public struct CategoryPolicyListFeature {
         // 페이지네이션
         public var pagination = PaginationState<String>()
 
+        /// 홈·내정책이 반영하는 공유 찜 오버레이(id → liked).
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
+
         public init(selectedCategory: PolicyCategoryUI) {
             self.selectedCategory = selectedCategory
         }
@@ -42,7 +45,7 @@ public struct CategoryPolicyListFeature {
 
     public enum Action: Equatable {
         // MARK: View
-        case task
+        case onAppear
         case didTapRetry
         case pullToRefresh
         case didSelectCategory(PolicyCategoryUI)
@@ -84,7 +87,7 @@ public struct CategoryPolicyListFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task:
+            case .onAppear:
                 guard state.list.value == nil, !state.list.isLoading else { return .none }
                 state.displayName = sessionClient.displayName()
                 let first = reloadFirstPage(&state)
@@ -168,6 +171,7 @@ public struct CategoryPolicyListFeature {
 
     /// 찜 상태를 teaser·list 양쪽에 반영한다.
     private func setLiked(_ state: inout State, id: Int, liked: Bool) {
+        state.$likeOverrides.withLock { $0[id] = liked }
         if state.teaser[id: id] != nil {
             state.teaser[id: id]?.isLiked = liked
         }

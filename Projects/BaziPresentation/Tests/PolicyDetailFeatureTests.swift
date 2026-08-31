@@ -41,9 +41,11 @@ struct PolicyDetailFeatureTests {
 
         await store.send(.didTapLike) {
             $0.detail = .loaded(liked)
+            $0.$likeOverrides.withLock { $0[1] = true }
         }
         await store.receive(\.likeFailed) {
             $0.detail = .loaded(PolicyDetailVO.mock(id: 1))
+            $0.$likeOverrides.withLock { $0[1] = false }
         }
     }
 
@@ -62,9 +64,11 @@ struct PolicyDetailFeatureTests {
 
         await store.send(.didToggleRecommendationLike(section: .personalized, id: 1)) {
             $0.detail = .loaded(expected)
+            $0.$likeOverrides.withLock { $0[1] = true }
         }
         await store.receive(\.recommendationLikeFailed) {
             $0.detail = .loaded(PolicyDetailVO.mock(id: 1))
+            $0.$likeOverrides.withLock { $0[1] = false }
         }
     }
 

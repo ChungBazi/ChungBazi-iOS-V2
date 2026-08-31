@@ -22,7 +22,7 @@ public struct RankedPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.task) }
+            .task { store.send(.onAppear) }
             .baziNavigationBar_backWithTitle(store.kind.navigationTitle) {
                 dismiss()
             }

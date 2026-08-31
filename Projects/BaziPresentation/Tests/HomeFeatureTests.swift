@@ -18,7 +18,7 @@ struct HomeFeatureTests {
             $0.sessionClient.userName = { nil }
         }
 
-        await store.send(.task) {
+        await store.send(.onAppear) {
             $0.displayName = "회원"
             $0.feed = .loading
         }
@@ -36,7 +36,7 @@ struct HomeFeatureTests {
             $0.sessionClient.userName = { nil }
         }
 
-        await store.send(.task) {
+        await store.send(.onAppear) {
             $0.displayName = "회원"
             $0.feed = .loading
         }
@@ -60,6 +60,7 @@ struct HomeFeatureTests {
 
         await store.send(.didToggleLike(section: .popular, id: 1)) {
             $0.feed = .loaded(expected)
+            $0.$likeOverrides.withLock { $0[1] = true }
         }
     }
 
@@ -73,7 +74,7 @@ struct HomeFeatureTests {
             $0.sessionClient.userName = { nil }
         }
 
-        await store.send(.task) {
+        await store.send(.onAppear) {
             $0.displayName = "회원"
         }
     }

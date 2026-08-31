@@ -50,9 +50,11 @@ struct CategoryPolicyListFeatureTests {
             var summary = PolicySummaryVO.mockList[0]
             summary.isLiked = true
             $0.list = .loaded([summary])
+            $0.$likeOverrides.withLock { $0[1] = true }
         }
         await store.receive(\.likeFailed) {
             $0.list = .loaded([PolicySummaryVO.mockList[0]])
+            $0.$likeOverrides.withLock { $0[1] = false }
         }
     }
 }

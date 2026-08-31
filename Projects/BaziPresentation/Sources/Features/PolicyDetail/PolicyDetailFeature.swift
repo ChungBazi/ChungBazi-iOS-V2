@@ -14,6 +14,8 @@ public struct PolicyDetailFeature {
         public let policyId: Int
         public var detail: LoadingState<PolicyDetailVO> = .idle
         public var displayName: String = ""
+        /// 홈·내정책이 반영하는 공유 찜 오버레이(id → liked).
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
         public var id: Int { policyId }
 
@@ -164,6 +166,7 @@ public struct PolicyDetailFeature {
     }
 
     private func setDetailLiked(_ state: inout State, liked: Bool) {
+        state.$likeOverrides.withLock { $0[state.policyId] = liked }
         guard var detail = state.detail.value else { return }
         detail.isLiked = liked
         state.detail = .loaded(detail)
@@ -178,6 +181,7 @@ public struct PolicyDetailFeature {
     }
 
     private func setRecommendationLiked(_ state: inout State, section: RecommendationSection, id: Int, liked: Bool) {
+        state.$likeOverrides.withLock { $0[id] = liked }
         guard var detail = state.detail.value else { return }
         switch section {
         case .personalized: detail.personalized[id: id]?.isLiked = liked

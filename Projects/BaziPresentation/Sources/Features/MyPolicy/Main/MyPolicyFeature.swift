@@ -65,6 +65,8 @@ public struct MyPolicyFeature {
         public var deadlineTeaser: IdentifiedArrayOf<PolicySummaryVO>
         /// 티저 조회 실패 여부. 실패 시 기존 티저를 지우지 않고 이 플래그로 빈-상태 배너 오표시를 막는다.
         public var teaserLoadFailed = false
+        /// 다른 화면에서 찜 해제된 정책은 목록에서 제외하기 위한 공유 오버레이(id → liked).
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
         /// 주간 스트립의 중심(항상 오늘). onAppear에서 주입된 `date.now` 기준으로 설정된다. (init 값은 placeholder)
         public var today: Date
         public var selectedDate: Date

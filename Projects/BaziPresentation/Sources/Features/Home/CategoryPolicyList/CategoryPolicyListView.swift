@@ -22,7 +22,7 @@ public struct CategoryPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.task) }
+            .task { store.send(.onAppear) }
             .baziNavigationBar_backWithTitle("분야별 정책") {
                 dismiss()
             }

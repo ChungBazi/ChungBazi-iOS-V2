@@ -37,6 +37,8 @@ public struct CustomPolicyListFeature {
         public var cards: LoadingState<IdentifiedArrayOf<PolicyCardVO>> = .idle
         /// 최초 진입 시에만 노출. `.task`에서 hasSeenGuide로 결정한다.
         public var guideStep: GuideStep?
+        /// 홈·내정책이 반영하는 공유 찜 오버레이(id → liked).
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
         public init(category: PolicyCategoryUI? = nil, policyIds: [Int] = []) {
             self.category = category
@@ -48,7 +50,7 @@ public struct CustomPolicyListFeature {
 
     public enum Action: Equatable {
         // MARK: View
-        case task
+        case onAppear
         case didTapRetry
         case didToggleLike(id: Int)
         case didTapDetail(id: Int)
@@ -89,7 +91,7 @@ public struct CustomPolicyListFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task:
+            case .onAppear:
                 guard state.cards.value == nil, !state.cards.isLoading else { return .none }
                 state.displayName = sessionClient.displayName()
                 if !customPolicyClient.hasSeenGuide() {
@@ -151,12 +153,14 @@ public struct CustomPolicyListFeature {
                 let newValue = !current
                 cards[id: id]?.isLiked = newValue
                 state.cards = .loaded(cards)
+                state.$likeOverrides.withLock { $0[id] = newValue }
                 return likeEffect(id: id, liked: newValue)
 
             case let .likeFailed(id, liked):
                 guard var cards = state.cards.value else { return .none }
                 cards[id: id]?.isLiked = !liked
                 state.cards = .loaded(cards)
+                state.$likeOverrides.withLock { $0[id] = !liked }
                 return .none
 
             case .didTapDetail(let id):

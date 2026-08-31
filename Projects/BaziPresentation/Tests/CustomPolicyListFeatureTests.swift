@@ -23,7 +23,7 @@ struct CustomPolicyListFeatureTests {
             }
         }
 
-        await store.send(.task) {
+        await store.send(.onAppear) {
             $0.displayName = "바지"
             $0.cards = .loading
         }
@@ -73,11 +73,13 @@ struct CustomPolicyListFeatureTests {
             var card = PolicyCardVO.mockList[0]
             card.isLiked = true
             $0.cards = .loaded([card])
+            $0.$likeOverrides.withLock { $0[1] = true }
         }
         await store.receive(\.likeFailed) {
             var card = PolicyCardVO.mockList[0]
             card.isLiked = false
             $0.cards = .loaded([card])
+            $0.$likeOverrides.withLock { $0[1] = false }
         }
     }
 }

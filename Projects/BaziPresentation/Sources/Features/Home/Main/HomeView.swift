@@ -24,7 +24,7 @@ public struct HomeView: View {
             path: $store.scope(state: \.path, action: \.path)
         ) {
             content
-                .task { store.send(.task) }
+                .task { store.send(.onAppear) }
                 .baziNavigationBar_home(
                     hasUnread: store.feed.value?.hasUnreadNotification ?? false
                 ) {
@@ -336,13 +336,16 @@ extension HomeView {
         Binding(
             get: {
                 guard let feed = store.feed.value else { return false }
+                let liked: Bool
                 switch section {
-                case .personalized: return feed.personalized[id: id]?.isLiked ?? false
-                case .recentViewed: return feed.recentViewed[id: id]?.isLiked ?? false
-                case .popular: return feed.popular[id: id]?.isLiked ?? false
-                case .deadline: return feed.deadline[id: id]?.isLiked ?? false
-                case .newest: return feed.newest[id: id]?.isLiked ?? false
+                case .personalized: liked = feed.personalized[id: id]?.isLiked ?? false
+                case .recentViewed: liked = feed.recentViewed[id: id]?.isLiked ?? false
+                case .popular: liked = feed.popular[id: id]?.isLiked ?? false
+                case .deadline: liked = feed.deadline[id: id]?.isLiked ?? false
+                case .newest: liked = feed.newest[id: id]?.isLiked ?? false
                 }
+                // 다른 화면에서 바뀐 찜 상태를 오버레이로 덮어 반영한다.
+                return store.likeOverrides[id] ?? liked
             },
             set: { _ in store.send(.didToggleLike(section: section, id: id)) }
         )

@@ -31,7 +31,7 @@ public struct CalendarView: View {
             weekdayHeader
             content
         }
-        .onAppear { store.send(.onAppear) }
+        .task { store.send(.onAppear) }
         .baziNavigationBar_backWithTitle("캘린더") {
             dismiss()
         }
