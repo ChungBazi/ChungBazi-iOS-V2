@@ -166,14 +166,14 @@ extension CategoryPolicyListView {
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.list.value?[id: id]?.isLiked ?? false },
+            get: { store.likeOverrides[id] ?? (store.list.value?[id: id]?.isLiked ?? false) },
             set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
 
     private func teaserLikeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.teaser[id: id]?.isLiked ?? false },
+            get: { store.likeOverrides[id] ?? (store.teaser[id: id]?.isLiked ?? false) },
             set: { _ in store.send(.didToggleTeaserLike(id: id)) }
         )
     }

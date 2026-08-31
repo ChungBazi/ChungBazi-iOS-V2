@@ -184,7 +184,7 @@ extension CustomPolicyListView {
 
     private func likeBinding(id: Int) -> Binding<Bool> {
         Binding(
-            get: { store.cards.value?[id: id]?.isLiked ?? false },
+            get: { store.likeOverrides[id] ?? (store.cards.value?[id: id]?.isLiked ?? false) },
             set: { _ in store.send(.didToggleLike(id: id)) }
         )
     }
