@@ -25,7 +25,7 @@ struct MyPolicyListFeatureTests {
             }
         }
 
-        await store.send(.task) {
+        await store.send(.onAppear) {
             $0.list = .loading
             $0.reloadGeneration = 1
         }
@@ -89,6 +89,7 @@ struct MyPolicyListFeatureTests {
             list.remove(id: targetId)
             $0.list = .loaded(list)
             $0.pagination.totalCount = items.count - 1
+            $0.$likeOverrides.withLock { $0[targetId] = false }
         }
     }
 }

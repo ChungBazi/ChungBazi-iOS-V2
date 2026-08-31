@@ -42,6 +42,8 @@ public struct MyPolicyListFeature {
         public var pagination = PaginationState<String>()
         /// 목록 새로고침 세대. 찜 해제 롤백이 지난 조회 결과(정렬·카테고리·새로고침으로 교체됨)에 잘못 적용되지 않도록 검증한다.
         public var reloadGeneration = 0
+        /// 다른 화면에서 찜 해제된 정책도 목록에서 제외하기 위한 공유 오버레이(id → liked).
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
         public init() {}
     }
@@ -50,7 +52,7 @@ public struct MyPolicyListFeature {
 
     public enum Action: Equatable {
         // MARK: View
-        case task
+        case onAppear
         case didTapRetry
         case pullToRefresh
         case didSelectCategory(PolicyCategoryUI?)
@@ -90,7 +92,7 @@ public struct MyPolicyListFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task:
+            case .onAppear:
                 guard state.list.value == nil, !state.list.isLoading else { return .none }
                 return reloadFirstPage(&state)
 
@@ -136,6 +138,7 @@ public struct MyPolicyListFeature {
                 let removed = list.remove(at: index)
                 state.list = .loaded(list)
                 state.pagination.totalCount = max(0, state.pagination.totalCount - 1)
+                state.$likeOverrides.withLock { $0[id] = false }
                 let generation = state.reloadGeneration
                 return .run { [policyLikeClient] send in
                     do {
@@ -147,7 +150,8 @@ public struct MyPolicyListFeature {
                 .cancellable(id: CancelID.like(id), cancelInFlight: true)
 
             case let .likeFailed(policy, index, generation):
-                // 그 사이 목록이 새로 조회(정렬·카테고리·새로고침)됐으면 롤백하지 않는다(다른 조회 결과 오염 방지).
+                // 해제 실패 → 오버레이 복구(찜 유지). 목록 재삽입은 조회 세대가 같을 때만(다른 조회 결과 오염 방지).
+                state.$likeOverrides.withLock { $0[policy.id] = true }
                 guard generation == state.reloadGeneration, var list = state.list.value else { return .none }
                 list.insert(policy, at: min(index, list.count))
                 state.list = .loaded(list)

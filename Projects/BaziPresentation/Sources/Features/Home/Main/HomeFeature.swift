@@ -39,6 +39,8 @@ public struct HomeFeature {
         public var feed: LoadingState<HomeFeedVO> = .idle
         /// 인사말·맞춤정책 타이틀용 사용자 이름. 세션(로컬 저장)에서 읽는다.
         public var displayName = ""
+        /// 다른 화면에서 바뀐 찜 상태를 반영하는 공유 오버레이. 하트 표시는 `likeOverrides[id] ?? isLiked`.
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
         public init() {}
     }
@@ -47,7 +49,7 @@ public struct HomeFeature {
 
     public enum Action {
         // MARK: View
-        case task
+        case onAppear
         case didTapRetry
         case pullToRefresh
         case didTapBell
@@ -83,7 +85,7 @@ public struct HomeFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .task:
+            case .onAppear:
                 state.displayName = sessionClient.displayName()
                 return loadFeed(&state)
 
@@ -199,17 +201,21 @@ public struct HomeFeature {
 
     private func currentLike(section: PolicySection, id: Int, state: State) -> Bool? {
         guard let feed = state.feed.value else { return nil }
+        let feedLiked: Bool?
         switch section {
-        case .personalized: return feed.personalized[id: id]?.isLiked
-        case .recentViewed: return feed.recentViewed[id: id]?.isLiked
-        case .popular: return feed.popular[id: id]?.isLiked
-        case .deadline: return feed.deadline[id: id]?.isLiked
-        case .newest: return feed.newest[id: id]?.isLiked
+        case .personalized: feedLiked = feed.personalized[id: id]?.isLiked
+        case .recentViewed: feedLiked = feed.recentViewed[id: id]?.isLiked
+        case .popular: feedLiked = feed.popular[id: id]?.isLiked
+        case .deadline: feedLiked = feed.deadline[id: id]?.isLiked
+        case .newest: feedLiked = feed.newest[id: id]?.isLiked
         }
+        // 다른 화면에서 바뀐 오버레이가 있으면 그 값 기준으로 토글한다.
+        return state.likeOverrides[id] ?? feedLiked
     }
 
     /// 찜 상태를 모든 섹션에 반영한다(같은 정책이 여러 섹션에 겹칠 수 있음).
     private func setLiked(id: Int, liked: Bool, state: inout State) {
+        state.$likeOverrides.withLock { $0[id] = liked }
         guard var feed = state.feed.value else { return }
         feed.setLiked(id: id, liked: liked)
         state.feed = .loaded(feed)

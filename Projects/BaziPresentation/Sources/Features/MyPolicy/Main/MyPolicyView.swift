@@ -87,7 +87,7 @@ private extension MyPolicyView {
 
     @ViewBuilder
     var teaser: some View {
-        if !store.deadlineTeaser.isEmpty {
+        if !visibleTeaser.isEmpty {
             teaserBanner
         } else if !store.teaserLoadFailed {
             // 실제로 찜한 정책이 없을 때만 빈 배너 표시. 조회 실패 시엔 아무것도 그리지 않는다(오표시 방지).
@@ -104,12 +104,22 @@ private extension MyPolicyView {
         case .failed:
             BZRetryView { store.send(.didTapRetry) }
         case .loaded(let policies):
-            if policies.isEmpty {
+            let visiblePolicies = visible(policies)
+            if visiblePolicies.isEmpty {
                 emptyPolicyList
             } else {
-                policyList(policies)
+                policyList(visiblePolicies)
             }
         }
+    }
+
+    /// 다른 화면에서 찜 해제된 정책(overlay == false)은 목록/티저에서 제외한다.
+    func visible(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> IdentifiedArrayOf<PolicySummaryVO> {
+        IdentifiedArray(uniqueElements: policies.filter { store.likeOverrides[$0.id] != false })
+    }
+
+    var visibleTeaser: IdentifiedArrayOf<PolicySummaryVO> {
+        visible(store.deadlineTeaser)
     }
 }
 
@@ -126,7 +136,7 @@ private extension MyPolicyView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(store.deadlineTeaser) { policy in
+                    ForEach(visibleTeaser) { policy in
                         policyCard(policy, size: .small)
                     }
                 }

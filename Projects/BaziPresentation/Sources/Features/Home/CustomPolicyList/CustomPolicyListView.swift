@@ -23,7 +23,7 @@ public struct CustomPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.task) }
+            .task { store.send(.onAppear) }
             .baziNavigationBar_backWithTitle(navigationTitle) {
                 dismiss()
             }

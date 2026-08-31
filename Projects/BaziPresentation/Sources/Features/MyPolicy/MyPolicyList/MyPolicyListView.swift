@@ -22,7 +22,7 @@ public struct MyPolicyListView: View {
 
     public var body: some View {
         content
-            .task { store.send(.task) }
+            .task { store.send(.onAppear) }
             .baziNavigationBar_backWithTitle("내 정책 전체보기") {
                 dismiss()
             }
@@ -57,14 +57,16 @@ extension MyPolicyListView {
             BZRetryView { store.send(.didTapRetry) }
 
         case .loaded(let policies):
+            // 다른 화면에서 찜 해제된 정책(overlay == false)은 제외한다.
+            let visiblePolicies = IdentifiedArray(uniqueElements: policies.filter { store.likeOverrides[$0.id] != false })
             // 정책이 없어도 결과바(갯수/정렬)는 항상 표시한다(내 정책 메인과 동일).
             resultsToolbar
-            if policies.isEmpty {
+            if visiblePolicies.isEmpty {
                 emptyView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    policyList(policies)
+                    policyList(visiblePolicies)
                 }
                 .refreshable { await store.send(.pullToRefresh).finish() }
             }

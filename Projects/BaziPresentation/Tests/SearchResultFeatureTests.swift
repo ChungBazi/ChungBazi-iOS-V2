@@ -49,9 +49,11 @@ struct SearchResultFeatureTests {
 
         await store.send(.didToggleLike(id: item.id)) {
             $0.results = .loaded([liked])
+            $0.$likeOverrides.withLock { $0[item.id] = true }
         }
         await store.receive(\.likeFailed) {
             $0.results = .loaded([item])
+            $0.$likeOverrides.withLock { $0[item.id] = false }
         }
     }
 
