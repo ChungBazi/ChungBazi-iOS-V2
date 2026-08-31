@@ -94,7 +94,7 @@ extension MyPolicyListView {
     }
 
     private var resultsToolbar: some View {
-        BZResultsToolbar(count: store.pagination.totalCount, sortTitle: store.sortOrder.title) {
+        BZResultsToolbar(count: store.visibleTotalCount, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrder)
         }
     }
