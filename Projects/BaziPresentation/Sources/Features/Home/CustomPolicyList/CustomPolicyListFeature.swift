@@ -149,7 +149,9 @@ public struct CustomPolicyListFeature {
                 return .none
 
             case .didToggleLike(let id):
-                guard var cards = state.cards.value, let current = cards[id: id]?.isLiked else { return .none }
+                guard var cards = state.cards.value, let localLiked = cards[id: id]?.isLiked else { return .none }
+                // 표시값(overlay ?? 로컬)을 기준으로 뒤집어야 첫 탭이 헛돌지 않는다.
+                let current = state.likeOverrides[id] ?? localLiked
                 let newValue = !current
                 cards[id: id]?.isLiked = newValue
                 state.cards = .loaded(cards)

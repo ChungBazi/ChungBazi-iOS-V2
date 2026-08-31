@@ -92,7 +92,9 @@ public struct PolicyDetailFeature {
                 return .none
 
             case .didTapLike:
-                guard let current = state.detail.value?.isLiked else { return .none }
+                guard let localLiked = state.detail.value?.isLiked else { return .none }
+                // 표시값(overlay ?? 로컬)을 기준으로 뒤집어야 첫 탭이 헛돌지 않는다.
+                let current = state.likeOverrides[state.policyId] ?? localLiked
                 let newValue = !current
                 setDetailLiked(&state, liked: newValue)
                 return likeEffect(id: state.policyId, liked: newValue) { .likeFailed(liked: newValue) }
@@ -106,7 +108,9 @@ public struct PolicyDetailFeature {
                 return .none
 
             case let .didToggleRecommendationLike(section, id):
-                guard let current = recommendationLiked(state, section: section, id: id) else { return .none }
+                guard let localLiked = recommendationLiked(state, section: section, id: id) else { return .none }
+                // 표시값(overlay ?? 로컬)을 기준으로 뒤집어야 첫 탭이 헛돌지 않는다.
+                let current = state.likeOverrides[id] ?? localLiked
                 let newValue = !current
                 setRecommendationLiked(&state, section: section, id: id, liked: newValue)
                 return likeEffect(id: id, liked: newValue) {

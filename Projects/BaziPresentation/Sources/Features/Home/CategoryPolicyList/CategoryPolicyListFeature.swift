@@ -144,8 +144,10 @@ public struct CategoryPolicyListFeature {
                 return .none
 
             case .didToggleTeaserLike(let id), .didToggleLike(let id):
-                let current = state.teaser[id: id]?.isLiked ?? state.list.value?[id: id]?.isLiked
-                guard let current else { return .none }
+                let localLiked = state.teaser[id: id]?.isLiked ?? state.list.value?[id: id]?.isLiked
+                guard let localLiked else { return .none }
+                // 표시값(overlay ?? 로컬)을 기준으로 뒤집어야 첫 탭이 헛돌지 않는다.
+                let current = state.likeOverrides[id] ?? localLiked
                 let newValue = !current
                 setLiked(&state, id: id, liked: newValue)
                 return likeEffect(id: id, liked: newValue)
