@@ -21,6 +21,7 @@ extension WithdrawClient: @retroactive DependencyKey {
         return WithdrawClient(
             withdraw: { request in
                 try await withdrawUseCase.execute(request)
+                AppDependencies.clearUserScopedCaches()  // 탈퇴 후 이전 계정 캐시 제거
             }
         )
     }()

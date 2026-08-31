@@ -33,4 +33,9 @@ public actor PolicyCache {
         guard let cached = stored else { return }
         stored = (cached.value.updatingLiked(policyId: policyId, liked: liked), cached.storedAt)
     }
+
+    /// 캐시를 비운다. 로그아웃/탈퇴 시 이전 계정 데이터가 재로그인에 노출되지 않도록 호출한다.
+    public func clear() {
+        stored = nil
+    }
 }

@@ -2,10 +2,13 @@
 
 import Foundation
 
+import ComposableArchitecture
+
 import BaziCore
 import BaziData
 import BaziDomain
 import BaziNetwork
+import BaziPresentation
 import BaziStorage
 
 /// Composition Root(`ChungBazi`)에서 공유해야만 하는 인스턴스만 모아둔다.
@@ -27,4 +30,11 @@ enum AppDependencies {
         networkProvider: networkProvider,
         cache: policyCache
     )
+
+    /// 로그아웃/탈퇴 시 사용자 범위 인메모리 캐시를 비운다(재로그인 시 이전 계정 데이터 노출 방지).
+    static func clearUserScopedCaches() {
+        Task { await policyCache.clear() }
+        @Shared(.likeOverrides) var likeOverrides = [Int: Bool]()
+        $likeOverrides.withLock { $0.removeAll() }
+    }
 }
