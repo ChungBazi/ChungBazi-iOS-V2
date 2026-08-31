@@ -85,6 +85,10 @@ public struct MyPolicyFeature {
         /// onAppear에서 today/selectedDate를 주입된 오늘로 최초 1회만 맞추기 위한 가드.
         public var didLoad = false
 
+        /// 마지막 조회 시점의 좋아요 오버레이 스냅샷. 다른 화면에서 찜이 바뀌면(신규 찜 포함)
+        /// 재진입 시 이 값과 달라져 목록 재조회를 트리거한다.
+        public var lastSyncedLikeOverrides: [Int: Bool] = [:]
+
         /// 현재 탭 기준 목록/총개수(뷰용 파생).
         public var currentPolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> {
             selectedTab == .policy ? datePolicies : openEndedPolicies
@@ -154,13 +158,28 @@ public struct MyPolicyFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // 최초 1회만 로드한다. 재진입 시엔 State에 남은 데이터를 유지해 스피너 깜빡임/불필요한 재요청을 막는다(새로고침은 당겨서).
-                guard !state.didLoad else { return .none }
-                state.didLoad = true
-                let today = calendar.startOfDay(for: now)
-                state.today = today
-                state.selectedDate = today
-                return .merge(loadTeaser(), reloadDatePolicies(&state))
+                // 최초 1회: 오늘 기준으로 맞추고 로드한다.
+                if !state.didLoad {
+                    state.didLoad = true
+                    let today = calendar.startOfDay(for: now)
+                    state.today = today
+                    state.selectedDate = today
+                    state.lastSyncedLikeOverrides = state.likeOverrides
+                    return .merge(loadTeaser(), reloadDatePolicies(&state))
+                }
+                // 재진입: 신규 찜(추가)이 생겼을 때만 재조회한다.
+                // 해제는 overlay 필터가 반응형으로 처리하므로 재조회가 필요 없고, 추가만 목록에 없어 서버 재조회가 필요하다.
+                let overrides = state.likeOverrides
+                let synced = state.lastSyncedLikeOverrides
+                let hasNewLike = overrides.contains { $0.value && synced[$0.key] != true }
+                state.lastSyncedLikeOverrides = overrides
+                guard hasNewLike else { return .none }
+                // 신규 찜이 정책/상시 어느 탭이든 진입 즉시 보이도록 티저 + 두 탭 모두 재조회(.loading 없이 → 깜빡임 방지).
+                return .merge(
+                    loadTeaser(),
+                    fetchDatePolicies(state: state, isFirstPage: true),
+                    fetchOpenEnded(state: state, isFirstPage: true)
+                )
 
             case .didTapRetry:
                 // 실패 화면의 재시도 — 현재 탭에 맞춰 재조회한다(상시모집 탭 복구 포함).

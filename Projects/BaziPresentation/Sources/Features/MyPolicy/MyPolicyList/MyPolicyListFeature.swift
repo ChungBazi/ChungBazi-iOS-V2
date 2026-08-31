@@ -45,6 +45,10 @@ public struct MyPolicyListFeature {
         /// 다른 화면에서 찜 해제된 정책도 목록에서 제외하기 위한 공유 오버레이(id → liked).
         @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
+        /// 마지막 조회 시점의 오버레이 스냅샷. 다른 화면에서 찜이 바뀌면(신규 찜 주입) 재조회 트리거로 쓴다.
+        /// 이 화면의 직접 토글은 목록을 즉시 갱신하므로 스냅샷도 함께 동기화해 불필요한 재조회를 막는다.
+        public var lastSyncedLikeOverrides: [Int: Bool] = [:]
+
         /// 서버 총개수에서 다른 화면발 찜 해제(overlay == false)로 숨겨진 로드분을 뺀 값.
         /// 이 화면의 직접 해제는 list에서 항목을 이미 제거하므로 중복 차감되지 않는다.
         public var visibleTotalCount: Int {
@@ -100,8 +104,20 @@ public struct MyPolicyListFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                guard state.list.value == nil, !state.list.isLoading else { return .none }
-                return reloadFirstPage(&state)
+                if state.list.value == nil {
+                    guard !state.list.isLoading else { return .none }
+                    state.lastSyncedLikeOverrides = state.likeOverrides
+                    return reloadFirstPage(&state)
+                }
+                // 재진입: 신규 찜(추가)이 생겼을 때만 1페이지 재조회한다.
+                // 해제는 overlay 필터가 반응형으로 처리하므로 재조회가 필요 없다.
+                let overrides = state.likeOverrides
+                let synced = state.lastSyncedLikeOverrides
+                let hasNewLike = overrides.contains { $0.value && synced[$0.key] != true }
+                state.lastSyncedLikeOverrides = overrides
+                guard hasNewLike else { return .none }
+                state.reloadGeneration += 1
+                return fetchPage(state: state, isFirstPage: true)
 
             case .didTapRetry:
                 return reloadFirstPage(&state)
@@ -146,6 +162,7 @@ public struct MyPolicyListFeature {
                 state.list = .loaded(list)
                 state.pagination.totalCount = max(0, state.pagination.totalCount - 1)
                 state.$likeOverrides.withLock { $0[id] = false }
+                state.lastSyncedLikeOverrides = state.likeOverrides  // 자체 변경은 스냅샷 동기화(onChange 재조회 방지)
                 let generation = state.reloadGeneration
                 return .run { [policyLikeClient] send in
                     do {
@@ -157,8 +174,12 @@ public struct MyPolicyListFeature {
                 .cancellable(id: CancelID.like(id), cancelInFlight: true)
 
             case let .likeFailed(policy, index, generation):
-                // 해제 실패 → 오버레이 복구(찜 유지). 목록 재삽입은 조회 세대가 같을 때만(다른 조회 결과 오염 방지).
-                state.$likeOverrides.withLock { $0[policy.id] = true }
+                // 해제 실패 → 오버레이 복구(찜 유지). 단 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(낙관값 false가 남아있을 때만).
+                if state.likeOverrides[policy.id] == false {
+                    state.$likeOverrides.withLock { $0[policy.id] = true }
+                }
+                state.lastSyncedLikeOverrides = state.likeOverrides
+                // 목록 재삽입은 조회 세대가 같을 때만(다른 조회 결과 오염 방지).
                 guard generation == state.reloadGeneration, var list = state.list.value else { return .none }
                 list.insert(policy, at: min(index, list.count))
                 state.list = .loaded(list)

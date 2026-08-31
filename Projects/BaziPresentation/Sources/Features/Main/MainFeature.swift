@@ -51,7 +51,8 @@ public struct MainFeature {
             switch action {
             case .didSelectTab(let tab):
                 state.selectedTab = tab
-                return .none
+                // 내 정책 탭 진입 시, 다른 화면에서 바뀐 찜 상태(신규 찜 포함)를 반영하도록 갱신을 트리거한다.
+                return tab == .myPolicy ? .send(.myPolicy(.onAppear)) : .none
 
             case .profile(.delegate(.didLogout)):
                 return .send(.delegate(.didLogout))

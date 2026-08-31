@@ -111,12 +111,11 @@ extension MyPolicyListView {
                     isLiked: likeBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
-                .onAppear {
-                    if policy.id == policies.last?.id {
-                        store.send(.didReachListEnd)
-                    }
-                }
             }
+            // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
+            Color.clear
+                .frame(height: 1)
+                .onAppear { store.send(.didReachListEnd) }
         }
         .padding(.top, 8)
         .padding([.horizontal, .bottom], 20)
