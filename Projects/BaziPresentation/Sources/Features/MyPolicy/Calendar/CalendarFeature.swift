@@ -59,6 +59,16 @@ public struct CalendarFeature: Sendable {
         /// 마감일 추가 요청 진행 중 여부. 더블탭으로 이벤트가 중복 생성되는 것을 막는다.
         public var isAddingDeadline: Bool
 
+        /// 다른 화면에서 찜 해제된 정책을 시트 목록에서 제외하기 위한 공유 오버레이.
+        @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
+
+        /// 시트 개수 — 다른 화면에서 찜 해제(overlay == false)돼 숨겨진 카드 수만큼 뺀다.
+        public var visibleSheetCount: Int {
+            let base = daySheetPagination.totalCount
+            let hidden = (selectedDatePolicies.value ?? []).filter { likeOverrides[$0.id] == false }.count
+            return max(0, base - hidden)
+        }
+
         /// centerDate가 속한 달의 첫날. 진입 시 이 달로 스크롤하기 위한 타깃(= CalendarMonth.id).
         public var centerMonthID: Date {
             let calendar = Calendar.current

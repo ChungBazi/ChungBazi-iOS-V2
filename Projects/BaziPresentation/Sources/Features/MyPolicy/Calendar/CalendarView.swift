@@ -197,20 +197,22 @@ extension CalendarView {
                 if let date = store.selectedDate { store.send(.didSelectDate(date)) }
             }
         case .loaded(let policies):
-            if policies.isEmpty {
+            // 다른 화면에서 찜 해제된 정책(overlay == false)은 시트에서 제외한다.
+            let visible = IdentifiedArray(uniqueElements: policies.filter { store.likeOverrides[$0.id] != false })
+            if visible.isEmpty {
                 BZEmptyView(message: "이 날짜에는 등록된 정책이 없어요")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 sheetResultsToolbar
                 ScrollView {
-                    sheetList(policies)
+                    sheetList(visible)
                 }
             }
         }
     }
 
     private var sheetResultsToolbar: some View {
-        BZResultsToolbar(count: store.daySheetPagination.totalCount, sortTitle: store.sortOrder.title) {
+        BZResultsToolbar(count: store.visibleSheetCount, sortTitle: store.sortOrder.title) {
             store.send(.didTapSortOrderInSheet)
         }
     }
@@ -219,12 +221,11 @@ extension CalendarView {
         LazyVStack(spacing: 12) {
             ForEach(policies) { policy in
                 sheetCard(policy)
-                    .onAppear {
-                        if policy.id == policies.last?.id {
-                            store.send(.didReachSheetListEnd)
-                        }
-                    }
             }
+            // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
+            Color.clear
+                .frame(height: 1)
+                .onAppear { store.send(.didReachSheetListEnd) }
         }
         .padding(.top, 8)
         .padding(.horizontal, 20)
