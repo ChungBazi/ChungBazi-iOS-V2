@@ -32,8 +32,8 @@ enum AppDependencies {
     )
 
     /// 로그아웃/탈퇴 시 사용자 범위 인메모리 캐시를 비운다(재로그인 시 이전 계정 데이터 노출 방지).
-    static func clearUserScopedCaches() {
-        Task { await policyCache.clear() }
+    static func clearUserScopedCaches() async {
+        await policyCache.clear()
         @Shared(.likeOverrides) var likeOverrides = [Int: Bool]()
         $likeOverrides.withLock { $0.removeAll() }
     }

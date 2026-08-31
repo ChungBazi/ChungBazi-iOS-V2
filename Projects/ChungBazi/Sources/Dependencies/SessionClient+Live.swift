@@ -46,14 +46,15 @@ extension SessionClient: @retroactive DependencyKey {
             },
             resetSession: {
                 resetSessionUseCase.execute()
-                AppDependencies.clearUserScopedCaches()  // 이전 계정 캐시(홈 피드/찜 오버레이) 제거
+                // 강제 로그아웃은 동기 경로라 await 불가 → 베스트에포트. 재로그인 UI 흐름 사이에 정리 완료됨.
+                Task { await AppDependencies.clearUserScopedCaches() }
             },
             userName: { userNameUseCase.get() },
             displayName: { userNameUseCase.get() ?? "회원" },
             logout: {
                 try await logoutUseCase.execute()  // 서버 로그아웃 (성공해야 진행)
                 resetSessionUseCase.execute()       // 로컬 토큰/세션 초기화
-                AppDependencies.clearUserScopedCaches()  // 이전 계정 캐시 제거
+                await AppDependencies.clearUserScopedCaches()  // 이전 계정 캐시 제거(전환 전 완료 보장)
             }
         )
     }()
