@@ -117,7 +117,8 @@ extension CustomPolicyListView {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxHeight: .infinity)
         }
-        .onAppear { selectedPolicyID = cards.first?.id }
+        // 최초 노출 시에만 첫 카드로 맞춘다(재노출 시 보던 카드 유지).
+        .onAppear { if selectedPolicyID == nil { selectedPolicyID = cards.first?.id } }
         .onChange(of: selectedPolicyID) { _, newID in
             if let newID { store.send(.didShowCard(id: newID)) }
         }
