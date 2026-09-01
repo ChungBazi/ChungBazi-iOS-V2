@@ -22,6 +22,7 @@ extension PolicyDetailResponseDTO {
             applicationMethod: applicationMethod ?? "",
             submittedDocument: submittedDocument ?? "",
             screeningMethod: screeningMethod ?? "",
+            applyUrl: applyUrl,
             referenceUrls: referenceUrls ?? [],
             personalized: (policies ?? []).map { $0.toDomain() },
             popular: (popularPolicies ?? []).map { $0.toDomain() }
