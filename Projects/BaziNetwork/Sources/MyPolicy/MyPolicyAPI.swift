@@ -7,6 +7,7 @@ public enum MyPolicyAPI {
     case getMyPolicies(category: String?, sort: String?, cursor: String?, size: Int)
     case getOpenEndedPolicies(cursor: String?, size: Int)
     case getDeadlinePolicies
+    case getDeadlineUpcomingPolicies(targetDate: String)
     case getDeadlineDatePolicies(targetDate: String, sort: String?, cursor: String?, size: Int)
     case getCalendar(targetMonth: String)
     case getMemo(policyId: Int)
@@ -21,6 +22,7 @@ extension MyPolicyAPI: APITargetType {
         case .getMyPolicies:                return ""
         case .getOpenEndedPolicies:         return "/open-ended"
         case .getDeadlinePolicies:          return "/deadline"
+        case .getDeadlineUpcomingPolicies:  return "/deadline/upcoming"
         case .getDeadlineDatePolicies:      return "/deadline/date"
         case .getCalendar:                  return "/calendar"
         case .getMemo(let policyId),
@@ -51,6 +53,9 @@ extension MyPolicyAPI: APITargetType {
             var params: [String: Any] = ["size": size]
             if let cursor { params["cursor"] = cursor }
             return .requestParameters(parameters: params, encoding: URLEncoding.queryString)
+
+        case .getDeadlineUpcomingPolicies(let targetDate):
+            return .requestParameters(parameters: ["targetDate": targetDate], encoding: URLEncoding.queryString)
 
         case .getDeadlineDatePolicies(let targetDate, let sort, let cursor, let size):
             var params: [String: Any] = ["targetDate": targetDate, "size": size]
