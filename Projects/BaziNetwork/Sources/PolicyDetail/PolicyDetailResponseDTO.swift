@@ -16,12 +16,17 @@ public struct PolicyDetailResponseDTO: Decodable, Sendable {
     public let eligibilityDescription: String?
     public let applyPeriod: String?
     public let supportContent: String?
+    public let applyUrl: String?
     public let applicationMethod: String?
     public let submittedDocument: String?
     public let screeningMethod: String?
     public let referenceUrls: [String]?
     public let policies: [PolicyItemDTO]?
     public let popularPolicies: [PolicyItemDTO]?
+}
+
+public struct PolicyCardListResponseDTO: Decodable, Sendable {
+    public let policies: [PolicyCardResponseDTO]
 }
 
 /// 정책 카드뉴스 조회 Response DTO

@@ -8,6 +8,7 @@ public enum PolicyDetailAPI {
     case unlikePolicy(policyId: Int)
     case getPolicyDetail(policyId: Int)
     case getPolicyCard(policyId: Int)
+    case getPolicyCards(category: String?)
 }
 
 extension PolicyDetailAPI: APITargetType {
@@ -19,6 +20,7 @@ extension PolicyDetailAPI: APITargetType {
              .unlikePolicy(let policyId): return "/\(policyId)/like"
         case .getPolicyDetail(let policyId): return "/detail/\(policyId)"
         case .getPolicyCard(let policyId):   return "/card/\(policyId)"
+        case .getPolicyCards:                return "/cards"
         }
     }
 
@@ -26,9 +28,18 @@ extension PolicyDetailAPI: APITargetType {
         switch self {
         case .likePolicy:    return .post
         case .unlikePolicy:  return .delete
-        case .getPolicyDetail, .getPolicyCard: return .get
+        case .getPolicyDetail, .getPolicyCard, .getPolicyCards: return .get
         }
     }
 
-    public var task: Task { .requestPlain }
+    public var task: Task {
+        switch self {
+        case .getPolicyCards(let category):
+            var params: [String: Any] = [:]
+            if let category { params["category"] = category }
+            return .requestParameters(parameters: params, encoding: URLEncoding.queryString)
+        default:
+            return .requestPlain
+        }
+    }
 }

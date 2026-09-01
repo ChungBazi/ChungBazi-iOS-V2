@@ -32,6 +32,7 @@ public struct PolicyItemDTO: Decodable, Sendable {
     public let categoryName: String
     public let dDay: String
     public let title: String
+    public let registeredDate: String
     public let viewCount: Int
     public let liked: Bool
 }
