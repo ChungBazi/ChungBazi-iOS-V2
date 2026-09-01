@@ -25,8 +25,8 @@ extension CustomPolicyClient: @retroactive DependencyKey {
         let guideUseCase: any CustomPolicyGuideUseCase = CustomPolicyGuideUseCaseImpl(appPreferenceRepository: appPreferenceRepository)
 
         return CustomPolicyClient(
-            fetchCard: { policyId in
-                PolicyCardVO(try await fetchPolicyCardUseCase.execute(policyId: policyId))
+            fetchCards: { category in
+                try await fetchPolicyCardUseCase.execute(category: category).map(PolicyCardVO.init)
             },
             hasSeenGuide: { guideUseCase.hasSeen() },
             markGuideSeen: { guideUseCase.markSeen() },

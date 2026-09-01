@@ -10,7 +10,7 @@ public struct FetchPolicyCardUseCaseImpl: FetchPolicyCardUseCase {
         self.policyDetailRepository = policyDetailRepository
     }
 
-    public func execute(policyId: Int) async throws -> PolicyCard {
-        try await policyDetailRepository.fetchPolicyCard(policyId: policyId)
+    public func execute(category: PolicyCategory?) async throws -> [PolicyCard] {
+        try await policyDetailRepository.fetchPolicyCards(category: category)
     }
 }

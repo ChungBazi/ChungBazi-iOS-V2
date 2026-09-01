@@ -5,7 +5,7 @@ import BaziDomain
 import ComposableArchitecture
 import Foundation
 
-/// 진입한 쪽(홈/분야별)이 넘겨준 맞춤 정책 id들의 카드(getPolicyCard)를 병렬로 조회한다.
+/// 맞춤 정책 카드뉴스를 배치로 조회한다(`/cards`). 분야별에서 진입하면 해당 분야, 홈 맞춤정책에서 진입하면 전체 관심 분야.
 @Reducer
 public struct CustomPolicyListFeature {
 
@@ -29,10 +29,8 @@ public struct CustomPolicyListFeature {
 
     @ObservableState
     public struct State: Equatable {
-        /// 분야별에서 진입 시 해당 분야. 홈 맞춤정책에서 진입하면 nil.
+        /// 분야별에서 진입 시 해당 분야. 홈 맞춤정책에서 진입하면 nil(전체 관심 분야).
         public var category: PolicyCategoryUI?
-        /// 카드로 보여줄 맞춤 정책 id 목록(진입 측에서 전달).
-        public var policyIds: [Int]
         public var displayName = ""
         public var cards: LoadingState<IdentifiedArrayOf<PolicyCardVO>> = .idle
         /// 최초 진입 시에만 노출. `.task`에서 hasSeenGuide로 결정한다.
@@ -40,9 +38,8 @@ public struct CustomPolicyListFeature {
         /// 홈·내정책이 반영하는 공유 찜 오버레이(id → liked).
         @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
-        public init(category: PolicyCategoryUI? = nil, policyIds: [Int] = []) {
+        public init(category: PolicyCategoryUI? = nil) {
             self.category = category
-            self.policyIds = policyIds
         }
     }
 
@@ -198,26 +195,15 @@ public struct CustomPolicyListFeature {
         .cancellable(id: CancelID.like(id), cancelInFlight: true)
     }
 
-    /// 전달받은 id들의 카드를 병렬로 조회한다.
+    /// 맞춤 카드를 배치로 조회한다. 분야별 진입이면 해당 분야, 홈 진입이면 전체 관심 분야.
     private func loadCards(_ state: inout State) -> Effect<Action> {
-        let ids = state.policyIds
-        guard !ids.isEmpty else {
-            state.cards = .loaded([])
-            return .none
-        }
         state.cards = .loading
+        let category = state.category?.toDomain()
         return .run { [customPolicyClient, clock] send in
             do {
                 // push 전환이 끝난 뒤 노출하도록 최소 로딩 시간을 함께 기다린다.
                 async let settle: Void = clock.sleep(for: .milliseconds(400))
-                let cards = try await withThrowingTaskGroup(of: (Int, PolicyCardVO).self) { group in
-                    for (index, id) in ids.enumerated() {
-                        group.addTask { (index, try await customPolicyClient.fetchCard(id)) }
-                    }
-                    var collected: [(Int, PolicyCardVO)] = []
-                    for try await pair in group { collected.append(pair) }
-                    return collected.sorted { $0.0 < $1.0 }.map(\.1)
-                }
+                let cards = try await customPolicyClient.fetchCards(category)
                 try await settle
                 await send(.cardsResponse(.success(cards)))
             } catch {

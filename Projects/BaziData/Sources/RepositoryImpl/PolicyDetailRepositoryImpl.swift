@@ -22,11 +22,11 @@ public struct PolicyDetailRepositoryImpl: PolicyDetailRepository {
         return dto.toDomain()
     }
 
-    public func fetchPolicyCard(policyId: Int) async throws -> PolicyCard {
-        let dto: PolicyCardResponseDTO = try await networkProvider.request(
-            PolicyDetailAPI.getPolicyCard(policyId: policyId)
+    public func fetchPolicyCards(category: PolicyCategory?) async throws -> [PolicyCard] {
+        let dto: PolicyCardListResponseDTO = try await networkProvider.request(
+            PolicyDetailAPI.getPolicyCards(category: category?.rawValue)
         )
-        return dto.toDomain()
+        return dto.policies.map { $0.toDomain() }
     }
 
     public func like(policyId: Int) async throws {
