@@ -11,16 +11,14 @@ struct CustomPolicyListFeatureTests {
 
     @Test("진입 시 카드들을 병렬 조회해 loaded가 된다 (최소 로딩은 ImmediateClock으로 즉시)")
     func task_loadsCards() async {
-        let store = TestStore(initialState: CustomPolicyListFeature.State(policyIds: [1, 2, 3])) {
+        let store = TestStore(initialState: CustomPolicyListFeature.State()) {
             CustomPolicyListFeature()
         } withDependencies: {
             $0.continuousClock = ImmediateClock()
             $0.sessionClient.displayName = { "바지" }
             $0.customPolicyClient.hasSeenGuide = { true }
             $0.customPolicyClient.isAISummaryAvailable = { false }
-            $0.customPolicyClient.fetchCard = { id in
-                PolicyCardVO.mockList.first { $0.id == id } ?? .mock
-            }
+            $0.customPolicyClient.fetchCards = { _ in PolicyCardVO.mockList }
         }
 
         await store.send(.onAppear) {
@@ -34,7 +32,7 @@ struct CustomPolicyListFeatureTests {
 
     @Test("지원 기기에서 카드가 보이면 요약을 생성해 .ready가 된다")
     func didShowCard_summarizes() async {
-        var state = CustomPolicyListFeature.State(policyIds: [1])
+        var state = CustomPolicyListFeature.State()
         state.cards = .loaded(IdentifiedArray(uniqueElements: [PolicyCardVO.mockList[0]]))
 
         let store = TestStore(initialState: state) {
@@ -60,7 +58,7 @@ struct CustomPolicyListFeatureTests {
 
     @Test("찜 실패 시 낙관적 갱신을 롤백한다")
     func didToggleLike_rollsBackOnFailure() async {
-        var state = CustomPolicyListFeature.State(policyIds: [1])
+        var state = CustomPolicyListFeature.State()
         state.cards = .loaded(IdentifiedArray(uniqueElements: [PolicyCardVO.mockList[0]]))
 
         let store = TestStore(initialState: state) {
