@@ -85,10 +85,10 @@ extension HomeView {
             VStack(spacing: 0) {
                 personalizedSection(feed)
                 categorySection
+                // 최근 본 정책이 없으면 섹션 자체를 숨긴다(emptyMessage 미지정).
                 cardRowSection(
                     title: "최근 본 정책",
                     subtitle: "내가 관심 있게 살펴본 정책이에요!",
-                    emptyMessage: "관심 가는 정책을 눌러보세요",
                     policies: feed.recentViewed,
                     section: .recentViewed
                 )
@@ -271,60 +271,64 @@ extension HomeView {
 
 extension HomeView {
 
+    @ViewBuilder
     private func cardRowSection(
         title: String,
         subtitle: String,
-        emptyMessage: String,
+        emptyMessage: String? = nil,
         policies: IdentifiedArrayOf<PolicySummaryVO>,
         section: HomeFeature.PolicySection,
         moreAction: (() -> Void)? = nil
     ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .baziFont(.head18B)
-                        .foregroundStyle(Color.gray900)
-                    Text(subtitle)
-                        .baziFont(.small14R)
-                        .foregroundStyle(Color.gray500)
-                }
-                Spacer()
-                if let moreAction, !policies.isEmpty {
-                    Button("더보기", action: moreAction)
-                        .baziFont(.small12R)
-                        .foregroundStyle(Color.gray400)
-                }
-            }
-            .padding(.horizontal, 20)
-
-            if policies.isEmpty {
-                Text(emptyMessage)
-                    .baziFont(.small14R)
-                    .foregroundStyle(Color.gray400)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 24)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 12) {
-                        ForEach(policies) { policy in
-                            BZCard(
-                                size: .small,
-                                category: policy.category.rawValue,
-                                dDay: policy.dDay,
-                                title: policy.title,
-                                viewCount: policy.viewCount,
-                                isLiked: likeBinding(section: section, id: policy.id)
-                            )
-                            .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
-                        }
+        // emptyMessage 없이 비어 있으면 섹션 자체를 숨긴다.
+        if !policies.isEmpty || emptyMessage != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .baziFont(.head18B)
+                            .foregroundStyle(Color.gray900)
+                        Text(subtitle)
+                            .baziFont(.small14R)
+                            .foregroundStyle(Color.gray500)
                     }
-                    .padding(.horizontal, 20)
+                    Spacer()
+                    if let moreAction, !policies.isEmpty {
+                        Button("더보기", action: moreAction)
+                            .baziFont(.small12R)
+                            .foregroundStyle(Color.gray400)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                if policies.isEmpty {
+                    Text(emptyMessage ?? "")
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray400)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 24)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 12) {
+                            ForEach(policies) { policy in
+                                BZCard(
+                                    size: .small,
+                                    category: policy.category.rawValue,
+                                    dDay: policy.dDay,
+                                    title: policy.title,
+                                    viewCount: policy.viewCount,
+                                    isLiked: likeBinding(section: section, id: policy.id)
+                                )
+                                .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
                 }
             }
+            .padding(.top, 44)
         }
-        .padding(.top, 44)
     }
 }
 
