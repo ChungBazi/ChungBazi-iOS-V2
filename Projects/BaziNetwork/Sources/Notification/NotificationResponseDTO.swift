@@ -15,7 +15,7 @@ public struct NotificationItemDTO: Decodable, Sendable {
     public let category: String
     public let title: String
     public let message: String
-    public let policyId: Int
+    public let policyId: Int?
     public let read: Bool
     public let elapsedTime: String
 }

@@ -9,7 +9,7 @@ public struct NotificationItem: Equatable, Sendable {
     public let category: String
     public let title: String
     public let message: String
-    public let policyId: Int
+    public let policyId: Int?
     public let isRead: Bool
     public let elapsedTime: String
 
@@ -18,7 +18,7 @@ public struct NotificationItem: Equatable, Sendable {
         category: String,
         title: String,
         message: String,
-        policyId: Int,
+        policyId: Int?,
         isRead: Bool,
         elapsedTime: String
     ) {

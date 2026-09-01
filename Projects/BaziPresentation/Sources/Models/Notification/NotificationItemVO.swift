@@ -56,7 +56,7 @@ public struct NotificationItemVO: Equatable, Identifiable, Sendable {
     public let kind: NotificationKind
     public let title: String
     public let message: String
-    public let policyId: Int
+    public let policyId: Int?
     public var isRead: Bool
     public let elapsedTime: String
 
@@ -65,7 +65,7 @@ public struct NotificationItemVO: Equatable, Identifiable, Sendable {
         kind: NotificationKind,
         title: String,
         message: String,
-        policyId: Int,
+        policyId: Int?,
         isRead: Bool = false,
         elapsedTime: String
     ) {
