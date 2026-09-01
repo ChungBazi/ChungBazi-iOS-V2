@@ -10,6 +10,7 @@ public struct OnboardingInfo: Equatable, Sendable {
     public let employmentCode: EmploymentCode
     public let incomeLevel: IncomeLevel
     public let interestCategories: [PolicySubCategoryType]
+    public let specialEligibilities: [SpecialEligibility]
 
     public init(
         birth: String,
@@ -18,7 +19,8 @@ public struct OnboardingInfo: Equatable, Sendable {
         educationCode: EducationCode,
         employmentCode: EmploymentCode,
         incomeLevel: IncomeLevel,
-        interestCategories: [PolicySubCategoryType]
+        interestCategories: [PolicySubCategoryType],
+        specialEligibilities: [SpecialEligibility]
     ) {
         self.birth = birth
         self.sidoCode = sidoCode
@@ -27,5 +29,6 @@ public struct OnboardingInfo: Equatable, Sendable {
         self.employmentCode = employmentCode
         self.incomeLevel = incomeLevel
         self.interestCategories = interestCategories
+        self.specialEligibilities = specialEligibilities
     }
 }

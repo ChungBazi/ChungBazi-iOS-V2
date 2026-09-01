@@ -47,6 +47,7 @@ extension PolicyProfileEditView {
                 educationSection
                 employmentSection
                 incomeSection
+                specialEligibilitySection
                 interestSection
             }
             .padding(.horizontal, 20)
@@ -159,6 +160,28 @@ extension PolicyProfileEditView {
     }
 }
 
+// MARK: - Special Eligibility
+
+extension PolicyProfileEditView {
+
+    private var specialEligibilitySection: some View {
+        VStack(alignment: .leading, spacing: 19) {
+            questionTitle(6, "나에게 해당하는 항목을 모두 선택해 주세요")
+
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(SpecialEligibilityUI.allCases, id: \.self) { item in
+                    BZChoiceChip(
+                        item.rawValue,
+                        isSelected: store.specialEligibilities.contains(item)
+                    ) {
+                        store.send(.didTapSpecialEligibility(item))
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Interest
 
 extension PolicyProfileEditView {
@@ -166,7 +189,7 @@ extension PolicyProfileEditView {
     private var interestSection: some View {
         VStack(alignment: .leading, spacing: 19) {
             VStack(alignment: .leading, spacing: 4) {
-                questionTitle(6, "관심 있는 분야를 선택해주세요")
+                questionTitle(7, "관심 있는 분야를 선택해주세요")
                 Text("3개 이상 선택 필수")
                     .font(.bazi(.small12R))
                     .foregroundStyle(Color.bazi(.accent))

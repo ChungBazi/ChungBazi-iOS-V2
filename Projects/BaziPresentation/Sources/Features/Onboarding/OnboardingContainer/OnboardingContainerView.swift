@@ -65,6 +65,9 @@ extension OnboardingContainerView {
         case .income:
             IncomeStepView(store: store)
 
+        case .specialEligibility:
+            SpecialEligibilityStepView(store: store)
+
         case .interest:
             InterestStepView(store: store)
         }
