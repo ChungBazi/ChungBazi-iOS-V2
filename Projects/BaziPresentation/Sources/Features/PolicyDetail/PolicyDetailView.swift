@@ -214,7 +214,7 @@ extension PolicyDetailView {
     }
 
     private var ctaButtons: some View {
-        // 신청 링크(참고 링크 첫 항목)가 없으면 신청 버튼을 비활성화한다.
+        // 서버 applyUrl이 없으면 신청 버튼을 비활성화한다.
         let applyURL = store.detail.value?.applyURL
         return HStack(spacing: 10) {
             BZButton("찜하기", type: .normal, size: .small) {

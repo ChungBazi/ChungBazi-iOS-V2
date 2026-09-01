@@ -18,6 +18,7 @@ public struct PolicyDetail: Equatable, Sendable {
     public let applicationMethod: String
     public let submittedDocument: String
     public let screeningMethod: String
+    public let applyUrl: String?
     public let referenceUrls: [String]
     public let personalized: [PolicySummary]
     public let popular: [PolicySummary]
@@ -37,6 +38,7 @@ public struct PolicyDetail: Equatable, Sendable {
         applicationMethod: String,
         submittedDocument: String,
         screeningMethod: String,
+        applyUrl: String?,
         referenceUrls: [String],
         personalized: [PolicySummary],
         popular: [PolicySummary]
@@ -55,6 +57,7 @@ public struct PolicyDetail: Equatable, Sendable {
         self.applicationMethod = applicationMethod
         self.submittedDocument = submittedDocument
         self.screeningMethod = screeningMethod
+        self.applyUrl = applyUrl
         self.referenceUrls = referenceUrls
         self.personalized = personalized
         self.popular = popular

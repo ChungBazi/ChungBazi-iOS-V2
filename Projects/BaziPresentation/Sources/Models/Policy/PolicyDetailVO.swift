@@ -21,12 +21,13 @@ public struct PolicyDetailVO: Equatable, Identifiable, Sendable {
     public let applicationMethod: String
     public let submittedDocument: String
     public let screeningMethod: String
+    public let applyUrl: String?
     public let referenceURLs: [String]
     public var personalized: IdentifiedArrayOf<PolicySummaryVO>
     public var popular: IdentifiedArrayOf<PolicySummaryVO>
 
-    /// 신청 링크. 상세 응답에 별도 필드가 없어 참고 링크의 첫 항목을 사용한다.
-    public var applyURL: URL? { referenceURLs.first.flatMap { URL(string: $0) } }
+    /// 신청 링크. 서버가 applyUrl을 주지 않으면 nil(신청 버튼 비활성).
+    public var applyURL: URL? { applyUrl.flatMap { URL(string: $0) } }
 
     public init(
         id: Int,
@@ -42,6 +43,7 @@ public struct PolicyDetailVO: Equatable, Identifiable, Sendable {
         applicationMethod: String,
         submittedDocument: String,
         screeningMethod: String,
+        applyUrl: String? = nil,
         referenceURLs: [String],
         personalized: IdentifiedArrayOf<PolicySummaryVO> = [],
         popular: IdentifiedArrayOf<PolicySummaryVO> = []
@@ -59,6 +61,7 @@ public struct PolicyDetailVO: Equatable, Identifiable, Sendable {
         self.applicationMethod = applicationMethod
         self.submittedDocument = submittedDocument
         self.screeningMethod = screeningMethod
+        self.applyUrl = applyUrl
         self.referenceURLs = referenceURLs
         self.personalized = personalized
         self.popular = popular
@@ -82,6 +85,7 @@ public struct PolicyDetailVO: Equatable, Identifiable, Sendable {
             applicationMethod: entity.applicationMethod.orDash,
             submittedDocument: entity.submittedDocument.orDash,
             screeningMethod: entity.screeningMethod.orDash,
+            applyUrl: entity.applyUrl,
             referenceURLs: entity.referenceUrls,
             personalized: IdentifiedArray(deduplicating: entity.personalized.map(PolicySummaryVO.init)),
             popular: IdentifiedArray(deduplicating: entity.popular.map(PolicySummaryVO.init))
@@ -107,6 +111,7 @@ extension PolicyDetailVO {
             applicationMethod: "접수처 : 신청인 본인 주민등록지 동 주민센터 (방문접수)",
             submittedDocument: "없음",
             screeningMethod: "서류 심사 후 개별 통보",
+            applyUrl: "https://www.gov.kr",
             referenceURLs: ["https://www.gov.kr"],
             personalized: IdentifiedArray(uniqueElements: Array(PolicySummaryVO.mockList.prefix(2))),
             popular: IdentifiedArray(uniqueElements: Array(PolicySummaryVO.mockList.suffix(2)))
