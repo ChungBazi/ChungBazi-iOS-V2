@@ -22,10 +22,10 @@ public struct KakaoLoginRequestDTO: Encodable {
 
 public struct AppleLoginRequestDTO: Encodable {
     public let idToken: String
-    public let name: String
+    public let name: String?
     public let fcmToken: String
-    
-    public init(idToken: String, name: String, fcmToken: String) {
+
+    public init(idToken: String, name: String?, fcmToken: String) {
         self.idToken = idToken
         self.name = name
         self.fcmToken = fcmToken
