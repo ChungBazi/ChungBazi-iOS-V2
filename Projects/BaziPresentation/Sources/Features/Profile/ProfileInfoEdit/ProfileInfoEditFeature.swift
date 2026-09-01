@@ -27,7 +27,6 @@ public struct ProfileInfoEditFeature {
 
     public enum Action: Equatable {
         // MARK: View
-        case onAppear
         case didTapNicknameEdit
         case didTapLinkedAccounts
         case didTapLogout
@@ -68,9 +67,6 @@ public struct ProfileInfoEditFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .onAppear:
-                return .none
-
             case .didTapNicknameEdit:
                 return .send(.delegate(.nicknameEditRequested))
 
