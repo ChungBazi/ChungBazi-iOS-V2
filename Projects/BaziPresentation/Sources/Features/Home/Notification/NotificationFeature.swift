@@ -107,7 +107,9 @@ public struct NotificationFeature {
             case .didTapNotification(let id):
                 guard let notification = state.notifications.value?[id: id] else { return .none }
                 // 읽음 처리는 서버가 조회 시점에 하므로, 상세 이동은 부모(홈 스택)에 위임한다.
-                return .send(.delegate(.didSelectPolicy(id: notification.policyId)))
+                // policyId가 없는 알림의 경우 상세로 이동하지 않는다.
+                guard let policyId = notification.policyId else { return .none }
+                return .send(.delegate(.didSelectPolicy(id: policyId)))
 
             case .didSwipeDelete(let id):
                 guard state.notifications.value?[id: id] != nil else { return .none }
