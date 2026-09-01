@@ -22,7 +22,6 @@ public struct ProfileInfoEditView: View {
 
     public var body: some View {
         content
-            .task { store.send(.onAppear) }
             .baziNavigationBar_backWithTitle("내 정보 수정") {
                 dismiss()
             }
