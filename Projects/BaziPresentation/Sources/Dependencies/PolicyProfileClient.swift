@@ -22,7 +22,8 @@ extension PolicyProfileClient: TestDependencyKey {
                 educationCode: .universityGraduated,
                 employmentCode: .employed,
                 incomeLevel: .level5,
-                interestCategories: [.employmentPreparation, .housingCostSpace, .financeLiving]
+                interestCategories: [.employmentPreparation, .housingCostSpace, .financeLiving],
+                specialEligibilities: [.woman]
             )
         },
         updatePolicyProfile: { _ in }

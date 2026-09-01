@@ -14,7 +14,8 @@ extension OnboardingInfo {
             educationCode: educationCode.rawValue,
             employmentCode: employmentCode.rawValue,
             incomeLevel: incomeLevel.rawValue,
-            interestCategories: interestCategories.map(\.rawValue)
+            interestCategories: interestCategories.map(\.rawValue),
+            specialEligibilities: specialEligibilities.map(\.rawValue)
         )
     }
 }

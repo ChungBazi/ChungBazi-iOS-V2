@@ -33,6 +33,9 @@ public struct PolicyProfileEditFeature {
         public var employment: EmploymentUI?
         public var income: IncomeLevelUI?
 
+        // MARK: Special Eligibility (해당 사항)
+        public var specialEligibilities: Set<SpecialEligibilityUI> = []
+
         // MARK: Interest
         public var interests: Set<InterestCategoryUI> = []
 
@@ -56,6 +59,7 @@ public struct PolicyProfileEditFeature {
                 && employment != nil
                 && income != nil
                 && interests.count >= PolicyProfileEditFeature.minimumInterestCount
+                && !specialEligibilities.isEmpty
                 && !isSaving
         }
     }
@@ -72,6 +76,7 @@ public struct PolicyProfileEditFeature {
         case didSelectEmployment(EmploymentUI?)
         case didSelectIncome(IncomeLevelUI?)
         case didTapInterest(InterestCategoryUI)
+        case didTapSpecialEligibility(SpecialEligibilityUI)
         case didTapSaveButton
 
         // MARK: Internal
@@ -189,6 +194,20 @@ public struct PolicyProfileEditFeature {
                 }
                 return .none
 
+            case .didTapSpecialEligibility(let item):
+                // '해당 없어요'와 나머지는 상호 배타 — 한쪽을 켜면 반대편은 자동 해제한다.
+                if item == .notApplicable {
+                    state.specialEligibilities = state.specialEligibilities.contains(.notApplicable) ? [] : [.notApplicable]
+                } else {
+                    state.specialEligibilities.remove(.notApplicable)
+                    if state.specialEligibilities.contains(item) {
+                        state.specialEligibilities.remove(item)
+                    } else {
+                        state.specialEligibilities.insert(item)
+                    }
+                }
+                return .none
+
             case .binding(\.year), .binding(\.month):
                 clampBirthDateToToday(&state)
                 return .none
@@ -240,6 +259,7 @@ public struct PolicyProfileEditFeature {
         state.employment = EmploymentUI(domain: profile.employmentCode)
         state.income = IncomeLevelUI(domain: profile.incomeLevel)
         state.interests = Set(profile.interestCategories.compactMap(InterestCategoryUI.init(domain:)))
+        state.specialEligibilities = Set(profile.specialEligibilities.compactMap(SpecialEligibilityUI.init(domain:)))
     }
 
     /// 화면 VO를 도메인 코드로 조립한다. 필수 값이 없으면 nil.
@@ -260,7 +280,8 @@ public struct PolicyProfileEditFeature {
             educationCode: education.toDomain(),
             employmentCode: employment.toDomain(),
             incomeLevel: income.toDomain(),
-            interestCategories: state.interests.map { $0.toDomain() }
+            interestCategories: state.interests.map { $0.toDomain() },
+            specialEligibilities: state.specialEligibilities.map { $0.toDomain() }
         )
     }
 

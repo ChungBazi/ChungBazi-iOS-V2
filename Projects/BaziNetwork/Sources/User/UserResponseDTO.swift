@@ -10,6 +10,7 @@ public struct PolicyProfileResponseDTO: Decodable, Sendable {
     public let employmentCode: String
     public let incomeLevel: String
     public let interestCategories: [String]
+    public let specialEligibilities: [String]
 }
 
 public struct UserInfoResponseDTO: Decodable, Sendable {

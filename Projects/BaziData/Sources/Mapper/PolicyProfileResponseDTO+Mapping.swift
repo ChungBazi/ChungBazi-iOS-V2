@@ -15,7 +15,8 @@ extension PolicyProfileResponseDTO {
             educationCode: EducationCode(rawValue: educationCode) ?? .etcOrNone,
             employmentCode: EmploymentCode(rawValue: employmentCode) ?? .etcOrNone,
             incomeLevel: IncomeLevel(rawValue: incomeLevel) ?? .unknown,
-            interestCategories: interestCategories.compactMap { PolicySubCategoryType(rawValue: $0) }
+            interestCategories: interestCategories.compactMap { PolicySubCategoryType(rawValue: $0) },
+            specialEligibilities: specialEligibilities.compactMap { SpecialEligibility(rawValue: $0) }
         )
     }
 }

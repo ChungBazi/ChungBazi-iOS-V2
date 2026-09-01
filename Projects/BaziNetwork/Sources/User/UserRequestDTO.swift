@@ -11,8 +11,9 @@ public struct OnboardingRequestDTO: Encodable {
     public let employmentCode: String
     public let incomeLevel: String
     public let interestCategories: [String]
+    public let specialEligibilities: [String]
 
-    public init(birth: String, sidoCode: String, sigunguCode: String, educationCode: String, employmentCode: String, incomeLevel: String, interestCategories: [String]) {
+    public init(birth: String, sidoCode: String, sigunguCode: String, educationCode: String, employmentCode: String, incomeLevel: String, interestCategories: [String], specialEligibilities: [String]) {
         self.birth = birth
         self.sidoCode = sidoCode
         self.sigunguCode = sigunguCode
@@ -20,6 +21,7 @@ public struct OnboardingRequestDTO: Encodable {
         self.employmentCode = employmentCode
         self.incomeLevel = incomeLevel
         self.interestCategories = interestCategories
+        self.specialEligibilities = specialEligibilities
     }
 }
 
