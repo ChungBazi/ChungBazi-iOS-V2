@@ -32,7 +32,8 @@ public struct PolicyItemDTO: Decodable, Sendable {
     public let categoryName: String
     public let dDay: String
     public let title: String
-    public let registeredDate: String
+    /// 목록 응답엔 있으나 상세 응답의 추천(맞춤/인기) 항목엔 없으므로 옵셔널.
+    public let registeredDate: String?
     public let viewCount: Int
     public let liked: Bool
 }
