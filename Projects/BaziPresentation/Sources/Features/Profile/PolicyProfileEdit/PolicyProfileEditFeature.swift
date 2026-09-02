@@ -45,11 +45,42 @@ public struct PolicyProfileEditFeature {
         /// onAppear 프리필을 최초 1회만 수행하기 위한 플래그. (탭 전환 등으로 화면이 재등장할 때
         /// 저장하지 않은 편집이 서버 값으로 되돌아가는 것을 막는다)
         public var hasLoaded = false
+        /// 프리필/저장 시점의 값 스냅샷. 현재 편집값이 이와 같으면(원래값과 동일 / 저장 직후) 저장 버튼을 비활성화한다.
+        public var savedSnapshot: Snapshot?
 
         public init(year: Int = 2000, month: Int = 1, day: Int = 1) {
             self.year = year
             self.month = month
             self.day = day
+        }
+
+        /// 저장 대상 편집 필드의 변경 여부 판정용 스냅샷.
+        public struct Snapshot: Equatable {
+            var year: Int
+            var month: Int
+            var day: Int
+            var sidoCode: String?
+            var sigunguCode: String?
+            var education: EducationUI?
+            var employment: EmploymentUI?
+            var income: IncomeLevelUI?
+            var specialEligibilities: Set<SpecialEligibilityUI>
+            var interests: Set<InterestCategoryUI>
+        }
+
+        public var currentSnapshot: Snapshot {
+            Snapshot(
+                year: year,
+                month: month,
+                day: day,
+                sidoCode: selectedSido?.code,
+                sigunguCode: selectedSigungu?.code,
+                education: education,
+                employment: employment,
+                income: income,
+                specialEligibilities: specialEligibilities,
+                interests: interests
+            )
         }
 
         public var isSaveEnabled: Bool {
@@ -61,6 +92,7 @@ public struct PolicyProfileEditFeature {
                 && interests.count >= PolicyProfileEditFeature.minimumInterestCount
                 && !specialEligibilities.isEmpty
                 && !isSaving
+                && currentSnapshot != savedSnapshot
         }
     }
 
@@ -147,6 +179,7 @@ public struct PolicyProfileEditFeature {
 
             case .profileResponse(.success(let profile)):
                 applyProfile(profile, to: &state)
+                state.savedSnapshot = state.currentSnapshot
                 return fetchSigunguList(&state)
 
             case .profileResponse(.failure):
@@ -163,6 +196,8 @@ public struct PolicyProfileEditFeature {
                 if let code = state.pendingSigunguCode {
                     state.selectedSigungu = list.first { $0.code == code }
                     state.pendingSigunguCode = nil
+                    // 프리필 완료(시군구까지 채워짐) → 기준 스냅샷을 확정한다.
+                    state.savedSnapshot = state.currentSnapshot
                 }
                 return .none
 
@@ -230,6 +265,8 @@ public struct PolicyProfileEditFeature {
             case .didSaveProfile:
                 state.isSaving = false
                 state.isSuccessToastPresented = true
+                // 저장 직후엔 현재값이 곧 기준값 → 버튼 비활성.
+                state.savedSnapshot = state.currentSnapshot
                 return .none
 
             case .didFailToSaveProfile:
