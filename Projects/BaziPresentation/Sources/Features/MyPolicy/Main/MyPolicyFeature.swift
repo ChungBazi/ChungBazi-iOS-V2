@@ -283,9 +283,9 @@ public struct MyPolicyFeature {
                 // TODO: 서버 연결 시 저장된 메모를 목록/티저에 반영한다. (현재는 별도 갱신 없음)
                 return .none
 
-            case .path(.element(_, .policyList(.delegate(.browsePolicies)))):
-                // 전체보기 빈 상태 "둘러보러 가기" → 분야별 정책(취업·창업).
-                state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: .job)))
+            case let .path(.element(_, .policyList(.delegate(.browsePolicies(category))))):
+                // 전체보기 빈 상태 "둘러보러 가기" → 선택한 분야의 분야별 정책(미선택 시 취업·창업).
+                state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: category ?? .job)))
                 return .none
 
             case .path:
