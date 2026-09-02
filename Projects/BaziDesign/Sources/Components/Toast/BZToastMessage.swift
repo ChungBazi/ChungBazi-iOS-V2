@@ -156,3 +156,11 @@ private struct BZToastMessagePreview: View {
 #Preview {
     BZToastMessagePreview()
 }
+
+#Preview("스타일") {
+    VStack(spacing: 16) {
+        BZToastMessage("정책 맞춤 조건이 수정되었어요")
+        BZToastMessage("필수 항목을 모두 선택해 주세요", style: .warning)
+    }
+    .padding(20)
+}
