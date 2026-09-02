@@ -38,16 +38,42 @@ public struct BZSegmentControl<Content: View>: View {
 
 extension BZSegmentControl {
 
+    @ViewBuilder
     private var segmentRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 19) {
-                ForEach(options, id: \.self) { option in
-                    segmentItem(option)
+        Group {
+            if options.count == 5 {
+                // 정확히 5개: 스크롤 없이 첫/마지막 라벨은 양옆 20에 붙이고 사이 간격만 균등하게 벌린다.
+                HStack(spacing: 0) {
+                    ForEach(Array(options.enumerated()), id: \.element) { index, option in
+                        segmentItem(option)
+                        if index < options.count - 1 {
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            } else if options.count < 5 {
+                // 5개 미만: 스크롤 없이 spacing 19로 좌측 정렬한다.
+                HStack(spacing: 19) {
+                    ForEach(options, id: \.self) { option in
+                        segmentItem(option)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                // 6개 이상: 가로 스크롤 + spacing 19.
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 19) {
+                        ForEach(options, id: \.self) { option in
+                            segmentItem(option)
+                        }
+                    }
+                    .padding(.horizontal, 20)
                 }
             }
-            .padding(.horizontal, 20)
         }
-        .frame(height: 44)
+        .frame(height: 52)
     }
 
     private func segmentItem(_ option: String) -> some View {
@@ -58,7 +84,8 @@ extension BZSegmentControl {
             Text(option)
                 .baziFont(isSelected ? .small14SB : .small14R)
                 .foregroundStyle(isSelected ? Color.grayBlack : Color.gray300)
-                .frame(minHeight: 44)
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
