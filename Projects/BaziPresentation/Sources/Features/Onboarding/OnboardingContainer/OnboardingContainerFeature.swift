@@ -291,7 +291,7 @@ public struct OnboardingContainerFeature {
         }
 
         let info = OnboardingInfo(
-            birth: String(format: "%04d-%02d-%02d", state.year, state.month, state.day),
+            birth: BaziDateFormat.serverDayString(year: state.year, month: state.month, day: state.day),
             sidoCode: sido.code,
             sigunguCode: sigungu.code,
             educationCode: education.toDomain(),

@@ -60,34 +60,14 @@ extension PolicySummaryVO {
 
     /// 주어진 정책들의 등록일 중 가장 최신을 "yyyy년 MM월 dd일 업데이트"로 만든다. 등록일이 없으면 nil.
     public static func latestUpdatedText(_ policies: some Sequence<PolicySummaryVO>) -> String? {
+        // 서버 등록일("yyyy-MM-dd")의 날짜 부분(앞 10자)만 파싱한다. datetime으로 와도 날짜만 취한다.
         let latest = policies
             .compactMap { $0.registeredDate }
-            .compactMap(parseRegisteredDate)
+            .compactMap { BaziDateFormat.serverDay.date(from: String($0.prefix(10))) }
             .max()
         guard let latest else { return nil }
-        return updateDisplayFormatter.string(from: latest) + " 업데이트"
+        return BaziDateFormat.koreanDay.string(from: latest) + " 업데이트"
     }
-
-    /// 서버 등록일("yyyy-MM-dd")의 날짜 부분(앞 10자)만 파싱한다. datetime으로 와도 날짜만 취한다.
-    private static func parseRegisteredDate(_ raw: String) -> Date? {
-        registeredDateParser.date(from: String(raw.prefix(10)))
-    }
-
-    private static let registeredDateParser: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
-    private static let updateDisplayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
-        formatter.dateFormat = "yyyy년 MM월 dd일"
-        return formatter
-    }()
 }
 
 // MARK: - Mock
@@ -103,7 +83,7 @@ extension PolicySummaryVO {
         PolicySummaryVO(id: 5, category: .dwelling, dDay: "D-14", title: "청년 1인가구 월세 특별지원 사업 신청 안내", viewCount: 10100),
         PolicySummaryVO(id: 6, category: .dwelling, dDay: "D-25", title: "전세보증금 반환보증료 지원 사업", viewCount: 6400),
         PolicySummaryVO(id: 7, category: .study, dDay: "D-20", title: "디지털·IT 실무 역량 강화를 위한 청년 취업사관학교 교육생 모집", viewCount: 9800),
-        PolicySummaryVO(id: 8, category: .study, dDay: "D-9", title: "청년 자기계발 지원을 위한 온라인 강의 수강료 바우처", viewCount: 7200),
+        PolicySummaryVO(id: 8, category:  .study, dDay: "D-9", title: "청년 자기계발 지원을 위한 온라인 강의 수강료 바우처", viewCount: 7200),
         PolicySummaryVO(id: 9, category: .study, dDay: "D-40", title: "국가기술자격증 취득 지원금 신청 안내", viewCount: 4100),
         PolicySummaryVO(id: 10, category: .livingSupport, dDay: "D-7", title: "청년 생활안정을 위한 필수생활비 바우처 지원 사업", viewCount: 7300),
         PolicySummaryVO(id: 11, category: .livingSupport, dDay: "D-16", title: "청년 마음건강 상담비 지원 사업", viewCount: 5900),
