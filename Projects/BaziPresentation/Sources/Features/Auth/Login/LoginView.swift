@@ -1,6 +1,5 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
-import AuthenticationServices
 import SwiftUI
 
 import BaziDesign
@@ -62,46 +61,52 @@ extension LoginView {
     }
 
     private var kakaoLoginButton: some View {
-        Button {
+        socialLoginButton(
+            icon: .bazi(.kakaoIcon),
+            title: "카카오로 로그인",
+            foreground: Color.grayBlack,
+            background: Color.kakao
+        ) {
             store.send(.didTapKakaoLoginButton)
-        } label: {
-            HStack(spacing: 8) {
-                Image.bazi(.kakaoIcon)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18)
-
-                Text("카카오로 로그인")
-                    .font(.system(size: 15, weight: .medium))
-            }
-            .foregroundStyle(Color.grayBlack)
-            .frame(maxWidth: .infinity)
-            .frame(height: 45)
-            .background(Color.kakao)
-            .baziRadius(.small)
         }
     }
 
     private var appleLoginButton: some View {
-        SignInWithAppleButton(.signIn) { request in
-            request.requestedScopes = [.fullName, .email]
-        } onCompletion: { result in
-            guard
-                case .success(let authorization) = result,
-                let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                let identityTokenData = credential.identityToken,
-                let idToken = String(data: identityTokenData, encoding: .utf8)
-            else { return }
-
-            // fullName은 최초 로그인 시에만 내려온다.
-            let name = credential.fullName.flatMap {
-                PersonNameComponentsFormatter().string(from: $0)
-            }
-            store.send(.didTapAppleLoginButton(idToken: idToken, name: name?.isEmpty == false ? name : nil))
+        socialLoginButton(
+            icon: Image(systemName: "apple.logo"),
+            iconWidth: 16,
+            title: "Apple로 로그인",
+            foreground: Color.grayWhite,
+            background: Color.grayBlack
+        ) {
+            store.send(.didTapAppleLoginButton)
         }
-        .signInWithAppleButtonStyle(.black)
-        .frame(height: 45)
-        .baziRadius(.small)
+    }
+
+    private func socialLoginButton(
+        icon: Image,
+        iconWidth: CGFloat = 18,
+        title: String,
+        foreground: Color,
+        background: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                icon
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: iconWidth)
+
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .foregroundStyle(foreground)
+            .frame(maxWidth: .infinity)
+            .frame(height: 45)
+            .background(background)
+            .baziRadius(.small)
+        }
     }
 }
 
