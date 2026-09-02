@@ -17,7 +17,7 @@ extension Target {
     ) -> Target {
         Target.target(
             name: name,
-            destinations: .iOS,
+            destinations: [.iPhone],
             product: product,
             bundleId: bundleId ?? Project.bundleID + "." + name.lowercased(),
             deploymentTargets: .iOS(Project.iOSVersion),
