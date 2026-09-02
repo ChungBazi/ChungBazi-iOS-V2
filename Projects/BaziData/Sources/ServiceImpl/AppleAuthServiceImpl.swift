@@ -19,18 +19,33 @@ public final class AppleAuthServiceImpl: NSObject, AppleAuthService, @unchecked 
     }
 
     public func login() async throws -> AppleCredential {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                DispatchQueue.main.async {
+                    self.continuation = continuation
+                    let request = ASAuthorizationAppleIDProvider().createRequest()
+                    request.requestedScopes = [.fullName, .email]
+                    let controller = ASAuthorizationController(authorizationRequests: [request])
+                    controller.delegate = self
+                    controller.presentationContextProvider = self
+                    self.authController = controller
+                    controller.performRequests()
+                }
+            }
+        } onCancel: {
             DispatchQueue.main.async {
-                self.continuation = continuation
-                let request = ASAuthorizationAppleIDProvider().createRequest()
-                request.requestedScopes = [.fullName, .email]
-                let controller = ASAuthorizationController(authorizationRequests: [request])
-                controller.delegate = self
-                controller.presentationContextProvider = self
-                self.authController = controller
-                controller.performRequests()
+                self.authController?.cancel()
+                self.authController = nil
+                self.finish(.failure(CancellationError()))
             }
         }
+    }
+
+    /// continuation을 한 번만 재개하고 정리한다. (성공/실패/취소 공통, 항상 main에서 호출)
+    private func finish(_ result: Result<AppleCredential, Error>) {
+        guard let continuation else { return }
+        self.continuation = nil
+        continuation.resume(with: result)
     }
 }
 
@@ -42,14 +57,13 @@ extension AppleAuthServiceImpl: ASAuthorizationControllerDelegate {
         controller: ASAuthorizationController,
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
-        defer { authController = nil }
+        authController = nil
         guard
             let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
             let identityTokenData = credential.identityToken,
             let idToken = String(data: identityTokenData, encoding: .utf8)
         else {
-            continuation?.resume(throwing: UseCaseError.unknown("애플 로그인 응답이 비어 있습니다."))
-            continuation = nil
+            finish(.failure(UseCaseError.unknown("애플 로그인 응답이 비어 있습니다.")))
             return
         }
 
@@ -57,8 +71,7 @@ extension AppleAuthServiceImpl: ASAuthorizationControllerDelegate {
         let name = credential.fullName.flatMap {
             PersonNameComponentsFormatter().string(from: $0)
         }
-        continuation?.resume(returning: AppleCredential(idToken: idToken, name: name?.isEmpty == false ? name : nil))
-        continuation = nil
+        finish(.success(AppleCredential(idToken: idToken, name: name?.isEmpty == false ? name : nil)))
     }
 
     public func authorizationController(
@@ -67,8 +80,7 @@ extension AppleAuthServiceImpl: ASAuthorizationControllerDelegate {
     ) {
         authController = nil
         // 사용자 취소를 포함한 실패는 그대로 던진다. (상위에서 UseCaseError로 매핑)
-        continuation?.resume(throwing: error)
-        continuation = nil
+        finish(.failure(error))
     }
 }
 
