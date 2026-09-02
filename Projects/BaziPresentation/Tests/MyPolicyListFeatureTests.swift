@@ -29,7 +29,7 @@ struct MyPolicyListFeatureTests {
             $0.list = .loading
             $0.reloadGeneration = 1
         }
-        await store.receive(\.pageResponse.success) {
+        await store.receive(\.pageResponse) {
             $0.list = .loaded(IdentifiedArray(uniqueElements: items))
             $0.pagination.totalCount = items.count
         }
@@ -63,7 +63,7 @@ struct MyPolicyListFeatureTests {
             $0.pagination.reset()
             $0.reloadGeneration = 1
         }
-        await store.receive(\.pageResponse.success) {
+        await store.receive(\.pageResponse) {
             $0.list = .loaded(IdentifiedArray(uniqueElements: sortedItems))
             $0.pagination.totalCount = sortedItems.count
         }

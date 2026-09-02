@@ -61,7 +61,7 @@ struct PolicySummaryVOTests {
 
     @Test("모든 값이 잘못된 형식이면 nil (형식 변경 시 배너가 조용히 사라지는 회귀 방지)")
     func allInvalid_returnsNil() {
-        let list = [policy("2026.08.31", id: 1), policy("20260831", id: 2), policy("invalid", id: 3)]
+        let list = [policy("not-a-date", id: 1), policy("invalid", id: 2), policy("----------", id: 3)]
         #expect(PolicySummaryVO.latestUpdatedText(list) == nil)
     }
 }

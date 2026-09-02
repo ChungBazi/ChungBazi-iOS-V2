@@ -9,7 +9,7 @@ import BaziDomain
 @MainActor
 struct PolicyMemoFeatureTests {
 
-    private static let memo = PolicyMemoVO(
+    private nonisolated static let memo = PolicyMemoVO(
         policyId: 1,
         category: .job,
         dDay: "D-5",
