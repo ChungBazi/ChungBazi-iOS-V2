@@ -32,9 +32,16 @@ public struct MyPolicyRepositoryImpl: MyPolicyRepository {
         return dto.policies.map { $0.toDomain() }
     }
 
-    public func fetchDeadlineDatePolicies(targetDate: String, sort: String, cursor: String?, size: Int) async throws -> PolicyPage {
-        let dto: PolicyListResponseDTO = try await networkProvider.request(
-            MyPolicyAPI.getDeadlineDatePolicies(targetDate: targetDate, sort: sort, cursor: cursor, size: size)
+    public func fetchDeadlineUpcoming(targetDate: String) async throws -> PolicyPage {
+        let dto: MyPolicyDeadlineResponseDTO = try await networkProvider.request(
+            MyPolicyAPI.getDeadlineUpcomingPolicies(targetDate: targetDate)
+        )
+        return dto.toDomain()
+    }
+
+    public func fetchDeadlineDatePolicies(targetDate: String) async throws -> PolicyPage {
+        let dto: MyPolicyDeadlineResponseDTO = try await networkProvider.request(
+            MyPolicyAPI.getDeadlineDatePolicies(targetDate: targetDate)
         )
         return dto.toDomain()
     }

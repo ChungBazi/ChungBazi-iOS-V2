@@ -20,8 +20,8 @@ extension CalendarClient: @retroactive DependencyKey {
             fetchCalendar: { targetMonth in
                 try await fetchCalendarUseCase.execute(targetMonth: targetMonth)
             },
-            fetchDeadlineDate: { targetDate, sort, cursor, size in
-                let page = try await fetchDeadlineDateUseCase.execute(targetDate: targetDate, sort: sort, cursor: cursor, size: size)
+            fetchDeadlineDate: { targetDate in
+                let page = try await fetchDeadlineDateUseCase.execute(targetDate: targetDate)
                 return PolicyPageVO(page)
             },
             // 이벤트 URL에 정책 상세 딥링크(chungbazi://policy/{id})를 심는다. 탭하면 앱이 열려 상세로 이동.

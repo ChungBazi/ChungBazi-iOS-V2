@@ -121,6 +121,13 @@ private extension MyPolicyView {
     var visibleTeaser: IdentifiedArrayOf<PolicySummaryVO> {
         visible(store.deadlineTeaser)
     }
+
+    /// 찜한 정책이 하나라도 있는지(상시모집 포함). 빈 배너 문구를 가른다.
+    var hasAnyLikedPolicy: Bool {
+        !visibleTeaser.isEmpty
+            || !visible(store.datePolicies.value ?? []).isEmpty
+            || !visible(store.openEndedPolicies.value ?? []).isEmpty
+    }
 }
 
 // MARK: - Deadline Teaser
@@ -151,7 +158,7 @@ private extension MyPolicyView {
     var emptyTeaserBanner: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("아직 찜한 정책이 없어요!")
+                Text(hasAnyLikedPolicy ? "마감이 임박한 정책이 없어요!" : "아직 찜한 정책이 없어요!")
                     .baziFont(.body16B)
                     .foregroundStyle(Color.bazi(.primary))
                 Text("관심 있는 정책을 찜하고\n놓치지 않게 관리해보세요")
@@ -285,17 +292,9 @@ private extension MyPolicyView {
 private extension MyPolicyView {
 
     var resultsToolbar: some View {
-        // 정책 탭은 갯수+정렬, 상시모집 탭은 정렬 없이 갯수만 표시한다.
-        Group {
-            if store.selectedTab == .policy {
-                BZResultsToolbar(count: store.currentTotalCount, sortTitle: store.sortOrder.title) {
-                    store.send(.didTapSortOrder)
-                }
-            } else {
-                BZResultsToolbar(count: store.currentTotalCount)
-            }
-        }
-        .baziBackground(.bgGray)
+        // 두 탭 모두 정렬 없이 갯수만 표시한다.
+        BZResultsToolbar(count: store.currentTotalCount)
+            .baziBackground(.bgGray)
     }
 
     func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {

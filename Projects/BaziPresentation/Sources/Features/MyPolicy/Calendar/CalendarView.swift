@@ -212,9 +212,8 @@ extension CalendarView {
     }
 
     private var sheetResultsToolbar: some View {
-        BZResultsToolbar(count: store.visibleSheetCount, sortTitle: store.sortOrder.title) {
-            store.send(.didTapSortOrderInSheet)
-        }
+        // 정렬 없이 갯수만 표시한다.
+        BZResultsToolbar(count: store.visibleSheetCount)
     }
 
     private func sheetList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
@@ -222,10 +221,6 @@ extension CalendarView {
             ForEach(policies) { policy in
                 sheetCard(policy)
             }
-            // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
-            Color.clear
-                .frame(height: 1)
-                .onAppear { store.send(.didReachSheetListEnd) }
         }
         .padding(.top, 8)
         .padding(.horizontal, 20)

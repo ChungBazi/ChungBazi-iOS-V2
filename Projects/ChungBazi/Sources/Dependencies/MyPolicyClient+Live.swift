@@ -13,7 +13,7 @@ extension MyPolicyClient: @retroactive DependencyKey {
             networkProvider: AppDependencies.networkProvider
         )
         let deadlineTeaserUseCase: any FetchDeadlineTeaserUseCase = FetchDeadlineTeaserUseCaseImpl(myPolicyRepository: repository)
-        let deadlineDateUseCase: any FetchDeadlineDatePoliciesUseCase = FetchDeadlineDatePoliciesUseCaseImpl(myPolicyRepository: repository)
+        let deadlineUpcomingUseCase: any FetchDeadlineUpcomingUseCase = FetchDeadlineUpcomingUseCaseImpl(myPolicyRepository: repository)
         let openEndedUseCase: any FetchOpenEndedPoliciesUseCase = FetchOpenEndedPoliciesUseCaseImpl(myPolicyRepository: repository)
 
         return MyPolicyClient(
@@ -21,8 +21,8 @@ extension MyPolicyClient: @retroactive DependencyKey {
                 let policies = try await deadlineTeaserUseCase.execute()
                 return policies.map(BaziPresentation.PolicySummaryVO.init)
             },
-            fetchDeadlineDate: { targetDate, sort, cursor, size in
-                let page = try await deadlineDateUseCase.execute(targetDate: targetDate, sort: sort, cursor: cursor, size: size)
+            fetchDeadlineUpcoming: { targetDate in
+                let page = try await deadlineUpcomingUseCase.execute(targetDate: targetDate)
                 return PolicyPageVO(page)
             },
             fetchOpenEnded: { cursor, size in

@@ -7,8 +7,8 @@ import ComposableArchitecture
 public struct MyPolicyClient: Sendable {
     /// 상단 티저: 마감이 다가오는 찜한 정책.
     public var fetchDeadlineTeaser: @Sendable () async throws -> [PolicySummaryVO]
-    /// 정책 탭: 선택한 날짜의 마감 정책(정렬 + 커서 페이지네이션).
-    public var fetchDeadlineDate: @Sendable (_ targetDate: String, _ sort: String, _ cursor: String?, _ size: Int) async throws -> PolicyPageVO
+    /// 정책 탭: 선택한 날짜 기준 2주 내 마감되는 찜한 정책(정렬·페이지네이션 없음, 총개수 포함).
+    public var fetchDeadlineUpcoming: @Sendable (_ targetDate: String) async throws -> PolicyPageVO
     /// 상시모집 탭: 상시모집 정책(정렬 없음, 커서 페이지네이션).
     public var fetchOpenEnded: @Sendable (_ cursor: String?, _ size: Int) async throws -> PolicyPageVO
 }
@@ -18,7 +18,7 @@ extension MyPolicyClient: TestDependencyKey {
 
     public static let previewValue = MyPolicyClient(
         fetchDeadlineTeaser: { Array(PolicySummaryVO.mockList.prefix(2)) },
-        fetchDeadlineDate: { _, _, _, _ in
+        fetchDeadlineUpcoming: { _ in
             let items = Array(PolicySummaryVO.mockList.prefix(3))
             return PolicyPageVO(
                 policies: IdentifiedArray(uniqueElements: items),

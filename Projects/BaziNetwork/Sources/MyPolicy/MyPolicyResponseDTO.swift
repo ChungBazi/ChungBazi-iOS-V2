@@ -2,8 +2,10 @@
 
 import Foundation
 
-/// 마감이 다가오는 찜한 정책 Response DTO
+/// 마감 관련 찜한 정책 Response DTO(티저 `/deadline`·정책 탭 `/deadline/upcoming`·캘린더 `/deadline/date` 공용).
+/// 티저는 totalCount를 내려주지 않을 수 있어 옵셔널로 둔다.
 public struct MyPolicyDeadlineResponseDTO: Decodable, Sendable {
+    public let totalCount: Int?
     public let policies: [PolicyItemDTO]
 }
 
