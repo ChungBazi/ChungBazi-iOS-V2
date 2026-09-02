@@ -7,7 +7,7 @@ import BaziDomain
 @DependencyClient
 public struct AuthClient: Sendable {
     public var loginWithKakao: @Sendable () async throws -> AccountStatus
-    public var loginWithApple: @Sendable (_ idToken: String, _ name: String?) async throws -> AccountStatus
+    public var loginWithApple: @Sendable () async throws -> AccountStatus
 }
 
 extension AuthClient: TestDependencyKey {
@@ -17,7 +17,7 @@ extension AuthClient: TestDependencyKey {
         loginWithKakao: {
             AccountStatus(hasNickname: false, hasCompletedOnboarding: false)
         },
-        loginWithApple: { _, _ in
+        loginWithApple: {
             AccountStatus(hasNickname: false, hasCompletedOnboarding: false)
         }
     )
