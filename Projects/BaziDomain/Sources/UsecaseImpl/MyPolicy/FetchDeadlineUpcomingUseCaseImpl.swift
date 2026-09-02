@@ -2,7 +2,7 @@
 
 import Foundation
 
-public struct FetchDeadlineDatePoliciesUseCaseImpl: FetchDeadlineDatePoliciesUseCase {
+public struct FetchDeadlineUpcomingUseCaseImpl: FetchDeadlineUpcomingUseCase {
 
     private let myPolicyRepository: MyPolicyRepository
 
@@ -11,6 +11,6 @@ public struct FetchDeadlineDatePoliciesUseCaseImpl: FetchDeadlineDatePoliciesUse
     }
 
     public func execute(targetDate: String) async throws -> PolicyPage {
-        try await myPolicyRepository.fetchDeadlineDatePolicies(targetDate: targetDate)
+        try await myPolicyRepository.fetchDeadlineUpcoming(targetDate: targetDate)
     }
 }

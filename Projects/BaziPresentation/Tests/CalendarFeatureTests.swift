@@ -49,7 +49,7 @@ struct CalendarFeatureTests {
         let store = TestStore(initialState: CalendarFeature.State(centerDate: date)) {
             CalendarFeature()
         } withDependencies: {
-            $0.calendarClient.fetchDeadlineDate = { _, _, _, _ in Self.page(items) }
+            $0.calendarClient.fetchDeadlineDate = { _ in Self.page(items) }
         }
 
         await store.send(.didSelectDate(date)) {
@@ -57,37 +57,31 @@ struct CalendarFeatureTests {
             $0.isDaySheetPresented = true
             $0.selectedDatePolicies = .loading
         }
-        await store.receive(\.sheetPageResponse.success) {
+        await store.receive(\.sheetPoliciesResponse.success) {
             $0.selectedDatePolicies = .loaded(IdentifiedArray(uniqueElements: items))
-            $0.daySheetPagination.totalCount = items.count
+            $0.selectedDateTotalCount = items.count
         }
     }
 
-    @Test("시트 정렬 변경 시 선택 날짜 정책을 다시 조회한다")
-    func didTapSortOrderInSheet_reloads() async {
-        let items = Array(PolicySummaryVO.mockList.prefix(2))
+    @Test("시트를 내리면 선택 상태와 목록이 초기화된다")
+    func didDismissSheet_resets() async {
         let date = Date(timeIntervalSince1970: 1_774_000_000)
 
         var state = CalendarFeature.State(centerDate: date)
         state.selectedDate = date
         state.isDaySheetPresented = true
-        state.selectedDatePolicies = .loaded(IdentifiedArray(uniqueElements: Array(PolicySummaryVO.mockList.prefix(3))))
-        state.daySheetPagination.totalCount = 3
+        state.selectedDatePolicies = .loaded(IdentifiedArray(uniqueElements: Array(PolicySummaryVO.mockList.prefix(2))))
+        state.selectedDateTotalCount = 2
 
         let store = TestStore(initialState: state) {
             CalendarFeature()
-        } withDependencies: {
-            $0.calendarClient.fetchDeadlineDate = { _, _, _, _ in Self.page(items) }
         }
 
-        await store.send(.didTapSortOrderInSheet) {
-            $0.sortOrder = .latest
-            $0.selectedDatePolicies = .loading
-            $0.daySheetPagination.reset()
-        }
-        await store.receive(\.sheetPageResponse.success) {
-            $0.selectedDatePolicies = .loaded(IdentifiedArray(uniqueElements: items))
-            $0.daySheetPagination.totalCount = items.count
+        await store.send(.didDismissSheet) {
+            $0.isDaySheetPresented = false
+            $0.selectedDate = nil
+            $0.selectedDatePolicies = .idle
+            $0.selectedDateTotalCount = 0
         }
     }
 }

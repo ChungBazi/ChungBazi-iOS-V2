@@ -31,7 +31,7 @@ struct MyPolicyFeatureTests {
             $0.selectedTab = .openEnded
             $0.openEndedPolicies = .loading
         }
-        await store.receive(\.pageResponse.success) {
+        await store.receive(\.openEndedResponse.success) {
             $0.openEndedPolicies = .loaded(IdentifiedArray(uniqueElements: items))
             $0.openEndedPagination.totalCount = items.count
         }
@@ -50,17 +50,17 @@ struct MyPolicyFeatureTests {
         let store = TestStore(initialState: state) {
             MyPolicyFeature()
         } withDependencies: {
-            $0.myPolicyClient.fetchDeadlineDate = { _, _, _, _ in Self.page(dateItems) }
+            $0.myPolicyClient.fetchDeadlineUpcoming = { _ in Self.page(dateItems) }
         }
 
-        // 정책 탭 최초 진입 → 정책 조회
+        // 정책 탭 최초 진입 → 2주 내 마감 목록 조회
         await store.send(.didSelectTab(.policy)) {
             $0.selectedTab = .policy
             $0.datePolicies = .loading
         }
-        await store.receive(\.pageResponse.success) {
+        await store.receive(\.datePoliciesResponse.success) {
             $0.datePolicies = .loaded(IdentifiedArray(uniqueElements: dateItems))
-            $0.datePagination.totalCount = dateItems.count
+            $0.datePoliciesTotalCount = dateItems.count
             $0.loadedDate = $0.selectedDate
         }
 
@@ -70,29 +70,28 @@ struct MyPolicyFeatureTests {
         }
     }
 
-    @Test("정렬 변경 시 정책 탭 목록을 다시 조회한다")
-    func didTapSortOrder_reloads() async {
+    @Test("주간 날짜를 바꾸면 정책 탭 목록을 다시 조회한다")
+    func didSelectWeekDate_reloads() async {
         let items = Array(PolicySummaryVO.mockList.prefix(2))
 
         var state = MyPolicyFeature.State()
         state.datePolicies = .loaded(IdentifiedArray(uniqueElements: Array(PolicySummaryVO.mockList.prefix(3))))
-        state.datePagination.totalCount = 3
 
         let store = TestStore(initialState: state) {
             MyPolicyFeature()
         } withDependencies: {
-            $0.myPolicyClient.fetchDeadlineDate = { _, _, _, _ in Self.page(items) }
+            $0.myPolicyClient.fetchDeadlineUpcoming = { _ in Self.page(items) }
         }
 
-        await store.send(.didTapSortOrder) {
-            $0.sortOrder = .latest
+        let newDate = state.selectedDate.addingTimeInterval(86_400)
+        await store.send(.didSelectWeekDate(newDate)) {
+            $0.selectedDate = newDate
             $0.datePolicies = .loading
-            $0.datePagination.reset()
         }
-        await store.receive(\.pageResponse.success) {
+        await store.receive(\.datePoliciesResponse.success) {
             $0.datePolicies = .loaded(IdentifiedArray(uniqueElements: items))
-            $0.datePagination.totalCount = items.count
-            $0.loadedDate = $0.selectedDate
+            $0.datePoliciesTotalCount = items.count
+            $0.loadedDate = newDate
         }
     }
 }

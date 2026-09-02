@@ -33,29 +33,6 @@ public struct MyPolicyFeature {
         }
     }
 
-    // MARK: - SortOrder
-
-    public enum SortOrder: Equatable {
-        case deadline
-        case latest
-
-        var title: String {
-            switch self {
-            case .deadline: return "마감순"
-            case .latest: return "최신순"
-            }
-        }
-
-        var serverValue: String {
-            switch self {
-            case .deadline: return "DEADLINE"
-            case .latest: return "LATEST"
-            }
-        }
-
-        var next: SortOrder { self == .deadline ? .latest : .deadline }
-    }
-
     // MARK: - State
 
     @ObservableState
@@ -71,12 +48,12 @@ public struct MyPolicyFeature {
         public var today: Date
         public var selectedDate: Date
         public var selectedTab: Tab
-        public var sortOrder: SortOrder
 
         // 탭별 목록을 각각 State에 보관해 탭 왕복 시 재조회하지 않는다(UI 상태).
-        // 정책 탭: 선택 날짜/정렬 기준. 상시모집 탭: 날짜 무관, 최초 1회만.
+        // 정책 탭: 선택 날짜 기준 2주 내 마감(정렬·페이지네이션 없음). 상시모집 탭: 날짜 무관, 진입 시 함께 조회.
         public var datePolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
-        public var datePagination = PaginationState<String>()
+        /// 정책 탭 서버 총개수(비페이지네이션이라 목록 길이와 같으나, 서버 값을 그대로 쓴다).
+        public var datePoliciesTotalCount = 0
         /// datePolicies가 로드된 날짜. 선택 날짜가 이와 다르면 정책 탭 진입 시 재조회한다.
         public var loadedDate: Date?
         public var openEndedPolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> = .idle
@@ -89,12 +66,15 @@ public struct MyPolicyFeature {
         /// 재진입 시 이 값과 달라져 목록 재조회를 트리거한다.
         public var lastSyncedLikeOverrides: [Int: Bool] = [:]
 
-        /// 현재 탭 기준 목록/총개수(뷰용 파생).
+        /// 현재 탭 기준 목록(뷰용 파생).
         public var currentPolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>> {
             selectedTab == .policy ? datePolicies : openEndedPolicies
         }
         public var currentTotalCount: Int {
-            let base = selectedTab == .policy ? datePagination.totalCount : openEndedPagination.totalCount
+            // 정책 탭은 비페이지네이션 서버 총개수, 상시모집은 페이지네이션 총개수.
+            let base = selectedTab == .policy
+                ? datePoliciesTotalCount
+                : openEndedPagination.totalCount
             // 다른 화면에서 찜 해제(overlay == false)돼 목록에서 숨겨진 카드 수만큼 뺀다.
             let hidden = (currentPolicies.value ?? []).filter { likeOverrides[$0.id] == false }.count
             return max(0, base - hidden)
@@ -112,7 +92,6 @@ public struct MyPolicyFeature {
             self.today = today
             self.selectedDate = today
             self.selectedTab = .policy
-            self.sortOrder = .deadline
         }
     }
 
@@ -126,7 +105,6 @@ public struct MyPolicyFeature {
         case didTapCalendarIcon
         case didSelectWeekDate(Date)
         case didSelectTab(Tab)
-        case didTapSortOrder
         case didTapRetry
         case pullToRefresh
         case didReachListEnd
@@ -136,7 +114,10 @@ public struct MyPolicyFeature {
 
         // MARK: Internal
         case teaserResponse(Result<[PolicySummaryVO], UseCaseError>)
-        case pageResponse(Result<PolicyPageVO, UseCaseError>, tab: Tab, isFirstPage: Bool)
+        /// 정책 탭: 2주 내 마감 목록(페이지네이션 없음, 총개수 포함).
+        case datePoliciesResponse(Result<PolicyPageVO, UseCaseError>)
+        /// 상시모집 탭: 커서 페이지네이션 목록.
+        case openEndedResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -165,7 +146,7 @@ public struct MyPolicyFeature {
                     state.today = today
                     state.selectedDate = today
                     state.lastSyncedLikeOverrides = state.likeOverrides
-                    return .merge(loadTeaser(), reloadDatePolicies(&state))
+                    return .merge(loadTeaser(), reloadDatePolicies(&state), reloadOpenEnded(&state))
                 }
                 // 재진입: 신규 찜(추가)이 생겼을 때만 재조회한다.
                 // 해제는 overlay 필터가 반응형으로 처리하므로 재조회가 필요 없고, 추가만 목록에 없어 서버 재조회가 필요하다.
@@ -177,7 +158,7 @@ public struct MyPolicyFeature {
                 // 신규 찜이 정책/상시 어느 탭이든 진입 즉시 보이도록 티저 + 두 탭 모두 재조회(.loading 없이 → 깜빡임 방지).
                 return .merge(
                     loadTeaser(),
-                    fetchDatePolicies(state: state, isFirstPage: true),
+                    fetchDatePolicies(state: state),
                     fetchOpenEnded(state: state, isFirstPage: true)
                 )
 
@@ -213,34 +194,25 @@ public struct MyPolicyFeature {
                     guard state.loadedDate != state.selectedDate || state.datePolicies.value == nil else { return .none }
                     return reloadDatePolicies(&state)
                 case .openEnded:
-                    // 상시모집은 최초 1회만 조회. 이미 있으면 재요청하지 않는다.
+                    // 상시모집은 진입 시 이미 조회됨(State 캐시 재사용). 미조회 상태일 때만 방어적으로 조회한다.
                     guard state.openEndedPolicies.value == nil, !state.openEndedPolicies.isLoading else { return .none }
                     return reloadOpenEnded(&state)
                 }
 
-            case .didTapSortOrder:
-                // 정렬은 정책 탭 전용.
-                state.sortOrder = state.sortOrder.next
-                return reloadDatePolicies(&state)
-
             case .pullToRefresh:
-                // 당김 새로고침: .loading으로 바꾸지 않고 티저 + 현재 탭 1페이지를 다시 가져온다.
+                // 당김 새로고침: .loading으로 바꾸지 않고 티저 + 현재 탭을 다시 가져온다.
                 let listReload: Effect<Action> = state.selectedTab == .policy
-                    ? fetchDatePolicies(state: state, isFirstPage: true)
+                    ? fetchDatePolicies(state: state)
                     : fetchOpenEnded(state: state, isFirstPage: true)
                 return .merge(loadTeaser(), listReload)
 
             case .didReachListEnd:
-                switch state.selectedTab {
-                case .policy:
-                    guard state.datePagination.canLoadNext, state.datePolicies.value != nil else { return .none }
-                    state.datePagination.isLoadingNext = true
-                    return fetchDatePolicies(state: state, isFirstPage: false)
-                case .openEnded:
-                    guard state.openEndedPagination.canLoadNext, state.openEndedPolicies.value != nil else { return .none }
-                    state.openEndedPagination.isLoadingNext = true
-                    return fetchOpenEnded(state: state, isFirstPage: false)
-                }
+                // 무한스크롤은 상시모집 탭에만 있다. 정책 탭은 2주 내 마감 단순 목록이라 페이지네이션이 없다.
+                guard state.selectedTab == .openEnded,
+                      state.openEndedPagination.canLoadNext,
+                      state.openEndedPolicies.value != nil else { return .none }
+                state.openEndedPagination.isLoadingNext = true
+                return fetchOpenEnded(state: state, isFirstPage: false)
 
             case .teaserResponse(.success(let policies)):
                 state.teaserLoadFailed = false
@@ -252,12 +224,35 @@ public struct MyPolicyFeature {
                 state.teaserLoadFailed = true
                 return .none
 
-            case let .pageResponse(.success(page), tab, isFirstPage):
-                handlePage(page, tab: tab, isFirstPage: isFirstPage, state: &state)
+            case .datePoliciesResponse(.success(let page)):
+                state.datePolicies = .loaded(page.policies)
+                state.datePoliciesTotalCount = page.totalCount
+                state.loadedDate = state.selectedDate
                 return .none
 
-            case let .pageResponse(.failure(error), tab, isFirstPage):
-                handlePageFailure(error, tab: tab, isFirstPage: isFirstPage, state: &state)
+            case .datePoliciesResponse(.failure(let error)):
+                if state.datePolicies.value == nil {
+                    state.datePolicies = .failed(error.loadFailureMessage)
+                }
+                return .none
+
+            case let .openEndedResponse(.success(page), isFirstPage):
+                state.openEndedPagination.apply(page)
+                if isFirstPage {
+                    state.openEndedPolicies = .loaded(page.policies)
+                } else {
+                    var current = state.openEndedPolicies.value ?? []
+                    current.append(contentsOf: page.policies)
+                    state.openEndedPolicies = .loaded(current)
+                }
+                return .none
+
+            case let .openEndedResponse(.failure(error), isFirstPage):
+                if isFirstPage {
+                    if state.openEndedPolicies.value == nil { state.openEndedPolicies = .failed(error.loadFailureMessage) }
+                } else {
+                    state.openEndedPagination.isLoadingNext = false
+                }
                 return .none
 
             case .didTapPolicy(let id):
@@ -317,23 +312,20 @@ public struct MyPolicyFeature {
         }
     }
 
-    /// 정책 탭: 선택 날짜/정렬 기준 1페이지부터 재조회.
+    /// 정책 탭: 선택 날짜 기준 2주 내 마감 목록을 다시 조회(로딩 표시).
     private func reloadDatePolicies(_ state: inout State) -> Effect<Action> {
         state.datePolicies = .loading
-        state.datePagination.reset()
-        return fetchDatePolicies(state: state, isFirstPage: true)
+        return fetchDatePolicies(state: state)
     }
 
-    private func fetchDatePolicies(state: State, isFirstPage: Bool) -> Effect<Action> {
+    private func fetchDatePolicies(state: State) -> Effect<Action> {
         let targetDate = targetDateString(state.selectedDate)
-        let sort = state.sortOrder.serverValue
-        let cursor = isFirstPage ? nil : state.datePagination.nextCursor
         return .run { [myPolicyClient] send in
             do {
-                let page = try await myPolicyClient.fetchDeadlineDate(targetDate, sort, cursor, Self.pageSize)
-                await send(.pageResponse(.success(page), tab: .policy, isFirstPage: isFirstPage))
+                let page = try await myPolicyClient.fetchDeadlineUpcoming(targetDate)
+                await send(.datePoliciesResponse(.success(page)))
             } catch {
-                await send(.pageResponse(.failure(UseCaseError.map(error)), tab: .policy, isFirstPage: isFirstPage))
+                await send(.datePoliciesResponse(.failure(UseCaseError.map(error))))
             }
         }
         .cancellable(id: CancelID.datePolicies, cancelInFlight: true)
@@ -351,53 +343,12 @@ public struct MyPolicyFeature {
         return .run { [myPolicyClient] send in
             do {
                 let page = try await myPolicyClient.fetchOpenEnded(cursor, Self.pageSize)
-                await send(.pageResponse(.success(page), tab: .openEnded, isFirstPage: isFirstPage))
+                await send(.openEndedResponse(.success(page), isFirstPage: isFirstPage))
             } catch {
-                await send(.pageResponse(.failure(UseCaseError.map(error)), tab: .openEnded, isFirstPage: isFirstPage))
+                await send(.openEndedResponse(.failure(UseCaseError.map(error)), isFirstPage: isFirstPage))
             }
         }
         .cancellable(id: CancelID.openEnded, cancelInFlight: true)
-    }
-
-    private func handlePage(_ page: PolicyPageVO, tab: Tab, isFirstPage: Bool, state: inout State) {
-        switch tab {
-        case .policy:
-            state.datePagination.apply(page)
-            if isFirstPage {
-                state.datePolicies = .loaded(page.policies)
-                state.loadedDate = state.selectedDate
-            } else {
-                var current = state.datePolicies.value ?? []
-                current.append(contentsOf: page.policies)
-                state.datePolicies = .loaded(current)
-            }
-        case .openEnded:
-            state.openEndedPagination.apply(page)
-            if isFirstPage {
-                state.openEndedPolicies = .loaded(page.policies)
-            } else {
-                var current = state.openEndedPolicies.value ?? []
-                current.append(contentsOf: page.policies)
-                state.openEndedPolicies = .loaded(current)
-            }
-        }
-    }
-
-    private func handlePageFailure(_ error: UseCaseError, tab: Tab, isFirstPage: Bool, state: inout State) {
-        switch tab {
-        case .policy:
-            if isFirstPage {
-                if state.datePolicies.value == nil { state.datePolicies = .failed(error.loadFailureMessage) }
-            } else {
-                state.datePagination.isLoadingNext = false
-            }
-        case .openEnded:
-            if isFirstPage {
-                if state.openEndedPolicies.value == nil { state.openEndedPolicies = .failed(error.loadFailureMessage) }
-            } else {
-                state.openEndedPagination.isLoadingNext = false
-            }
-        }
     }
 
     /// 주입된 calendar 기준으로 "yyyy-MM-dd" 문자열을 만든다(서버 targetDate 파라미터용).

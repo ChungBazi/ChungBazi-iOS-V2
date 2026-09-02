@@ -43,3 +43,16 @@ extension PolicyListResponseDTO {
         )
     }
 }
+
+extension MyPolicyDeadlineResponseDTO {
+    /// 마감(2주 내/해당일) 목록은 페이지네이션이 없다. totalCount 미제공 시 목록 길이로 대체한다.
+    func toDomain() -> PolicyPage {
+        let items = policies.map { $0.toDomain() }
+        return PolicyPage(
+            policies: items,
+            nextCursor: nil,
+            hasNext: false,
+            totalCount: totalCount ?? items.count
+        )
+    }
+}

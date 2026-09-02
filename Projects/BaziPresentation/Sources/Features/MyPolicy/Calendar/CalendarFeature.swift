@@ -12,29 +12,6 @@ import ComposableArchitecture
 @Reducer
 public struct CalendarFeature: Sendable {
 
-    // MARK: - SortOrder
-
-    public enum SortOrder: Equatable {
-        case deadline
-        case latest
-
-        var title: String {
-            switch self {
-            case .deadline: return "마감순"
-            case .latest: return "최신순"
-            }
-        }
-
-        var serverValue: String {
-            switch self {
-            case .deadline: return "DEADLINE"
-            case .latest: return "LATEST"
-            }
-        }
-
-        var next: SortOrder { self == .deadline ? .latest : .deadline }
-    }
-
     // MARK: - State
 
     @ObservableState
@@ -46,8 +23,8 @@ public struct CalendarFeature: Sendable {
         public var requestedMonths: Set<String>
         public var selectedDate: Date?
         public var selectedDatePolicies: LoadingState<IdentifiedArrayOf<PolicySummaryVO>>
-        public var daySheetPagination: PaginationState<String>
-        public var sortOrder: SortOrder
+        /// 시트 서버 총개수(비페이지네이션).
+        public var selectedDateTotalCount = 0
         /// 시트가 실제로 떠 있는지. `selectedDate`와 분리해 두어, 메모/상세로 이동할 때는
         /// 시트만 내리고(`selectedDate`는 유지) 되돌아오면 같은 날짜 시트를 다시 띄울 수 있게 한다.
         public var isDaySheetPresented: Bool
@@ -62,11 +39,10 @@ public struct CalendarFeature: Sendable {
         /// 다른 화면에서 찜 해제된 정책을 시트 목록에서 제외하기 위한 공유 오버레이.
         @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
-        /// 시트 개수 — 다른 화면에서 찜 해제(overlay == false)돼 숨겨진 카드 수만큼 뺀다.
+        /// 시트 개수 — 서버 총개수에서 다른 화면발 찜 해제(overlay == false)로 숨겨진 카드 수만큼 뺀다.
         public var visibleSheetCount: Int {
-            let base = daySheetPagination.totalCount
             let hidden = (selectedDatePolicies.value ?? []).filter { likeOverrides[$0.id] == false }.count
-            return max(0, base - hidden)
+            return max(0, selectedDateTotalCount - hidden)
         }
 
         /// centerDate가 속한 달의 첫날. 진입 시 이 달로 스크롤하기 위한 타깃(= CalendarMonth.id).
@@ -81,8 +57,6 @@ public struct CalendarFeature: Sendable {
             self.requestedMonths = []
             self.selectedDate = nil
             self.selectedDatePolicies = .idle
-            self.daySheetPagination = PaginationState<String>()
-            self.sortOrder = .deadline
             self.isDaySheetPresented = false
             self.centerDate = Calendar.current.startOfDay(for: centerDate)
             self.toastMessage = ""
@@ -99,8 +73,6 @@ public struct CalendarFeature: Sendable {
         case didAppearMonth(Date)
         case didSelectDate(Date)
         case didDismissSheet
-        case didTapSortOrderInSheet
-        case didReachSheetListEnd
         case didTapPolicyInSheet(id: Int)
         case didTapMemoIcon(id: Int)
         case didTapAddToCalendar(id: Int)
@@ -108,7 +80,7 @@ public struct CalendarFeature: Sendable {
 
         // MARK: Internal
         case calendarResponse(month: String, Result<[DateComponents], UseCaseError>)
-        case sheetPageResponse(Result<PolicyPageVO, UseCaseError>, isFirstPage: Bool)
+        case sheetPoliciesResponse(Result<PolicyPageVO, UseCaseError>)
         case addToCalendarSucceeded
         case addToCalendarFailed(EventKitError)
 
@@ -173,39 +145,21 @@ public struct CalendarFeature: Sendable {
                 state.isDaySheetPresented = false
                 state.selectedDate = nil
                 state.selectedDatePolicies = .idle
+                state.selectedDateTotalCount = 0
                 // 토스트/추가 진행 상태도 초기화(다음 시트 오픈 시 이전 토스트가 다시 뜨는 것 방지).
                 state.isToastPresented = false
                 state.toastMessage = ""
                 state.isAddingDeadline = false
                 return .none
 
-            case .didTapSortOrderInSheet:
-                state.sortOrder = state.sortOrder.next
-                return reloadSheetPolicies(&state)
-
-            case .didReachSheetListEnd:
-                guard state.daySheetPagination.canLoadNext, state.selectedDatePolicies.value != nil else { return .none }
-                state.daySheetPagination.isLoadingNext = true
-                return fetchSheetPolicies(state: state, isFirstPage: false)
-
-            case let .sheetPageResponse(.success(page), isFirstPage):
-                state.daySheetPagination.apply(page)
-                if isFirstPage {
-                    state.selectedDatePolicies = .loaded(page.policies)
-                } else {
-                    var current = state.selectedDatePolicies.value ?? []
-                    current.append(contentsOf: page.policies)
-                    state.selectedDatePolicies = .loaded(current)
-                }
+            case .sheetPoliciesResponse(.success(let page)):
+                state.selectedDatePolicies = .loaded(page.policies)
+                state.selectedDateTotalCount = page.totalCount
                 return .none
 
-            case let .sheetPageResponse(.failure(error), isFirstPage):
-                if isFirstPage {
-                    if state.selectedDatePolicies.value == nil {
-                        state.selectedDatePolicies = .failed(error.loadFailureMessage)
-                    }
-                } else {
-                    state.daySheetPagination.isLoadingNext = false
+            case .sheetPoliciesResponse(.failure(let error)):
+                if state.selectedDatePolicies.value == nil {
+                    state.selectedDatePolicies = .failed(error.loadFailureMessage)
                 }
                 return .none
 
@@ -276,8 +230,6 @@ public struct CalendarFeature: Sendable {
 
     private enum CancelID: Hashable { case sheetPolicies }
 
-    private static let pageSize = 20
-
     private func fetchDeadlines(month: String) -> Effect<Action> {
         .run { [calendarClient] send in
             do {
@@ -289,24 +241,21 @@ public struct CalendarFeature: Sendable {
         }
     }
 
-    /// 선택 날짜 시트 목록을 1페이지부터 재조회.
+    /// 선택 날짜 시트 목록을 다시 조회(로딩 표시).
     private func reloadSheetPolicies(_ state: inout State) -> Effect<Action> {
         state.selectedDatePolicies = .loading
-        state.daySheetPagination.reset()
-        return fetchSheetPolicies(state: state, isFirstPage: true)
+        return fetchSheetPolicies(state: state)
     }
 
-    private func fetchSheetPolicies(state: State, isFirstPage: Bool) -> Effect<Action> {
+    private func fetchSheetPolicies(state: State) -> Effect<Action> {
         guard let date = state.selectedDate else { return .none }
         let targetDate = dayString(date)
-        let sort = state.sortOrder.serverValue
-        let cursor = isFirstPage ? nil : state.daySheetPagination.nextCursor
         return .run { [calendarClient] send in
             do {
-                let page = try await calendarClient.fetchDeadlineDate(targetDate, sort, cursor, Self.pageSize)
-                await send(.sheetPageResponse(.success(page), isFirstPage: isFirstPage))
+                let page = try await calendarClient.fetchDeadlineDate(targetDate)
+                await send(.sheetPoliciesResponse(.success(page)))
             } catch {
-                await send(.sheetPageResponse(.failure(UseCaseError.map(error)), isFirstPage: isFirstPage))
+                await send(.sheetPoliciesResponse(.failure(UseCaseError.map(error))))
             }
         }
         .cancellable(id: CancelID.sheetPolicies, cancelInFlight: true)
