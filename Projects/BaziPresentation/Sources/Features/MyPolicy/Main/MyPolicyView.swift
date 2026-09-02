@@ -313,7 +313,7 @@ private extension MyPolicyView {
     }
 
     var emptyPolicyList: some View {
-        BZEmptyView(message: store.selectedTab == .policy ? "이 날짜에는 등록된 정책이 없어요" : "상시모집 중인 정책이 없어요")
+        BZEmptyView(message: store.selectedTab == .policy ? "이 날짜에는 저장된 정책이 없어요" : "상시모집 중인 정책이 없어요")
     }
 
     /// teaser(가로 스크롤)와 목록에서 공통으로 쓰는 정책 카드. 탭하면 상세로, 메모 액세서리로 메모 진입.
