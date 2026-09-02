@@ -11,7 +11,7 @@ public struct CategoryPolicyListFeature {
 
     public enum SortOrder: String, Equatable {
         case deadline = "마감순"
-        case latest = "최신순"
+        case latest = "등록순"
 
         var next: SortOrder { self == .deadline ? .latest : .deadline }
 
