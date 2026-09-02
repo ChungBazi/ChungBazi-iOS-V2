@@ -27,7 +27,10 @@ public struct PolicyMemoView: View {
                 "메모",
                 isSaveEnabled: store.isSaveEnabled,
                 onBack: { store.send(.didTapBack) },
-                onSave: { store.send(.didTapSave) }
+                onSave: {
+                    store.send(.didTapSave)
+                    isFocused = false // 저장 시 키보드를 내린다(텍스트 재탭 시 재포커스).
+                }
             )
             .toolbar(.hidden, for: .tabBar)
             // 스와이프 백은 저장 훅을 우회하므로 막고, 커스텀 뒤로가기 버튼으로만 나가게 한다(뒤로가기=자동저장).
