@@ -119,7 +119,7 @@ extension BZCard {
     }
 
     private var tagRow: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack {
             HStack(spacing: 8) {
                 if let badgeNumber {
                     BZTag("\(badgeNumber)", type: .green)
@@ -127,10 +127,21 @@ extension BZCard {
                 BZTag(category, type: .blue100)
                 Text(dDay)
                     .baziFont(.small12SB)
-                    .foregroundStyle(Color.gray700)
+                    .foregroundStyle(dDayColor)
             }
             Spacer(minLength: 8)
             accessoryView
+        }
+    }
+
+    private var dDayColor: Color {
+        switch dDay {
+        case "D-3", "D-2", "D-1", "D-Day":
+            return Color.bazi(.accent)
+        case "상시":
+            return Color.blue800
+        default:
+            return Color.gray700
         }
     }
 
