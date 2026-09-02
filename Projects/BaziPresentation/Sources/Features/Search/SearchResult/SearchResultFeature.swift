@@ -12,7 +12,7 @@ public struct SearchResultFeature {
 
     public enum SortOrder: String, Equatable, Sendable {
         case deadline = "마감순"
-        case latest = "최신순"
+        case latest = "등록순"
 
         var next: SortOrder { self == .deadline ? .latest : .deadline }
         var serverValue: String { self == .deadline ? "DEADLINE" : "LATEST" }

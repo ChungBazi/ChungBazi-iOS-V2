@@ -16,7 +16,7 @@ public struct MyPolicyListFeature {
         var title: String {
             switch self {
             case .deadline: return "마감순"
-            case .latest: return "최신순"
+            case .latest: return "등록순"
             }
         }
 
