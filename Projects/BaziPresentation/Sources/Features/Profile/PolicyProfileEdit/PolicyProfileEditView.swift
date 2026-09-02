@@ -31,6 +31,7 @@ public struct PolicyProfileEditView: View {
             .baziNavigationBar_backWithTitle("정책 맞춤 조건 수정") {
                 dismiss()
             }
+            .toolbar(.hidden, for: .tabBar)
             .baziToast(isPresented: $store.isSuccessToastPresented, message: "정책 맞춤 조건이 수정되었어요")
     }
 }
