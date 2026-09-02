@@ -31,6 +31,7 @@ public enum BaziImage {
     case eyeIcon
     case historyIcon
     case kakaoIcon
+    case appleLogo
     case memoIcon
     case searchIcon
     case shareIcon
@@ -95,6 +96,7 @@ public enum BaziImage {
         case .eyeIcon: return BaziDesignAsset.eyeIcon.swiftUIImage
         case .historyIcon: return BaziDesignAsset.historyIcon.swiftUIImage
         case .kakaoIcon: return BaziDesignAsset.kakaoIcon.swiftUIImage
+        case .appleLogo: return BaziDesignAsset.appleLogo.swiftUIImage
         case .memoIcon: return BaziDesignAsset.memoIcon.swiftUIImage
         case .searchIcon: return BaziDesignAsset.searchIcon.swiftUIImage
         case .shareIcon: return BaziDesignAsset.shareIcon.swiftUIImage

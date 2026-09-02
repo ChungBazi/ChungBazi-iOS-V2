@@ -73,8 +73,10 @@ extension LoginView {
 
     private var appleLoginButton: some View {
         socialLoginButton(
-            icon: Image(systemName: "apple.logo"),
-            iconWidth: 16,
+            icon: .bazi(.appleLogo),
+            iconWidth: 27,
+            iconBlendMode: .screen,
+            iconSpacing: 1,
             title: "Apple로 로그인",
             foreground: Color.grayWhite,
             background: Color.grayBlack
@@ -85,18 +87,21 @@ extension LoginView {
 
     private func socialLoginButton(
         icon: Image,
-        iconWidth: CGFloat = 18,
+        iconWidth: CGFloat = 17,
+        iconBlendMode: BlendMode = .normal,
+        iconSpacing: CGFloat = 8,
         title: String,
         foreground: Color,
         background: Color,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: iconSpacing) {
                 icon
                     .resizable()
                     .scaledToFit()
                     .frame(width: iconWidth)
+                    .blendMode(iconBlendMode)
 
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
