@@ -53,10 +53,18 @@ extension RankedPolicyListView {
 
     private var teaserBanner: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(store.kind.bannerTitle)
-                .baziFont(.head18B)
-                .foregroundStyle(Color.gray900)
-                .padding(.horizontal, 20)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(store.kind.bannerTitle)
+                    .baziFont(.head18B)
+                    .foregroundStyle(Color.gray900)
+                // '새로 뜬 정책'에서만 노출 정책들의 최신 등록일을 "yyyy년 MM월 dd일 업데이트"로 표시한다.
+                if store.kind == .latest, let updated = PolicySummaryVO.latestUpdatedText(store.teaser) {
+                    Text(updated)
+                        .baziFont(.small12R)
+                        .foregroundStyle(Color.gray500)
+                }
+            }
+            .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 12) {

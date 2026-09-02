@@ -12,6 +12,7 @@ public struct PolicySummaryVO: Equatable, Identifiable, Sendable {
     public let title: String
     public let viewCount: Int
     public var isLiked: Bool
+    public let registeredDate: String?
 
     public init(
         id: Int,
@@ -19,7 +20,8 @@ public struct PolicySummaryVO: Equatable, Identifiable, Sendable {
         dDay: String,
         title: String,
         viewCount: Int,
-        isLiked: Bool = false
+        isLiked: Bool = false,
+        registeredDate: String? = nil
     ) {
         self.id = id
         self.category = category
@@ -27,6 +29,7 @@ public struct PolicySummaryVO: Equatable, Identifiable, Sendable {
         self.title = title
         self.viewCount = viewCount
         self.isLiked = isLiked
+        self.registeredDate = registeredDate
     }
 }
 
@@ -45,9 +48,46 @@ extension PolicySummaryVO {
             dDay: entity.dDay,
             title: entity.title,
             viewCount: entity.viewCount,
-            isLiked: entity.liked
+            isLiked: entity.liked,
+            registeredDate: entity.registeredDate
         )
     }
+}
+
+// MARK: - Update Date
+
+extension PolicySummaryVO {
+
+    /// 주어진 정책들의 등록일 중 가장 최신을 "yyyy년 MM월 dd일 업데이트"로 만든다. 등록일이 없으면 nil.
+    public static func latestUpdatedText(_ policies: some Sequence<PolicySummaryVO>) -> String? {
+        let latest = policies
+            .compactMap { $0.registeredDate }
+            .compactMap(parseRegisteredDate)
+            .max()
+        guard let latest else { return nil }
+        return updateDisplayFormatter.string(from: latest) + " 업데이트"
+    }
+
+    /// 서버 등록일("yyyy-MM-dd")의 날짜 부분(앞 10자)만 파싱한다. datetime으로 와도 날짜만 취한다.
+    private static func parseRegisteredDate(_ raw: String) -> Date? {
+        registeredDateParser.date(from: String(raw.prefix(10)))
+    }
+
+    private static let registeredDateParser: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private static let updateDisplayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+        formatter.dateFormat = "yyyy년 MM월 dd일"
+        return formatter
+    }()
 }
 
 // MARK: - Mock

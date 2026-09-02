@@ -14,7 +14,8 @@ extension PolicyItemDTO {
             dDay: dDay,
             title: title,
             viewCount: viewCount,
-            liked: liked
+            liked: liked,
+            registeredDate: registeredDate
         )
     }
 }
