@@ -55,7 +55,7 @@ public struct PolicyProfileEditFeature {
         }
 
         /// 저장 대상 편집 필드의 변경 여부 판정용 스냅샷.
-        public struct Snapshot: Equatable {
+        public struct Snapshot: Equatable, Sendable {
             var year: Int
             var month: Int
             var day: Int
@@ -115,7 +115,7 @@ public struct PolicyProfileEditFeature {
         case profileResponse(Result<OnboardingInfo, UseCaseError>)
         case sidoResponse(Result<[RegionVO], UseCaseError>)
         case sigunguResponse(Result<[RegionVO], UseCaseError>)
-        case didSaveProfile
+        case didSaveProfile(State.Snapshot)
         case didFailToSaveProfile(UseCaseError)
 
         // MARK: Delegate
@@ -179,7 +179,11 @@ public struct PolicyProfileEditFeature {
 
             case .profileResponse(.success(let profile)):
                 applyProfile(profile, to: &state)
-                state.savedSnapshot = state.currentSnapshot
+                // 서버 프리필 기준 스냅샷을 동기 시점에 고정한다. 시군구는 곧 로드될 pendingSigunguCode로 미리 반영해,
+                // 응답 대기 중 사용자가 편집하더라도 기준이 오염되지 않게 한다.
+                var baseline = state.currentSnapshot
+                baseline.sigunguCode = state.pendingSigunguCode
+                state.savedSnapshot = baseline
                 return fetchSigunguList(&state)
 
             case .profileResponse(.failure):
@@ -196,8 +200,7 @@ public struct PolicyProfileEditFeature {
                 if let code = state.pendingSigunguCode {
                     state.selectedSigungu = list.first { $0.code == code }
                     state.pendingSigunguCode = nil
-                    // 프리필 완료(시군구까지 채워짐) → 기준 스냅샷을 확정한다.
-                    state.savedSnapshot = state.currentSnapshot
+                    // 기준 스냅샷은 profileResponse에서 이미 고정했으므로 여기서 다시 설정하지 않는다.
                 }
                 return .none
 
@@ -253,20 +256,22 @@ public struct PolicyProfileEditFeature {
             case .didTapSaveButton:
                 guard state.isSaveEnabled, let info = makeOnboardingInfo(state) else { return .none }
                 state.isSaving = true
+                // 저장 요청에 사용한 값을 고정한다. 저장 중 편집이 있어도 그 편집분은 미저장으로 남아 재저장 가능.
+                let requestedSnapshot = state.currentSnapshot
                 return .run { [policyProfileClient] send in
                     do {
                         try await policyProfileClient.updatePolicyProfile(info)
-                        await send(.didSaveProfile)
+                        await send(.didSaveProfile(requestedSnapshot))
                     } catch {
                         await send(.didFailToSaveProfile(UseCaseError.map(error)))
                     }
                 }
 
-            case .didSaveProfile:
+            case .didSaveProfile(let requestedSnapshot):
                 state.isSaving = false
                 state.isSuccessToastPresented = true
-                // 저장 직후엔 현재값이 곧 기준값 → 버튼 비활성.
-                state.savedSnapshot = state.currentSnapshot
+                // 실제로 저장 요청에 사용한 스냅샷만 기준으로 삼는다. (저장 중 편집분은 미저장으로 유지)
+                state.savedSnapshot = requestedSnapshot
                 return .none
 
             case .didFailToSaveProfile:
