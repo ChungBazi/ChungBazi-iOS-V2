@@ -18,7 +18,11 @@ public enum BZCardSize: Equatable {
     }
 
     var height: CGFloat {
-        self == .large ? 297 : 141
+        switch self {
+        case .large: return 275
+        case .medium, .medium2: return 119
+        case .small: return 141
+        }
     }
 
 //    var contentSpacing: CGFloat {
@@ -160,10 +164,12 @@ extension BZCard {
     }
 
     private var titleText: some View {
+        // small만 2줄, 나머지는 1줄. 넘치면 말줄임(…)으로 잘린다(Text 기본 tail 트렁케이션).
         Text(title.byCharWrapping)
             .baziFont(size.titleFont)
             .foregroundStyle(Color.grayBlack)
-            .lineLimit(2)
+            .lineLimit(size == .small ? 2 : 1)
+            .truncationMode(.tail)
     }
 
     private var viewCountRow: some View {
