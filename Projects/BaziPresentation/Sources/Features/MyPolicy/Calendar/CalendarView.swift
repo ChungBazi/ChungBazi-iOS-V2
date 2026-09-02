@@ -32,7 +32,7 @@ public struct CalendarView: View {
             content
         }
         .task { store.send(.onAppear) }
-        .baziNavigationBar_backWithTitle("캘린더") {
+        .baziNavigationBar_backWithTitle("정책 마감 캘린더") {
             dismiss()
         }
         .sheet(isPresented: isSheetPresented) {
@@ -200,7 +200,7 @@ extension CalendarView {
             // 다른 화면에서 찜 해제된 정책(overlay == false)은 시트에서 제외한다.
             let visible = IdentifiedArray(uniqueElements: policies.filter { store.likeOverrides[$0.id] != false })
             if visible.isEmpty {
-                BZEmptyView(message: "이 날짜에는 등록된 정책이 없어요")
+                BZEmptyView(message: "이 날짜에는 저장된 정책이 없어요")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 sheetResultsToolbar
