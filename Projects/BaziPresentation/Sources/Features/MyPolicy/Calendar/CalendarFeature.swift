@@ -201,7 +201,7 @@ public struct CalendarFeature: Sendable {
 
             case .addToCalendarSucceeded:
                 state.isAddingDeadline = false
-                state.toastMessage = "마감일을 캘린더에 추가했어요"
+                state.toastMessage = "마감일을 애플 캘린더에 추가했어요"
                 state.isToastPresented = true
                 return .none
 
