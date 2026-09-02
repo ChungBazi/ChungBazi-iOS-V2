@@ -58,30 +58,60 @@ private struct BZAlertModifier: ViewModifier {
     // MARK: - Body
 
     func body(content: Content) -> some View {
-        content.overlay {
-            if isPresented {
-                ZStack {
-                    BZDimOverlay(level: .dim1)
-                    BZAlert(
-                        title: title,
-                        message: message,
-                        cancelTitle: cancelTitle,
-                        confirmTitle: confirmTitle,
-                        confirmType: confirmType.buttonType,
-                        onCancel: { isPresented = false },
-                        onConfirm: {
-                            onConfirm()
-                            isPresented = false
-                        },
-                        onClose: { isPresented = false }
-                    )
-                    .padding(.horizontal, 40)
+        // 시스템 네비바/툴바는 콘텐츠 위에 그려지므로, 콘텐츠 오버레이 딤으로는 네비바를 덮지 못한다.
+        // fullScreenCover + 투명 배경으로 present해 네비바·탭바를 포함한 화면 전체를 딤 처리한다.
+        content.fullScreenCover(isPresented: $isPresented) {
+            BZAlertPresentation(
+                title: title,
+                message: message,
+                cancelTitle: cancelTitle,
+                confirmTitle: confirmTitle,
+                confirmType: confirmType,
+                onCancel: { isPresented = false },
+                onConfirm: {
+                    onConfirm()
+                    isPresented = false
                 }
-                .transition(.opacity)
-                .zIndex(1)
-            }
+            )
+            .presentationBackground(.clear)
         }
-        .animation(.easeInOut(duration: 0.2), value: isPresented)
+        // 커버 기본 슬라이드를 끄고, 내부(BZAlertPresentation)에서 딤/알럿을 페이드인한다.
+        .transaction { $0.disablesAnimations = true }
+    }
+}
+
+// MARK: - Presentation
+
+/// fullScreenCover로 띄우는 딤 + 알럿. 커버 슬라이드를 끈 대신 여기서 페이드인한다.
+private struct BZAlertPresentation: View {
+
+    let title: String
+    let message: String
+    let cancelTitle: String
+    let confirmTitle: String
+    let confirmType: BZAlertConfirmType
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    @State private var visible = false
+
+    var body: some View {
+        ZStack {
+            BZDimOverlay(level: .dim1)
+            BZAlert(
+                title: title,
+                message: message,
+                cancelTitle: cancelTitle,
+                confirmTitle: confirmTitle,
+                confirmType: confirmType.buttonType,
+                onCancel: onCancel,
+                onConfirm: onConfirm,
+                onClose: onCancel
+            )
+            .padding(.horizontal, 40)
+        }
+        .opacity(visible ? 1 : 0)
+        .onAppear { withAnimation(.easeInOut(duration: 0.2)) { visible = true } }
     }
 }
 
