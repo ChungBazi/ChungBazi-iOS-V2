@@ -52,9 +52,16 @@ extension SearchResultView {
             }
             .buttonStyle(.plain)
 
-            // 검색어 편집은 이전 화면에서만 하고, 결과 화면에서는 뒤로가기로만 돌아갈 수 있어 인터랙션을 막는다.
+            // 결과 화면에서는 직접 편집하지 않고, 검색바를 탭하면 뒤로가기와 동일하게 검색 입력 화면으로 돌아간다.
+            // 필드 자체는 히트테스트를 끄고, 투명 오버레이가 탭을 받아 전체 영역을 탭 가능하게 한다.
             BZSearchField(text: .constant(store.query))
                 .disabled(true)
+                .allowsHitTesting(false)
+                .overlay {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { dismiss() }
+                }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
