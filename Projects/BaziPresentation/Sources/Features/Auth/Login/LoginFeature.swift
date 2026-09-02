@@ -21,7 +21,7 @@ public struct LoginFeature {
     public enum Action: Equatable {
         // MARK: View
         case didTapKakaoLoginButton
-        case didTapAppleLoginButton(idToken: String, name: String?)
+        case didTapAppleLoginButton
 
         // MARK: Internal
         case loginResponse(Result<AccountStatus, UseCaseError>)
@@ -69,12 +69,12 @@ public struct LoginFeature {
                 }
                 .cancellable(id: CancelID.login, cancelInFlight: true)
 
-            case .didTapAppleLoginButton(let idToken, let name):
+            case .didTapAppleLoginButton:
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return .run { [authClient] send in
                     do {
-                        let result = try await authClient.loginWithApple(idToken, name)
+                        let result = try await authClient.loginWithApple()
                         await send(.loginResponse(.success(result)))
                     } catch {
                         await send(.loginResponse(.failure(UseCaseError.map(error))))
