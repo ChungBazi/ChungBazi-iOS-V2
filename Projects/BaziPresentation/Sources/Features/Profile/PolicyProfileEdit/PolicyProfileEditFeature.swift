@@ -42,6 +42,7 @@ public struct PolicyProfileEditFeature {
         // MARK: Save
         public var isSaving = false
         public var isSuccessToastPresented = false
+        public var isFailureToastPresented = false
         /// onAppear 프리필을 최초 1회만 수행하기 위한 플래그. (탭 전환 등으로 화면이 재등장할 때
         /// 저장하지 않은 편집이 서버 값으로 되돌아가는 것을 막는다)
         public var hasLoaded = false
@@ -269,6 +270,7 @@ public struct PolicyProfileEditFeature {
 
             case .didSaveProfile(let requestedSnapshot):
                 state.isSaving = false
+                state.isFailureToastPresented = false
                 state.isSuccessToastPresented = true
                 // 실제로 저장 요청에 사용한 스냅샷만 기준으로 삼는다. (저장 중 편집분은 미저장으로 유지)
                 state.savedSnapshot = requestedSnapshot
@@ -276,7 +278,8 @@ public struct PolicyProfileEditFeature {
 
             case .didFailToSaveProfile:
                 state.isSaving = false
-                // TODO: 저장 실패 알림 UI가 정해지면 State에 반영.
+                state.isSuccessToastPresented = false
+                state.isFailureToastPresented = true
                 return .none
 
             case .delegate:
