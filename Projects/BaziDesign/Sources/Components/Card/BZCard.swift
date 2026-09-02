@@ -145,8 +145,8 @@ extension BZCard {
 
         case let .calendarAndMemo(onAddCalendar, onMemo):
             // 캘린더 추가 아이콘을 메모 왼쪽에 나란히(패딩 조금) 둔다.
-            HStack(spacing: 8) {
-                iconButton(.addCalendarIcon, label: "마감일 캘린더에 추가", size: 26, action: onAddCalendar)
+            HStack(spacing: 20) {
+                iconButton(.addCalendarIcon, label: "마감일 캘린더에 추가", action: onAddCalendar)
                 iconButton(.memoIcon, label: "메모", action: onMemo)
             }
         }
