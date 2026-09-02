@@ -44,7 +44,7 @@ extension DefaultPolicySummarizer {
         guard case .available = model.availability else { return nil }
 
         let instructions = """
-        당신은 청년 정책을 쉽게 풀어 설명하는 요약 도우미예요.
+        당신은 정책을 쉽게 풀어 설명하는 요약 도우미예요.
         주어진 '지원 내용'을 읽고, 사용자가 한눈에 이해하도록 핵심만 자연스럽게 요약해요.
 
         규칙:
@@ -55,19 +55,31 @@ extension DefaultPolicySummarizer {
         - 원문에 없는 내용은 지어내지 않고, 불확실하면 생략해요.
         - 항목 이름(지원 대상, 지원 내용 등)이나 불릿을 그대로 나열하지 말고, 이어지는 문장으로 풀어써요.
         - 마크다운·불릿·이모지·머리말 없이 자연스러운 문단으로만 써요.
-        - "요약하면", "이 정책은" 같은 군더더기 없이 요약 내용만 출력해요.
+        - "요약하면", "정리하자면" 같은 군더더기 머리말 없이 요약 내용만 출력해요.
+        - 정책을 지칭할 때는 '청년 정책'이나 특정 정책명으로 부르지 말고 '해당 정책'이라고 표현해요. (예: "해당 정책은 ~해요")
         """
 
         let session = LanguageModelSession(instructions: instructions)
         do {
             let response = try await session.respond(to: "다음 지원 내용을 요약해줘.\n\n\(text)")
-            let cleaned = Self.stripMarkdownEscapes(response.content)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let cleaned = Self.normalizeOpening(
+                Self.stripMarkdownEscapes(response.content)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            )
             // 공백만 남으면 요약 실패로 간주 → 뒷면은 원문(supportContent) fallback
             return cleaned.isEmpty ? nil : cleaned
         } catch {
             return nil
         }
+    }
+
+    /// 모델이 가끔 '청년 정책은~'처럼 포괄 주어로 요약을 시작하는 것을 '해당 정책은~'으로 바로잡는다.
+    /// (프롬프트로도 유도하지만 온디바이스 모델이 항상 따르지 않아 시작부만 결정적으로 보정한다.)
+    static func normalizeOpening(_ text: String) -> String {
+        for prefix in ["청년 정책", "청년정책"] where text.hasPrefix(prefix) {
+            return "해당 정책" + text.dropFirst(prefix.count)
+        }
+        return text
     }
 
     /// 모델이 마크다운 특수문자를 이스케이프(\~, \*, \. 등)해 내보내는 것을 평문으로 되돌린다.
