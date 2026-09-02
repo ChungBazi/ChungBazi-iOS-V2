@@ -10,6 +10,7 @@ public struct PolicySummary: Identifiable, Equatable, Sendable {
     public let title: String
     public let viewCount: Int
     public let liked: Bool
+    public let registeredDate: String?
 
     public init(
         id: Int,
@@ -18,7 +19,8 @@ public struct PolicySummary: Identifiable, Equatable, Sendable {
         dDay: String,
         title: String,
         viewCount: Int,
-        liked: Bool
+        liked: Bool,
+        registeredDate: String? = nil
     ) {
         self.id = id
         self.category = category
@@ -27,6 +29,7 @@ public struct PolicySummary: Identifiable, Equatable, Sendable {
         self.title = title
         self.viewCount = viewCount
         self.liked = liked
+        self.registeredDate = registeredDate
     }
 
     /// 찜 낙관적 갱신: id가 일치할 때만 liked를 바꾼 새 값을 반환한다.
@@ -39,7 +42,8 @@ public struct PolicySummary: Identifiable, Equatable, Sendable {
             dDay: dDay,
             title: title,
             viewCount: viewCount,
-            liked: liked
+            liked: liked,
+            registeredDate: registeredDate
         )
     }
 }
