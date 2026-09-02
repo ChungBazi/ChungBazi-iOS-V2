@@ -36,11 +36,12 @@ public struct BZDatePicker: UIViewRepresentable {
     public func updateUIView(_ pickerView: UIPickerView, context: Context) {
         context.coordinator.parent = self
 
+        // 행 재구성(reload) 후에 선택 행을 지정한다. 순서를 바꾸면 reload가 물리적 위치를 리셋할 수 있다.
+        pickerView.reloadAllComponents()
         let targetRow = selection - range.lowerBound
         if pickerView.selectedRow(inComponent: 0) != targetRow {
             pickerView.selectRow(targetRow, inComponent: 0, animated: false)
         }
-        pickerView.reloadAllComponents()
         hideSelectionIndicator(in: pickerView)
     }
 
@@ -92,7 +93,10 @@ extension BZDatePicker {
             label.text = parent.text(parent.range.lowerBound + row)
             label.textAlignment = .center
 
-            let distance = abs(row - pickerView.selectedRow(inComponent: component))
+            // 강조(선택) 행은 UIPickerView 내부 selectedRow(reload 시 리셋될 수 있음)가 아니라
+            // 바인딩 값(selection)을 기준으로 계산해, 재진입 후에도 선택 행이 어긋나지 않게 한다.
+            let selectedRow = parent.selection - parent.range.lowerBound
+            let distance = abs(row - selectedRow)
             let style = BZDatePicker.rowStyle(distance: distance, hasInteracted: hasInteracted)
             label.font = style.font
             label.textColor = style.color
