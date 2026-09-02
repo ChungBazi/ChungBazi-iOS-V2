@@ -41,7 +41,7 @@ struct SearchFeatureTests {
         }
     }
 
-    @Test("검색 제출 시 최근 검색어에 낙관적으로 추가하고 결과 화면으로 이동한다")
+    @Test("검색 제출 시 결과 화면으로 이동한다(최근 검색 저장은 서버 담당)")
     func didSubmitQuery_pushesResult() async {
         var state = SearchFeature.State()
         state.query = "청년 월세"
@@ -51,7 +51,6 @@ struct SearchFeatureTests {
 
         await store.send(.didSubmitQuery) {
             $0.suggestions = []
-            $0.recentKeywords.insert(RecentSearchKeywordVO(id: 1, keyword: "청년 월세"), at: 0)
             $0.path.append(.searchResult(SearchResultFeature.State(query: "청년 월세")))
         }
     }

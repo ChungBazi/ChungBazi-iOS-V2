@@ -16,6 +16,7 @@ struct HomeFeatureTests {
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in .mock }
             $0.sessionClient.userName = { nil }
+            $0.sessionClient.displayName = { "회원" }
         }
 
         await store.send(.onAppear) {
@@ -34,6 +35,7 @@ struct HomeFeatureTests {
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.network }
             $0.sessionClient.userName = { nil }
+            $0.sessionClient.displayName = { "회원" }
         }
 
         await store.send(.onAppear) {
@@ -72,6 +74,7 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.sessionClient.userName = { nil }
+            $0.sessionClient.displayName = { "회원" }
         }
 
         await store.send(.onAppear) {

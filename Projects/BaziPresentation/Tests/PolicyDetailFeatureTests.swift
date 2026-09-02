@@ -15,6 +15,7 @@ struct PolicyDetailFeatureTests {
             PolicyDetailFeature()
         } withDependencies: {
             $0.policyDetailClient.fetch = { PolicyDetailVO.mock(id: $0) }
+            $0.sessionClient.displayName = { "회원" }
         }
 
         await store.send(.onAppear) {
