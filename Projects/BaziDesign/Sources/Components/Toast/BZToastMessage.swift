@@ -2,35 +2,71 @@
 
 import SwiftUI
 
+/// 토스트 종류. 기본(안내)과 경고(accent 배경).
+public enum BZToastStyle: Equatable {
+    case `default`
+    case warning
+
+    var background: Color {
+        switch self {
+        case .default: return Color.blue200
+        case .warning: return Color.bazi(.accent)
+        }
+    }
+
+    var foreground: Color {
+        switch self {
+        case .default: return Color.gray800
+        case .warning: return Color.grayWhite
+        }
+    }
+}
+
 /// 화면 하단 등에 잠깐 띄우는 토스트 메시지. (Figma: Overlay - Toast Message)
 public struct BZToastMessage: View {
 
     // MARK: - Properties
 
     private let message: String
+    private let style: BZToastStyle
 
     // MARK: - Init
 
-    public init(_ message: String) {
+    public init(_ message: String, style: BZToastStyle = .default) {
         self.message = message
+        self.style = style
     }
 
     // MARK: - Body
 
     public var body: some View {
         HStack(spacing: 8) {
+            icon
+            Text(message)
+                .baziFont(.small14SB)
+                .foregroundStyle(style.foreground)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(style.background)
+        .baziRadius(.medium)
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        switch style {
+        case .default:
             Image.bazi(.checkIcon)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 16)
-            Text(message)
-                .baziFont(.small14SB)
-                .foregroundStyle(Color.gray800)
+        case .warning:
+            Image(systemName: "exclamationmark.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16)
+                .foregroundStyle(Color.grayWhite)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity)
-        .background(Color.blue200)
-        .baziRadius(.medium)
     }
 }
 
@@ -55,12 +91,12 @@ extension View {
 extension View {
     /// `isPresented`가 `true`가 되면 토스트를 띄우고 2초 뒤 자동으로 내린다.
     /// `baziToastAnchor()`로 표시된 뷰가 있으면 그 위 15pt에, 없으면 `edge` 가장자리(20pt)에 띄운다.
-    public func baziToast(isPresented: Binding<Bool>, message: String, edge: VerticalEdge = .bottom) -> some View {
+    public func baziToast(isPresented: Binding<Bool>, message: String, style: BZToastStyle = .default, edge: VerticalEdge = .bottom) -> some View {
         overlayPreferenceValue(BZToastAnchorKey.self) { anchor in
             GeometryReader { proxy in
                 if isPresented.wrappedValue {
                     let placement = BZToastPlacement(anchor: anchor, edge: edge, proxy: proxy)
-                    BZToastMessage(message)
+                    BZToastMessage(message, style: style)
                         .padding(.horizontal, 20)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: placement.alignment)
                         .padding(placement.paddingEdge, placement.inset)
