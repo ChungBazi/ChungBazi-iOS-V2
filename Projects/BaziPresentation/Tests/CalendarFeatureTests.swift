@@ -11,7 +11,7 @@ import BaziDomain
 @MainActor
 struct CalendarFeatureTests {
 
-    private static func page(_ items: [PolicySummaryVO]) -> PolicyPageVO {
+    private nonisolated static func page(_ items: [PolicySummaryVO]) -> PolicyPageVO {
         PolicyPageVO(
             policies: IdentifiedArray(uniqueElements: items),
             nextCursor: nil,
@@ -36,7 +36,7 @@ struct CalendarFeatureTests {
         await store.send(.didAppearMonth(monthDate)) {
             $0.requestedMonths.insert("2026-05")
         }
-        await store.receive(\.calendarResponse.success) {
+        await store.receive(\.calendarResponse) {
             $0.deadlineDays = [20260518]
         }
     }
@@ -49,6 +49,7 @@ struct CalendarFeatureTests {
         let store = TestStore(initialState: CalendarFeature.State(centerDate: date)) {
             CalendarFeature()
         } withDependencies: {
+            $0.calendar = Calendar(identifier: .gregorian)
             $0.calendarClient.fetchDeadlineDate = { _ in Self.page(items) }
         }
 

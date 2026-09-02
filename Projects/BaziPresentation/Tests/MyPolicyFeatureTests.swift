@@ -1,5 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import Foundation
+
 import ComposableArchitecture
 import Testing
 
@@ -9,7 +11,7 @@ import BaziDomain
 @MainActor
 struct MyPolicyFeatureTests {
 
-    private static func page(_ items: [PolicySummaryVO]) -> PolicyPageVO {
+    private nonisolated static func page(_ items: [PolicySummaryVO]) -> PolicyPageVO {
         PolicyPageVO(
             policies: IdentifiedArray(uniqueElements: items),
             nextCursor: nil,
@@ -31,7 +33,7 @@ struct MyPolicyFeatureTests {
             $0.selectedTab = .openEnded
             $0.openEndedPolicies = .loading
         }
-        await store.receive(\.openEndedResponse.success) {
+        await store.receive(\.openEndedResponse) {
             $0.openEndedPolicies = .loaded(IdentifiedArray(uniqueElements: items))
             $0.openEndedPagination.totalCount = items.count
         }
@@ -50,6 +52,7 @@ struct MyPolicyFeatureTests {
         let store = TestStore(initialState: state) {
             MyPolicyFeature()
         } withDependencies: {
+            $0.calendar = Calendar(identifier: .gregorian)
             $0.myPolicyClient.fetchDeadlineUpcoming = { _ in Self.page(dateItems) }
         }
 
@@ -80,6 +83,7 @@ struct MyPolicyFeatureTests {
         let store = TestStore(initialState: state) {
             MyPolicyFeature()
         } withDependencies: {
+            $0.calendar = Calendar(identifier: .gregorian)
             $0.myPolicyClient.fetchDeadlineUpcoming = { _ in Self.page(items) }
         }
 

@@ -56,6 +56,7 @@ public struct PolicyMemoFeature {
 
     // MARK: - Delegate
 
+    @CasePathable
     public enum Delegate: Equatable {
         case didSaveMemo(policyId: Int, memo: String)
     }
