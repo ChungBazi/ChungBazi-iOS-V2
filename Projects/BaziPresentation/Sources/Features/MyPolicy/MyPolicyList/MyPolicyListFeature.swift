@@ -85,8 +85,8 @@ public struct MyPolicyListFeature {
 
     public enum Delegate: Equatable {
         case didSelectPolicy(id: Int)
-        /// 찜한 정책이 없을 때 "둘러보러 가기" → 상위(MyPolicy)가 분야별 정책으로 이동시킨다.
-        case browsePolicies
+        /// 찜한 정책이 없을 때 "둘러보러 가기" → 상위(MyPolicy)가 선택한 분야의 분야별 정책으로 이동시킨다.
+        case browsePolicies(category: PolicyCategoryUI?)
     }
 
     // MARK: - Dependencies
@@ -190,7 +190,7 @@ public struct MyPolicyListFeature {
                 return .send(.delegate(.didSelectPolicy(id: id)))
 
             case .didTapBrowsePolicies:
-                return .send(.delegate(.browsePolicies))
+                return .send(.delegate(.browsePolicies(category: state.selectedCategory)))
 
             case .delegate:
                 return .none
