@@ -243,15 +243,8 @@ extension CalendarView {
         .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
     }
 
-    private static let dayTitleFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M월 d일 (E)"
-        formatter.locale = Locale(identifier: "ko_KR")
-        return formatter
-    }()
-
     private func dayTitle(for date: Date) -> String {
-        Self.dayTitleFormatter.string(from: date)
+        BaziDateFormat.monthDayWeekday.string(from: date)
     }
 }
 

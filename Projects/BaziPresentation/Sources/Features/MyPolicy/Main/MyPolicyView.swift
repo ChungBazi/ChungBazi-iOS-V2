@@ -200,7 +200,7 @@ private extension MyPolicyView {
             store.send(.didTapCalendarIcon)
         } label: {
             HStack(spacing: 11) {
-                Text(Self.monthFormatter.string(from: store.selectedDate))
+                Text(BaziDateFormat.yearMonth.string(from: store.selectedDate))
                     .baziFont(.body16SB)
                     .foregroundStyle(Color.gray900)
                 Circle()
@@ -235,7 +235,7 @@ private extension MyPolicyView {
             store.send(.didSelectWeekDate(date))
         } label: {
             VStack(spacing: 4) {
-                Text(Self.weekdayFormatter.string(from: date))
+                Text(BaziDateFormat.weekday.string(from: date))
                     .baziFont(.small12R)
                     .foregroundStyle(Color.gray500)
                 Text("\(calendar.component(.day, from: date))")
@@ -329,25 +329,6 @@ private extension MyPolicyView {
         )
         .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
     }
-}
-
-// MARK: - Formatters
-
-private extension MyPolicyView {
-
-    static let monthFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy년 M월"
-        formatter.locale = Locale(identifier: "ko_KR")
-        return formatter
-    }()
-
-    static let weekdayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "E"
-        formatter.locale = Locale(identifier: "ko_KR")
-        return formatter
-    }()
 }
 
 // MARK: - Preview

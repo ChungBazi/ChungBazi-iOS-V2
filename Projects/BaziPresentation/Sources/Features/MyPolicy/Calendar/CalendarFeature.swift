@@ -263,13 +263,11 @@ public struct CalendarFeature: Sendable {
 
     /// 주입된 calendar 기준 "yyyy-MM"(getCalendar targetMonth 파라미터용).
     private func monthString(_ date: Date) -> String {
-        let components = calendar.dateComponents([.year, .month], from: date)
-        return String(format: "%04d-%02d", components.year ?? 0, components.month ?? 0)
+        BaziDateFormat.serverMonthString(date, calendar: calendar)
     }
 
     /// 주입된 calendar 기준 "yyyy-MM-dd"(getDeadlineDatePolicies targetDate 파라미터용).
     private func dayString(_ date: Date) -> String {
-        let components = calendar.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+        BaziDateFormat.serverDayString(date, calendar: calendar)
     }
 }

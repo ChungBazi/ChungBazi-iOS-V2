@@ -353,8 +353,7 @@ public struct MyPolicyFeature {
 
     /// 주입된 calendar 기준으로 "yyyy-MM-dd" 문자열을 만든다(서버 targetDate 파라미터용).
     private func targetDateString(_ date: Date) -> String {
-        let components = calendar.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+        BaziDateFormat.serverDayString(date, calendar: calendar)
     }
 }
 
