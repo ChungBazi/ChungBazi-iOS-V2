@@ -33,6 +33,7 @@ public struct PolicyProfileEditView: View {
             }
             .toolbar(.hidden, for: .tabBar)
             .baziToast(isPresented: $store.isSuccessToastPresented, message: "정책 맞춤 조건이 수정되었어요")
+            .baziToast(isPresented: $store.isFailureToastPresented, message: "저장에 실패했어요. 다시 시도해 주세요", style: .warning)
     }
 }
 
@@ -54,6 +55,8 @@ extension PolicyProfileEditView {
             .padding(.horizontal, 20)
             .padding(.top, 16)
             .padding(.bottom, 95)
+            // 저장 중에는 폼 편집을 잠근다. (저장 요청 값과 화면 상태 불일치 방지)
+            .disabled(store.isSaving)
         }
         .safeAreaInset(edge: .bottom) {
             saveButton
