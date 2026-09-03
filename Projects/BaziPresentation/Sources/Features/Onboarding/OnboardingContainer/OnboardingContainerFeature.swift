@@ -46,6 +46,8 @@ public struct OnboardingContainerFeature {
         public var sigunguOptions: [RegionVO] = []
         public var selectedSido: RegionVO?
         public var selectedSigungu: RegionVO?
+        /// 시도 목록 로딩 중 여부. 지역 진입 시 중복 재요청을 막는 가드.
+        public var isSidoLoading = false
 
         // MARK: Education / Employment / Income
         public var education: EducationUI?
@@ -135,15 +137,17 @@ public struct OnboardingContainerFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                return fetchSidoList()
+                return fetchSidoList(&state)
 
             case .sidoResponse(.success(let list)):
+                state.isSidoLoading = false
                 state.sidoOptions = list
                 return .none
 
             case .sidoResponse(.failure(let error)):
                 // 지역 스텝 진입 시 목록이 비어 있으면 다시 불러오므로, 여기선 토스트만 띄운다.
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.isSidoLoading = false
+                state.errorToast = error.toastMessage
                 return .none
 
             case .didSelectSido(let sido):
@@ -156,7 +160,7 @@ public struct OnboardingContainerFeature {
 
             case .sigunguResponse(.failure(let error)):
                 // 시군구는 시도 재선택으로 다시 시도할 수 있어 토스트만 띄운다.
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 return .none
 
             case .didSelectSigungu(let sigungu):
@@ -227,9 +231,9 @@ public struct OnboardingContainerFeature {
                     return submitOnboarding(state: &state)
                 }
                 state.currentStep = nextStep
-                // 지역 스텝인데 시도 목록이 (로드 실패 등으로) 비어 있으면 진입 시 다시 불러온다.
-                if nextStep == .region, state.sidoOptions.isEmpty {
-                    return fetchSidoList()
+                // 지역 스텝인데 목록이 비어 있고 로딩 중도 아니면 다시 불러온다.
+                if nextStep == .region, state.sidoOptions.isEmpty, !state.isSidoLoading {
+                    return fetchSidoList(&state)
                 }
                 return .none
 
@@ -264,8 +268,9 @@ public struct OnboardingContainerFeature {
         state.day = clamped.day
     }
 
-    private func fetchSidoList() -> Effect<Action> {
-        .run { [onboardingClient] send in
+    private func fetchSidoList(_ state: inout State) -> Effect<Action> {
+        state.isSidoLoading = true
+        return .run { [onboardingClient] send in
             do {
                 let sido = try await onboardingClient.fetchSidoList()
                 await send(.sidoResponse(.success(sido.map(RegionVO.init))))

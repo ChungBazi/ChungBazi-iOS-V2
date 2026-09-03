@@ -142,6 +142,7 @@ public struct PolicyProfileEditFeature {
     // MARK: - CancelID
 
     private enum CancelID {
+        case load
         case sigunguFetch
     }
 
@@ -152,16 +153,17 @@ public struct PolicyProfileEditFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                // 재등장(탭 전환 등) 시 프리필이 저장 안 한 편집을 덮어쓰지 않도록 최초 1회만 로드한다.
+                // 프리필 성공 시에만 hasLoaded를 세운다(profileResponse.success). 초기 로드 실패 시 재진입으로 다시 시도된다.
                 guard !state.hasLoaded else { return .none }
-                state.hasLoaded = true
                 // 시도 목록을 먼저 받은 뒤 프로필을 받아, sidoCode를 시도 VO로 역매핑할 수 있게 한다.
                 return .run { [policyProfileClient] send in
                     do {
                         let sido = try await policyProfileClient.fetchSidoList()
                         await send(.sidoResponse(.success(sido.map(RegionVO.init))))
                     } catch {
+                        // 시도 목록 없이 프리필하면 화면이 깨지므로 여기서 중단한다.
                         await send(.sidoResponse(.failure(UseCaseError.map(error))))
+                        return
                     }
                     do {
                         let profile = try await policyProfileClient.getPolicyProfile()
@@ -170,18 +172,21 @@ public struct PolicyProfileEditFeature {
                         await send(.profileResponse(.failure(UseCaseError.map(error))))
                     }
                 }
+                .cancellable(id: CancelID.load, cancelInFlight: true)
 
             case .sidoResponse(.success(let list)):
                 state.sidoOptions = list
                 return .none
 
             case .sidoResponse(.failure(let error)):
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
-                // 로드 실패면 프리필이 없으므로, 재진입 시 다시 시도할 수 있게 1회 가드를 푼다.
-                state.hasLoaded = false
+                // 재진입(뒤로 → 재푸시)은 새 State라 이미 자동 재시도된다. 여기서 hasLoaded를 풀면
+                // 같은 State가 재등장할 때 프리필이 사용자 편집을 덮을 수 있어 건드리지 않는다.
+                state.errorToast = error.toastMessage
                 return .none
 
             case .profileResponse(.success(let profile)):
+                // 프리필 완료 시점에만 로드 완료로 표시한다(재등장 시 편집 덮어쓰기 방지).
+                state.hasLoaded = true
                 applyProfile(profile, to: &state)
                 // 서버 프리필 기준 스냅샷을 동기 시점에 고정한다. 시군구는 곧 로드될 pendingSigunguCode로 미리 반영해,
                 // 응답 대기 중 사용자가 편집하더라도 기준이 오염되지 않게 한다.
@@ -191,8 +196,7 @@ public struct PolicyProfileEditFeature {
                 return fetchSigunguList(&state)
 
             case .profileResponse(.failure(let error)):
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
-                state.hasLoaded = false
+                state.errorToast = error.toastMessage
                 return .none
 
             case .didSelectSido(let sido):
@@ -211,7 +215,7 @@ public struct PolicyProfileEditFeature {
 
             case .sigunguResponse(.failure(let error)):
                 // 시군구는 시도 재선택으로 다시 시도할 수 있어 토스트만 띄운다.
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 return .none
 
             case .didSelectSigungu(let sigungu):
@@ -284,7 +288,7 @@ public struct PolicyProfileEditFeature {
             case .didFailToSaveProfile(let error):
                 state.isSaving = false
                 state.isSuccessToastPresented = false
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 return .none
 
             case .delegate:

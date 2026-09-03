@@ -52,7 +52,7 @@ public struct SearchFeature {
         case recentSearchesResponse(Result<RecentSearchResultVO, UseCaseError>)
         case suggestionsResponse(Result<[SearchSuggestionVO], UseCaseError>)
         case deleteRecentFailed(UseCaseError)
-        case dismissErrorToast
+        case errorToastDismissed
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -78,15 +78,7 @@ public struct SearchFeature {
             switch action {
             case .onAppear:
                 return .merge(
-                    .run { [policySearchClient] send in
-                        do {
-                            let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
-                            await send(.recentSearchesResponse(.success(result)))
-                        } catch {
-                            await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
-                        }
-                    }
-                    .cancellable(id: CancelID.recentSearches, cancelInFlight: true),
+                    fetchRecentSearches(),
                     .run { [analytics] _ in analytics.track(.screenView(.search)) }
                 )
 
@@ -158,10 +150,11 @@ public struct SearchFeature {
                 }
 
             case .deleteRecentFailed(let error):
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
-                return .none
+                state.errorToast = error.toastMessage
+                // 낙관적 삭제를 되돌린다 — 서버 상태로 재동기화(로컬 목록이 서버와 어긋난 채 남지 않게).
+                return fetchRecentSearches()
 
-            case .dismissErrorToast:
+            case .errorToastDismissed:
                 state.errorToast = nil
                 return .none
 
@@ -208,6 +201,19 @@ public struct SearchFeature {
     }
 
     // MARK: - Private
+
+    /// 최근 검색어 목록을 서버에서 다시 불러온다. 진입 로드와 삭제 실패 시 재동기화에 공통으로 쓴다.
+    private func fetchRecentSearches() -> Effect<Action> {
+        .run { [policySearchClient] send in
+            do {
+                let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
+                await send(.recentSearchesResponse(.success(result)))
+            } catch {
+                await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+        .cancellable(id: CancelID.recentSearches, cancelInFlight: true)
+    }
 
     private func submitSearch(state: inout State, query: String) -> Effect<Action> {
         state.query = query
