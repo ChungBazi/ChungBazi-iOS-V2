@@ -95,9 +95,10 @@ public struct ProfileInfoEditFeature {
                 }
 
             case .didCompleteLogout:
-                return .merge(
-                    .send(.delegate(.didLogout)),
-                    .run { [analytics] _ in analytics.track(.logout) }
+                // 추적을 먼저 끝낸 뒤 delegate 전송(부모의 state 교체로 인한 child effect 취소로 이벤트 유실 방지).
+                return .concatenate(
+                    .run { [analytics] _ in analytics.track(.logout) },
+                    .send(.delegate(.didLogout))
                 )
 
             case .didFailLogout:
