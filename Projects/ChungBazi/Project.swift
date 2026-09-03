@@ -12,6 +12,9 @@ let project = Project.project(
                 "BASE_URL": .string("$(BASE_URL)"),
                 "KAKAO_NATIVE_APP_KEY": .string("$(KAKAO_NATIVE_APP_KEY)"),
                 "AMPLITUDE_API_KEY": .string("$(AMPLITUDE_API_KEY)"),
+                // 앱 기본 언어(한국어) — VoiceOver가 한글 라벨/텍스트를 한국어 음성으로 읽도록 기본 지역을 명시한다.
+                "CFBundleDevelopmentRegion": .string("ko"),
+                "CFBundleLocalizations": .array([.string("ko")]),
                 // 앱 표시 이름 / 마케팅 버전
                 "CFBundleDisplayName": .string("청바지"),
                 "CFBundleName": .string("청바지"),
