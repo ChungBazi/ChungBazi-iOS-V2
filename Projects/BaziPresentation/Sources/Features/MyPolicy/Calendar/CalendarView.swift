@@ -241,14 +241,12 @@ extension CalendarView {
             title: policy.title,
             viewCount: policy.viewCount,
             isLiked: .constant(policy.isLiked),
+            onOpen: { store.send(.didTapPolicyInSheet(id: policy.id)) },
             accessory: .calendarAndMemo(
                 onAddCalendar: { store.send(.didTapAddToCalendar(id: policy.id)) },
                 onMemo: { store.send(.didTapMemoIcon(id: policy.id)) }
             )
         )
-        .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { store.send(.didTapPolicyInSheet(id: policy.id)) }
     }
 
     private func dayTitle(for date: Date) -> String {

@@ -220,11 +220,9 @@ extension PolicyDetailView {
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
-                            isLiked: recommendationLikeBinding(section: section, id: policy.id)
+                            isLiked: recommendationLikeBinding(section: section, id: policy.id),
+                            onOpen: { store.send(.didTapPolicy(id: policy.id)) }
                         )
-                        .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
                     }
                 }
                 .padding(.horizontal, 20)

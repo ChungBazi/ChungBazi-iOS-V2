@@ -171,11 +171,9 @@ extension HomeView {
                             title: policy.title,
                             viewCount: policy.viewCount,
                             image: policy.category.cardImage.image,
-                            isLiked: likeBinding(section: .personalized, id: policy.id)
+                            isLiked: likeBinding(section: .personalized, id: policy.id),
+                            onOpen: { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
                         )
-                        .onTapGesture { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityAction { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -323,11 +321,9 @@ extension HomeView {
                                     dDay: policy.dDay,
                                     title: policy.title,
                                     viewCount: policy.viewCount,
-                                    isLiked: likeBinding(section: section, id: policy.id)
+                                    isLiked: likeBinding(section: section, id: policy.id),
+                                    onOpen: { store.send(.didTapPolicy(section: section, id: policy.id)) }
                                 )
-                                .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
-                                .accessibilityAddTraits(.isButton)
-                                .accessibilityAction { store.send(.didTapPolicy(section: section, id: policy.id)) }
                             }
                         }
                         .padding(.horizontal, 20)
