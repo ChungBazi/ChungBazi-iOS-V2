@@ -174,7 +174,9 @@ public struct HomeFeature {
                 guard let current = currentLike(section: section, id: id, state: state) else { return .none }
                 let newValue = !current
                 setLiked(id: id, liked: newValue, state: &state)
-                return likeEffect(id: id, liked: newValue)
+                return .merge(likeEffect(id: id, liked: newValue), .run { [analytics] _ in
+                    analytics.track(.likeToggle(policyId: id, liked: newValue, source: .home))
+                })
 
             case let .likeFailed(id, liked):
                 // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).

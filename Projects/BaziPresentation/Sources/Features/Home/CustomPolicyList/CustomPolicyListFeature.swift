@@ -159,7 +159,9 @@ public struct CustomPolicyListFeature {
                 cards[id: id]?.isLiked = newValue
                 state.cards = .loaded(cards)
                 state.$likeOverrides.withLock { $0[id] = newValue }
-                return likeEffect(id: id, liked: newValue)
+                return .merge(likeEffect(id: id, liked: newValue), .run { [analytics] _ in
+                    analytics.track(.likeToggle(policyId: id, liked: newValue, source: .customList))
+                })
 
             case let .likeFailed(id, liked):
                 guard var cards = state.cards.value else { return .none }

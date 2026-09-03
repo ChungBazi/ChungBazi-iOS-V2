@@ -88,6 +88,7 @@ public struct RankedPolicyListFeature {
 
     @Dependency(\.rankedPolicyClient) var rankedPolicyClient
     @Dependency(\.policyLikeClient) var policyLikeClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -112,8 +113,15 @@ public struct RankedPolicyListFeature {
             case .didSelectCategory(let category):
                 guard category != state.selectedCategory else { return .none }
                 state.selectedCategory = category
+                let listType: ListType = switch state.kind {
+                case .popular: .rankedPopular
+                case .deadline: .rankedDeadline
+                case .latest: .rankedNew
+                }
                 // teaser는 분야 무관(전체 상위) 고정이므로 목록만 재조회한다.
-                return reloadFirstPage(&state)
+                return .merge(reloadFirstPage(&state), .run { [analytics] _ in
+                    analytics.track(.categoryFilter(listType: listType, category: category.rawValue))
+                })
 
             case .didReachListEnd:
                 guard state.pagination.canLoadNext, state.list.value != nil else { return .none }
@@ -149,7 +157,9 @@ public struct RankedPolicyListFeature {
                 let current = state.likeOverrides[id] ?? localLiked
                 let newValue = !current
                 setLiked(&state, id: id, liked: newValue)
-                return likeEffect(id: id, liked: newValue)
+                return .merge(likeEffect(id: id, liked: newValue), .run { [analytics] _ in
+                    analytics.track(.likeToggle(policyId: id, liked: newValue, source: .ranked))
+                })
 
             case let .likeFailed(id, liked):
                 // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).

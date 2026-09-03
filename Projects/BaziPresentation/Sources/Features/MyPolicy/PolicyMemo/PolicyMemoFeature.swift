@@ -65,6 +65,7 @@ public struct PolicyMemoFeature {
 
     @Dependency(\.policyMemoClient) var policyMemoClient
     @Dependency(\.dismiss) var dismiss
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -120,10 +121,13 @@ public struct PolicyMemoFeature {
                 }
                 let policyId = state.policyId
                 let text = state.draftText
-                return .run { [dismiss] send in
-                    await send(.delegate(.didSaveMemo(policyId: policyId, memo: text)))
-                    if dismissAfter { await dismiss() }
-                }
+                return .merge(
+                    .run { [dismiss] send in
+                        await send(.delegate(.didSaveMemo(policyId: policyId, memo: text)))
+                        if dismissAfter { await dismiss() }
+                    },
+                    .run { [analytics] _ in analytics.track(.memoSave(policyId: policyId, hasContent: !text.isEmpty)) }
+                )
 
             case let .saveFailed(dismissAfter):
                 state.isSaving = false
