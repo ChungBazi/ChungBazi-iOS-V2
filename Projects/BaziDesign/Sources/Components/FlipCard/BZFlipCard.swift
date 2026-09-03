@@ -165,6 +165,7 @@ extension BZFlipCard {
                 .scaledToFill()
                 .frame(width: geometry.size.width, height: geometry.size.height)
                 .clipped()
+                .accessibilityHidden(true)
         }
         .aspectRatio(Self.thumbnailAspectRatio, contentMode: .fit)
         .baziRadius(.small)
