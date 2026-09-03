@@ -1,6 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
 import Foundation
+import Alamofire
 import Moya
 
 import BaziCore
@@ -67,7 +68,13 @@ extension NetworkError {
             }
         }
 
-        // 3) 그 외는 NSError 기반으로 URLError 코드를 매핑
+        // 3) Alamofire가 URLError를 AFError(.sessionTaskFailed 등)로 감싸므로, underlying으로 내려가
+        //    실제 URLError까지 도달해야 offline/timeout이 분류된다.
+        if let afError = error as? AFError, let underlying = afError.underlyingError {
+            return from(underlying)
+        }
+
+        // 4) 그 외는 NSError 기반으로 URLError 코드를 매핑
         let nsError = error as NSError
         switch nsError.code {
         case NSURLErrorNotConnectedToInternet:
