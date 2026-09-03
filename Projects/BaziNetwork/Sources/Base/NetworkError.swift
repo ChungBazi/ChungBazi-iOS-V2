@@ -3,10 +3,13 @@
 import Foundation
 import Moya
 
+import BaziCore
+
 public enum NetworkError: Error {
     case serverError(code: String, message: String)
     case decodingError(Error)
-    case networkError(message: String)
+    case offline
+    case timeout
     case unauthorized
     case unknown(Error)
 }
@@ -16,9 +19,24 @@ extension NetworkError: LocalizedError {
         switch self {
         case .serverError(let code, let message): return "[\(code)] \(message)"
         case .decodingError:                      return "데이터 디코딩에 실패했습니다."
-        case .networkError(let message):          return message
+        case .offline:                            return "인터넷 연결이 끊겼습니다."
+        case .timeout:                            return "요청 시간이 초과되었습니다."
         case .unauthorized:                       return "인증이 만료되었습니다. 다시 로그인해주세요."
         case .unknown:                            return "알 수 없는 오류가 발생했습니다."
+        }
+    }
+}
+
+// 상위 계층(UseCaseError)이 구체 타입을 몰라도 분류를 읽을 수 있도록 노출한다.
+extension NetworkError: NetworkFailureClassifiable {
+    public var failureKind: NetworkFailureKind {
+        switch self {
+        case .serverError(let code, let message): return .server(code: code, message: message)
+        case .decodingError:                      return .decoding
+        case .offline:                            return .offline
+        case .timeout:                            return .timeout
+        case .unauthorized:                       return .unauthorized
+        case .unknown:                            return .other
         }
     }
 }
@@ -29,7 +47,7 @@ extension NetworkError {
         if let networkError = error as? NetworkError {
             return networkError
         }
-        
+
         // 2) MoyaError: 검증 실패(비-2xx) 응답이면 바디의 서버 code/message를 살린다.
         if let moyaError = error as? MoyaError {
             if let response = moyaError.response {
@@ -48,14 +66,14 @@ extension NetworkError {
                 return .unknown(moyaError)
             }
         }
-        
+
         // 3) 그 외는 NSError 기반으로 URLError 코드를 매핑
         let nsError = error as NSError
         switch nsError.code {
         case NSURLErrorNotConnectedToInternet:
-            return .networkError(message: "인터넷 연결이 끊겼습니다.")
+            return .offline
         case NSURLErrorTimedOut:
-            return .networkError(message: "요청 시간이 초과되었습니다.")
+            return .timeout
         default:
             return .unknown(error)
         }

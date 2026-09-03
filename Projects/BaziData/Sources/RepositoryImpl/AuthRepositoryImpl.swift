@@ -43,7 +43,7 @@ public struct AuthRepositoryImpl: AuthRepository {
                 }
                 group.addTask {
                     try await Task.sleep(nanoseconds: 5_000_000_000) // 5s 타임아웃 (스플래시 무한대기 방지)
-                    throw NetworkError.networkError(message: "세션 검증 시간 초과")
+                    throw NetworkError.timeout
                 }
                 defer { group.cancelAll() }
                 _ = try await group.next()
