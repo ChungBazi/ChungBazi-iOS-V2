@@ -78,6 +78,8 @@ extension RankedPolicyListView {
                             isLiked: teaserLikeBinding(id: policy.id)
                         )
                         .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -122,6 +124,8 @@ extension RankedPolicyListView {
                     isLiked: likeBinding(id: policy.id)
                 )
                 .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
                 .onAppear {
                     if policy.id == policies.last?.id {
                         store.send(.didReachListEnd)

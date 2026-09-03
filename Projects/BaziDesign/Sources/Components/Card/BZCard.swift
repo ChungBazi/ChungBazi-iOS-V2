@@ -101,6 +101,40 @@ public struct BZCard: View {
         .frame(maxWidth: size.width == nil ? .infinity : nil)
         .baziBackground(.bgWhite)
         .baziRadius(.medium)
+        // 카드를 하나의 요소로 읽고, 우측 상단 액세서리(찜/메모/캘린더)는 커스텀 액션으로 노출한다.
+        // "열기"(탭) 동작과 .isButton 트레잇은 탭 여부를 아는 호출부가 붙인다.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(cardAccessibilityLabel)
+        .accessibilityActions { accessoryAccessibilityActions }
+    }
+}
+
+// MARK: - Accessibility
+
+extension BZCard {
+
+    private var cardAccessibilityLabel: String {
+        var parts: [String] = []
+        if let badgeNumber { parts.append("\(badgeNumber)위") }
+        parts.append(category)
+        parts.append(dDay)
+        parts.append(title)
+        parts.append("조회수 \(viewCount.formatted())회")
+        if case .like = accessory, isLiked { parts.append("찜함") }
+        return parts.joined(separator: ", ")
+    }
+
+    @ViewBuilder
+    private var accessoryAccessibilityActions: some View {
+        switch accessory {
+        case .like:
+            Button(isLiked ? "찜 해제" : "찜하기") { isLiked.toggle() }
+        case .memo(let action):
+            Button("메모") { action() }
+        case let .calendarAndMemo(onAddCalendar, onMemo):
+            Button("마감일 캘린더에 추가") { onAddCalendar() }
+            Button("메모") { onMemo() }
+        }
     }
 }
 

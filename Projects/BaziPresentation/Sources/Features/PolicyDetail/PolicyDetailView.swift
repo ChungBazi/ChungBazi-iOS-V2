@@ -222,6 +222,8 @@ extension PolicyDetailView {
                             isLiked: recommendationLikeBinding(section: section, id: policy.id)
                         )
                         .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
                     }
                 }
                 .padding(.horizontal, 20)

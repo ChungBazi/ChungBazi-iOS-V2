@@ -123,9 +123,10 @@ extension CalendarView {
         let isToday = Calendar.current.isDate(date, inSameDayAs: store.centerDate)
         let dayKey = Calendar.current.dateComponents([.year, .month, .day], from: date).yyyymmddKey
         let hasDeadline = dayKey.map { store.deadlineDays.contains($0) } ?? false
+        let day = Calendar.current.component(.day, from: date)
 
         return VStack(spacing: 4) {
-            Text("\(Calendar.current.component(.day, from: date))")
+            Text("\(day)")
                 .baziFont(.small14R)
                 .foregroundStyle(isToday ? Color.grayWhite : Color.gray700)
                 .frame(width: 36, height: 36)
@@ -143,6 +144,9 @@ extension CalendarView {
             guard hasDeadline else { return }
             store.send(.didSelectDate(date))
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(isToday ? "오늘, " : "")\(day)일\(hasDeadline ? ", 마감 정책 있음" : "")")
+        .accessibilityAddTraits(hasDeadline ? .isButton : [])
     }
 }
 
@@ -241,6 +245,8 @@ extension CalendarView {
             )
         )
         .onTapGesture { store.send(.didTapPolicyInSheet(id: policy.id)) }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { store.send(.didTapPolicyInSheet(id: policy.id)) }
     }
 
     private func dayTitle(for date: Date) -> String {

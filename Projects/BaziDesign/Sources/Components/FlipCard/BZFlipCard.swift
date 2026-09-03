@@ -60,14 +60,22 @@ public struct BZFlipCard: View {
                 .baziRadius(.medium)
                 .opacity(isFlipped ? 0 : 1)
                 .rotation3DEffect(.degrees(isFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+                .accessibilityHidden(isFlipped)
             back
                 .baziRadius(.medium)
                 .opacity(isFlipped ? 1 : 0)
                 .rotation3DEffect(.degrees(isFlipped ? 0 : -180), axis: (x: 0, y: 1, z: 0))
+                .accessibilityHidden(!isFlipped)
         }
         .aspectRatio(Self.cardAspectRatio, contentMode: .fit)
         .shadow(color: Color.grayBlack.opacity(0.11), radius: 5.67, x: 0, y: 1.89)
         .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.4)) {
+                isFlipped.toggle()
+            }
+            onFlip?(isFlipped)
+        }
+        .accessibilityAction(named: Text(isFlipped ? "카드 앞면 보기" : "정책 요약 보기")) {
             withAnimation(.easeInOut(duration: 0.4)) {
                 isFlipped.toggle()
             }

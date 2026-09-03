@@ -328,6 +328,8 @@ private extension MyPolicyView {
             accessory: .memo(action: { store.send(.didTapMemo(id: policy.id)) })
         )
         .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
     }
 }
 
