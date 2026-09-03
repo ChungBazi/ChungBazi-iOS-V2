@@ -34,35 +34,39 @@ public struct NotificationSettingView: View {
 extension NotificationSettingView {
 
     private var content: some View {
-        VStack(spacing: 0) {
-            row(
-                ProfileConstants.NotificationText.all,
-                isOn: Binding(
-                    get: { store.isAllNotificationOn },
-                    set: { store.send(.didToggleAllNotification($0)) }
+        ScrollView {
+            VStack(spacing: 0) {
+                row(
+                    ProfileConstants.NotificationText.all,
+                    isOn: Binding(
+                        get: { store.isAllNotificationOn },
+                        set: { store.send(.didToggleAllNotification($0)) }
+                    )
                 )
-            )
-            row(
-                ProfileConstants.NotificationText.myPolicy,
-                isOn: Binding(
-                    get: { store.isMyPolicyNotificationOn },
-                    set: { store.send(.didToggleMyPolicyNotification($0)) }
+                row(
+                    ProfileConstants.NotificationText.myPolicy,
+                    isOn: Binding(
+                        get: { store.isMyPolicyNotificationOn },
+                        set: { store.send(.didToggleMyPolicyNotification($0)) }
+                    )
                 )
-            )
-            .disabled(!store.isAllNotificationOn)
-            .opacity(store.isAllNotificationOn ? 1 : 0.4)
-            row(
-                ProfileConstants.NotificationText.chungBazi,
-                isOn: Binding(
-                    get: { store.isChungBaziNotificationOn },
-                    set: { store.send(.didToggleChungBaziNotification($0)) }
+                .disabled(!store.isAllNotificationOn)
+                .opacity(store.isAllNotificationOn ? 1 : 0.4)
+                row(
+                    ProfileConstants.NotificationText.chungBazi,
+                    isOn: Binding(
+                        get: { store.isChungBaziNotificationOn },
+                        set: { store.send(.didToggleChungBaziNotification($0)) }
+                    )
                 )
-            )
-            .disabled(!store.isAllNotificationOn)
-            .opacity(store.isAllNotificationOn ? 1 : 0.4)
+                .disabled(!store.isAllNotificationOn)
+                .opacity(store.isAllNotificationOn ? 1 : 0.4)
+            }
+            .disabled(!store.hasLoaded)
+            .padding(.horizontal, 20)
         }
-        .disabled(!store.hasLoaded)
-        .padding(.horizontal, 20)
+        .hiddenTabBarSafeBottom()
+        .scrollBounceBehavior(.basedOnSize)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .baziBackground(.bgWhite)
     }

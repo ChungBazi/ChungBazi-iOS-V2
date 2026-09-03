@@ -84,6 +84,9 @@ extension BZSegmentControl {
             Text(option)
                 .baziFont(isSelected ? .small14SB : .small14R)
                 .foregroundStyle(isSelected ? Color.grayBlack : Color.gray300)
+                // 5개 이하 비스크롤 배치에서 큰 글자로 라벨이 "…" 잘리지 않도록 칸에 맞게 축소.
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .frame(maxHeight: .infinity)
                 .contentShape(Rectangle())
         }

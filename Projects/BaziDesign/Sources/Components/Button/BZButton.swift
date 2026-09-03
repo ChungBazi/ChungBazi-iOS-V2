@@ -50,6 +50,9 @@ public struct BZButton: View {
     public var body: some View {
         Button(action: action) {
             Text(title)
+                // 버튼 라벨은 "…"로 잘리면 기능 판독이 안 되므로, 큰 글자에선 칸에 맞게 축소한다.
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
         .buttonStyle(BZButtonStyle(type: type, size: size))
     }
