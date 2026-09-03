@@ -99,6 +99,7 @@ public struct CalendarFeature: Sendable {
 
     @Dependency(\.calendarClient) var calendarClient
     @Dependency(\.calendar) var calendar
+    @Dependency(\.analytics) var analytics
     @Dependency(\.continuousClock) var clock
 
     // MARK: - Init
@@ -188,9 +189,10 @@ public struct CalendarFeature: Sendable {
                       let policy = state.selectedDatePolicies.value?[id: id] else { return .none }
                 state.isAddingDeadline = true
                 let title = policy.title
-                return .run { [calendarClient] send in
+                return .run { [calendarClient, analytics] send in
                     do {
                         try await calendarClient.addDeadline(id, title, date)
+                        analytics.track(.calendarAdd(policyId: id))
                         await send(.addToCalendarSucceeded)
                     } catch let error as EventKitError {
                         await send(.addToCalendarFailed(error))

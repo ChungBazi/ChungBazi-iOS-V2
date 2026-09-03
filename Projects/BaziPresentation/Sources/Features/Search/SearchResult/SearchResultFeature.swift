@@ -64,6 +64,7 @@ public struct SearchResultFeature {
 
     @Dependency(\.policySearchClient) var policySearchClient
     @Dependency(\.policyLikeClient) var policyLikeClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -86,11 +87,16 @@ public struct SearchResultFeature {
             case .didSelectCategory(let category):
                 guard category != state.selectedCategory else { return .none }
                 state.selectedCategory = category
-                return reloadFirstPage(&state)
+                return .merge(reloadFirstPage(&state), .run { [analytics] _ in
+                    analytics.track(.categoryFilter(listType: .searchResult, category: category?.rawValue ?? "all"))
+                })
 
             case .didTapSortOrder:
                 state.sortOrder = state.sortOrder.next
-                return reloadFirstPage(&state)
+                let sort = state.sortOrder.serverValue
+                return .merge(reloadFirstPage(&state), .run { [analytics] _ in
+                    analytics.track(.sortApply(listType: .searchResult, sortOrder: sort))
+                })
 
             case .didReachListEnd:
                 guard state.pagination.canLoadNext, state.results.value != nil else { return .none }
@@ -121,7 +127,9 @@ public struct SearchResultFeature {
                 let current = state.likeOverrides[id] ?? localLiked
                 let newValue = !current
                 setLiked(&state, id: id, liked: newValue)
-                return likeEffect(id: id, liked: newValue)
+                return .merge(likeEffect(id: id, liked: newValue), .run { [analytics] _ in
+                    analytics.track(.likeToggle(policyId: id, liked: newValue, source: .searchResult))
+                })
 
             case let .likeFailed(id, liked):
                 // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).

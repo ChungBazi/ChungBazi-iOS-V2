@@ -98,7 +98,11 @@ public struct PolicyDetailFeature {
                 let current = state.likeOverrides[state.policyId] ?? localLiked
                 let newValue = !current
                 setDetailLiked(&state, liked: newValue)
-                return likeEffect(id: state.policyId, liked: newValue) { .likeFailed(liked: newValue) }
+                let policyId = state.policyId
+                return .merge(
+                    likeEffect(id: state.policyId, liked: newValue) { .likeFailed(liked: newValue) },
+                    .run { [analytics] _ in analytics.track(.likeToggle(policyId: policyId, liked: newValue, source: .detail)) }
+                )
 
             case .didTapApply:
                 guard let url = state.detail.value?.applyURL else { return .none }
@@ -121,9 +125,12 @@ public struct PolicyDetailFeature {
                 let current = state.likeOverrides[id] ?? localLiked
                 let newValue = !current
                 setRecommendationLiked(&state, section: section, id: id, liked: newValue)
-                return likeEffect(id: id, liked: newValue) {
-                    .recommendationLikeFailed(section: section, id: id, liked: newValue)
-                }
+                return .merge(
+                    likeEffect(id: id, liked: newValue) {
+                        .recommendationLikeFailed(section: section, id: id, liked: newValue)
+                    },
+                    .run { [analytics] _ in analytics.track(.likeToggle(policyId: id, liked: newValue, source: .recommendation)) }
+                )
 
             case let .recommendationLikeFailed(section, id, liked):
                 // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
@@ -139,9 +146,12 @@ public struct PolicyDetailFeature {
                     // 앱 복귀는 iosExecutionParams(policyId)로 처리하므로 webURL은 두지 않는다.
                     webURL: nil
                 )
-                return .run { [policyDetailClient] _ in
-                    try? await policyDetailClient.shareToKakao(content)
-                }
+                return .merge(
+                    .run { [policyDetailClient] _ in
+                        try? await policyDetailClient.shareToKakao(content)
+                    },
+                    .run { [analytics] _ in analytics.track(.shareClick(policyId: detail.id)) }
+                )
 
             case .didTapPolicy(let id):
                 return .send(.delegate(.didSelectPolicy(id: id)))

@@ -123,10 +123,15 @@ public struct SearchFeature {
 
             case .didSubmitQuery:
                 guard !state.query.isEmpty else { return .none }
-                return submitSearch(state: &state, query: state.query)
+                let query = state.query
+                return .merge(submitSearch(state: &state, query: query), .run { [analytics] _ in
+                    analytics.track(.search(keyword: query, source: .submit))
+                })
 
             case .didTapSuggestion(let keyword):
-                return submitSearch(state: &state, query: keyword)
+                return .merge(submitSearch(state: &state, query: keyword), .run { [analytics] _ in
+                    analytics.track(.search(keyword: keyword, source: .suggestion))
+                })
 
             case .didTapDeleteRecentKeyword(let id):
                 state.recentKeywords.remove(id: id)

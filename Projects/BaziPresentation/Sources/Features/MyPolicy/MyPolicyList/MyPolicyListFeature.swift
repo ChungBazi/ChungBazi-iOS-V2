@@ -93,6 +93,7 @@ public struct MyPolicyListFeature {
 
     @Dependency(\.myPolicyListClient) var myPolicyListClient
     @Dependency(\.policyLikeClient) var policyLikeClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -130,11 +131,16 @@ public struct MyPolicyListFeature {
             case .didSelectCategory(let category):
                 guard category != state.selectedCategory else { return .none }
                 state.selectedCategory = category
-                return reloadFirstPage(&state)
+                return .merge(reloadFirstPage(&state), .run { [analytics] _ in
+                    analytics.track(.categoryFilter(listType: .myPolicy, category: category?.rawValue ?? "all"))
+                })
 
             case .didTapSortOrder:
                 state.sortOrder = state.sortOrder.next
-                return reloadFirstPage(&state)
+                let sort = state.sortOrder.serverValue
+                return .merge(reloadFirstPage(&state), .run { [analytics] _ in
+                    analytics.track(.sortApply(listType: .myPolicy, sortOrder: sort))
+                })
 
             case .didReachListEnd:
                 guard state.pagination.canLoadNext, state.list.value != nil else { return .none }
@@ -164,14 +170,19 @@ public struct MyPolicyListFeature {
                 state.$likeOverrides.withLock { $0[id] = false }
                 state.lastSyncedLikeOverrides = state.likeOverrides  // 자체 변경은 스냅샷 동기화(onChange 재조회 방지)
                 let generation = state.reloadGeneration
-                return .run { [policyLikeClient] send in
-                    do {
-                        try await policyLikeClient.setLike(id, false)
-                    } catch {
-                        await send(.likeFailed(policy: removed, index: index, generation: generation))
+                return .merge(
+                    .run { [policyLikeClient] send in
+                        do {
+                            try await policyLikeClient.setLike(id, false)
+                        } catch {
+                            await send(.likeFailed(policy: removed, index: index, generation: generation))
+                        }
                     }
-                }
-                .cancellable(id: CancelID.like(id), cancelInFlight: true)
+                    .cancellable(id: CancelID.like(id), cancelInFlight: true),
+                    .run { [analytics] _ in
+                        analytics.track(.likeToggle(policyId: id, liked: false, source: .myPolicyList))
+                    }
+                )
 
             case let .likeFailed(policy, index, generation):
                 // 해제 실패 → 오버레이 복구(찜 유지). 단 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(낙관값 false가 남아있을 때만).
