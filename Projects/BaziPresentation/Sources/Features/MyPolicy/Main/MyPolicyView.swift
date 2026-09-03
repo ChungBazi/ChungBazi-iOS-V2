@@ -248,6 +248,7 @@ private extension MyPolicyView {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -284,6 +285,7 @@ private extension MyPolicyView {
                 }
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

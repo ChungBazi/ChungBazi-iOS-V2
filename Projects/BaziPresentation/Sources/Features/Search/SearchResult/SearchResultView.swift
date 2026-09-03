@@ -51,6 +51,7 @@ extension SearchResultView {
                     .foregroundStyle(Color.gray900)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("뒤로 가기")
 
             // 결과 화면에서는 직접 편집하지 않고, 검색바를 탭하면 뒤로가기와 동일하게 검색 입력 화면으로 돌아간다.
             // 필드 자체는 히트테스트를 끄고, 투명 오버레이가 탭을 받아 전체 영역을 탭 가능하게 한다.
@@ -62,6 +63,11 @@ extension SearchResultView {
                         .contentShape(Rectangle())
                         .onTapGesture { dismiss() }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("검색어 \(store.query)")
+                .accessibilityHint("두 번 탭하면 검색 화면으로 돌아갑니다")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { dismiss() }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)

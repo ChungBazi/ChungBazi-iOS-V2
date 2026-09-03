@@ -62,6 +62,8 @@ extension BZInputField {
                 .focused($isFocused)
                 .baziFont(.body16R)
                 .foregroundColor(Color.grayBlack)
+                .accessibilityLabel(placeholder)
+                .accessibilityValue(helperText)
 
             Text("\(text.count)/\(maxLength)")
                 .baziFont(.small12M)

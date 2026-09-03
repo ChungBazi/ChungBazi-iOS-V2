@@ -39,6 +39,8 @@ public struct BZSelectField: View {
             content
         }
         .disabled(isDisabled)
+        .accessibilityLabel("\(title), \(selection ?? placeholder)")
+        .accessibilityHint("탭하여 선택")
         .sheet(isPresented: $isPresented) {
             BZBottomSheet(title: title, options: options) { option in
                 selection = option

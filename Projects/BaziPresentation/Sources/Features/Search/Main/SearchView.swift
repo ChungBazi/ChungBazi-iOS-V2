@@ -150,6 +150,7 @@ extension SearchView {
             ))
             .labelsHidden()
             .tint(Color.bazi(.primary))
+            .accessibilityLabel("검색어 자동저장")
 
             Text("자동저장")
                 .baziFont(.small14R)
