@@ -7,19 +7,29 @@ public enum AnalyticsEvent: Equatable, Sendable {
     case login(method: String, isNewUser: Bool)
     case logout
     case withdrawComplete(reasons: [String])
-    // MARK: 탐색 퍼널 (Phase B)
+    // MARK: 탐색 퍼널
     case policyListView(listType: ListType, entryPoint: EntryPoint, category: String?)
     case policyDetailView(policyId: Int, policyName: String?, category: String?, entryPoint: EntryPoint)
     case applyClick(policyId: Int, applyURL: String, source: ApplySource)
-    // MARK: 검색/필터 (Phase C)
+    // MARK: 검색/필터
     case search(keyword: String, source: SearchSource)
     case sortApply(listType: ListType, sortOrder: String)
     case categoryFilter(listType: ListType, category: String)
-    // MARK: 기능 채택 (Phase C)
+    // MARK: 기능 채택
     case likeToggle(policyId: Int, liked: Bool, source: LikeSource)
     case calendarAdd(policyId: Int)
     case memoSave(policyId: Int, hasContent: Bool)
     case shareClick(policyId: Int)
+    // MARK: 심화 인터랙션
+    case customCardView(policyId: Int, position: Int)
+    case aiSummaryView(policyId: Int)
+    case aiSummaryGenerated(policyId: Int, available: Bool)
+    case policyDetailScroll(policyId: Int, depth: Int)
+    // MARK: 생명주기
+    case onboardingStart
+    case onboardingComplete
+    case policyProfileEditSave(changed: Bool)
+    case notificationClick(notificationId: Int, policyId: Int?)
 
     /// Amplitude 이벤트명(snake_case).
     public var name: String {
@@ -38,6 +48,14 @@ public enum AnalyticsEvent: Equatable, Sendable {
         case .calendarAdd: return "calendar_add"
         case .memoSave: return "memo_save"
         case .shareClick: return "share_click"
+        case .customCardView: return "custom_card_view"
+        case .aiSummaryView: return "ai_summary_view"
+        case .aiSummaryGenerated: return "ai_summary_generated"
+        case .policyDetailScroll: return "policy_detail_scroll"
+        case .onboardingStart: return "onboarding_start"
+        case .onboardingComplete: return "onboarding_complete"
+        case .policyProfileEditSave: return "policy_profile_edit_save"
+        case .notificationClick: return "notification_click"
         }
     }
 
@@ -77,6 +95,22 @@ public enum AnalyticsEvent: Equatable, Sendable {
             return ["policy_id": policyId, "has_content": hasContent]
         case let .shareClick(policyId):
             return ["policy_id": policyId]
+        case let .customCardView(policyId, position):
+            return ["policy_id": policyId, "position": position]
+        case let .aiSummaryView(policyId):
+            return ["policy_id": policyId]
+        case let .aiSummaryGenerated(policyId, available):
+            return ["policy_id": policyId, "available": available]
+        case let .policyDetailScroll(policyId, depth):
+            return ["policy_id": policyId, "depth": depth]
+        case .onboardingStart, .onboardingComplete:
+            return [:]
+        case let .policyProfileEditSave(changed):
+            return ["changed": changed]
+        case let .notificationClick(notificationId, policyId):
+            var props: [String: Any] = ["notification_id": notificationId]
+            if let policyId { props["policy_id"] = policyId }
+            return props
         }
     }
 }
