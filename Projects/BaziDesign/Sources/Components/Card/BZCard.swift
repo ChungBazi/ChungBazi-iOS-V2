@@ -25,10 +25,6 @@ public enum BZCardSize: Equatable {
         }
     }
 
-//    var contentSpacing: CGFloat {
-//        self == .large ? 12 : 8
-//    }
-
     var titleFont: BaziFont {
         self == .large ? .body16SB : .body15SB
     }
@@ -54,6 +50,8 @@ public struct BZCard: View {
     private let viewCount: Int
     private let image: Image?
     private let accessory: BZCardAccessory
+    /// 카드 탭(=상세 열기). VoiceOver 요약 요소의 활성화 액션이기도 하다. `nil`이면 열기 없음.
+    private let onOpen: (() -> Void)?
     @Binding private var isLiked: Bool
 
     // MARK: - Init
@@ -67,6 +65,7 @@ public struct BZCard: View {
         viewCount: Int,
         image: Image? = nil,
         isLiked: Binding<Bool>,
+        onOpen: (() -> Void)? = nil,
         accessory: BZCardAccessory = .like
     ) {
         self.size = size
@@ -77,6 +76,7 @@ public struct BZCard: View {
         self.viewCount = viewCount
         self.image = image
         self._isLiked = isLiked
+        self.onOpen = onOpen
         self.accessory = accessory
     }
 
@@ -101,11 +101,12 @@ public struct BZCard: View {
         .frame(maxWidth: size.width == nil ? .infinity : nil)
         .baziBackground(.bgWhite)
         .baziRadius(.medium)
-        // 카드를 하나의 요소로 읽고, 우측 상단 액세서리(찜/메모/캘린더)는 커스텀 액션으로 노출한다.
-        // "열기"(탭) 동작과 .isButton 트레잇은 탭 여부를 아는 호출부가 붙인다.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(cardAccessibilityLabel)
-        .accessibilityActions { accessoryAccessibilityActions }
+        .contentShape(Rectangle())
+        .onTapGesture { onOpen?() }
+        // 카드 정보는 요약 요소 하나로 읽고(탭=열기), 액세서리 버튼은 개별 포커스로 남긴다.
+        .background(cardAccessibilityElement)
+        // 요약 요소와 액세서리 버튼이 병합되지 않게 묶는다(요약 먼저, 그다음 각 버튼).
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -124,16 +125,23 @@ extension BZCard {
         return parts.joined(separator: ", ")
     }
 
+    /// 카드 프레임 전체를 덮는 투명 요약 요소. 정보 서브뷰는 숨기고 이 요소 하나로 읽는다.
+    /// `onOpen`이 있으면 버튼(활성화 = 열기)으로, 없으면 읽기 전용 텍스트로 노출한다.
     @ViewBuilder
-    private var accessoryAccessibilityActions: some View {
-        switch accessory {
-        case .like:
-            Button(isLiked ? "찜 해제" : "찜하기") { isLiked.toggle() }
-        case .memo(let action):
-            Button("메모") { action() }
-        case let .calendarAndMemo(onAddCalendar, onMemo):
-            Button("마감일 캘린더에 추가") { onAddCalendar() }
-            Button("메모") { onMemo() }
+    private var cardAccessibilityElement: some View {
+        if let onOpen {
+            Color.clear
+                .accessibilityElement()
+                .accessibilityLabel(cardAccessibilityLabel)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onOpen() }
+                // 액세서리 버튼(sortPriority 0)보다 먼저 포커스되도록 우선순위를 높인다.
+                .accessibilitySortPriority(1)
+        } else {
+            Color.clear
+                .accessibilityElement()
+                .accessibilityLabel(cardAccessibilityLabel)
+                .accessibilitySortPriority(1)
         }
     }
 }
@@ -150,6 +158,7 @@ extension BZCard {
             .frame(maxWidth: .infinity)
             .clipped()
             .baziRadius(.small)
+            .accessibilityHidden(true)
     }
 
     private var tagRow: some View {
@@ -163,8 +172,12 @@ extension BZCard {
                     .baziFont(.small12SB)
                     .foregroundStyle(dDayColor)
             }
+            // 태그·D-day는 카드 요약 요소(cardAccessibilityElement)로 대체해 읽는다.
+            .accessibilityHidden(true)
             Spacer(minLength: 8)
+            // 단일 버튼(찜/메모)도 요약 요소에 병합되지 않고 개별 포커스되도록 자체 컨테이너로 감싼다.
             accessoryView
+                .accessibilityElement(children: .contain)
         }
     }
 
@@ -189,7 +202,6 @@ extension BZCard {
             iconButton(.memoIcon, label: "메모", action: action)
 
         case let .calendarAndMemo(onAddCalendar, onMemo):
-            // 캘린더 추가 아이콘을 메모 왼쪽에 나란히(패딩 조금) 둔다.
             HStack(spacing: 20) {
                 iconButton(.addCalendarIcon, label: "마감일 캘린더에 추가", action: onAddCalendar)
                 iconButton(.memoIcon, label: "메모", action: onMemo)
@@ -215,6 +227,7 @@ extension BZCard {
             .foregroundStyle(Color.grayBlack)
             .lineLimit(size == .small ? 2 : 1)
             .truncationMode(.tail)
+            .accessibilityHidden(true)
     }
 
     private var viewCountRow: some View {
@@ -228,6 +241,7 @@ extension BZCard {
                 .baziFont(.small12R)
         }
         .foregroundStyle(Color.gray400)
+        .accessibilityHidden(true)
     }
 }
 

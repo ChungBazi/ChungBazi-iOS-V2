@@ -131,11 +131,9 @@ extension CategoryPolicyListView {
                     dDay: policy.dDay,
                     title: policy.title,
                     viewCount: policy.viewCount,
-                    isLiked: likeBinding(id: policy.id)
+                    isLiked: likeBinding(id: policy.id),
+                    onOpen: { store.send(.didTapPolicy(id: policy.id)) }
                 )
-                .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
                 .onAppear {
                     if policy.id == policies.last?.id {
                         store.send(.didReachListEnd)

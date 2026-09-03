@@ -328,11 +328,9 @@ private extension MyPolicyView {
             title: policy.title,
             viewCount: policy.viewCount,
             isLiked: .constant(policy.isLiked),
+            onOpen: { store.send(.didTapPolicy(id: policy.id)) },
             accessory: .memo(action: { store.send(.didTapMemo(id: policy.id)) })
         )
-        .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
     }
 }
 

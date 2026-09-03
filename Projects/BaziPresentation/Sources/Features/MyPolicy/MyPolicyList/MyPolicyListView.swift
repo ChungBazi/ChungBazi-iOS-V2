@@ -108,11 +108,9 @@ extension MyPolicyListView {
                     dDay: policy.dDay,
                     title: policy.title,
                     viewCount: policy.viewCount,
-                    isLiked: likeBinding(id: policy.id)
+                    isLiked: likeBinding(id: policy.id),
+                    onOpen: { store.send(.didTapPolicy(id: policy.id)) }
                 )
-                .onTapGesture { store.send(.didTapPolicy(id: policy.id)) }
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { store.send(.didTapPolicy(id: policy.id)) }
             }
             // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
             Color.clear
