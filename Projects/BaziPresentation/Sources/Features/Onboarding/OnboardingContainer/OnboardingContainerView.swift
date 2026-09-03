@@ -23,6 +23,7 @@ public struct OnboardingContainerView: View {
         content
             .toolbar(.hidden, for: .navigationBar)
             .task { store.send(.onAppear) }
+            .baziToast(errorMessage: $store.errorToast)
     }
 }
 

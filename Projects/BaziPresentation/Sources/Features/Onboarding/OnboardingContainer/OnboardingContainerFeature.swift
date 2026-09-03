@@ -60,6 +60,8 @@ public struct OnboardingContainerFeature {
 
         // MARK: Submit
         public var isSubmitting = false
+        /// 제출 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
 
         public init() {}
 
@@ -122,6 +124,7 @@ public struct OnboardingContainerFeature {
     // MARK: - CancelID
 
     private enum CancelID {
+        case sidoFetch
         case sigunguFetch
     }
 
@@ -132,21 +135,15 @@ public struct OnboardingContainerFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                return .run { [onboardingClient] send in
-                    do {
-                        let sido = try await onboardingClient.fetchSidoList()
-                        await send(.sidoResponse(.success(sido.map(RegionVO.init))))
-                    } catch {
-                        await send(.sidoResponse(.failure(UseCaseError.map(error))))
-                    }
-                }
+                return fetchSidoList()
 
             case .sidoResponse(.success(let list)):
                 state.sidoOptions = list
                 return .none
 
-            case .sidoResponse(.failure):
-                // TODO: 시도 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+            case .sidoResponse(.failure(let error)):
+                // 지역 스텝 진입 시 목록이 비어 있으면 다시 불러오므로, 여기선 토스트만 띄운다.
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
                 return .none
 
             case .didSelectSido(let sido):
@@ -157,8 +154,9 @@ public struct OnboardingContainerFeature {
                 state.sigunguOptions = list
                 return .none
 
-            case .sigunguResponse(.failure):
-                // TODO: 시군구 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+            case .sigunguResponse(.failure(let error)):
+                // 시군구는 시도 재선택으로 다시 시도할 수 있어 토스트만 띄운다.
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
                 return .none
 
             case .didSelectSigungu(let sigungu):
@@ -229,15 +227,19 @@ public struct OnboardingContainerFeature {
                     return submitOnboarding(state: &state)
                 }
                 state.currentStep = nextStep
+                // 지역 스텝인데 시도 목록이 (로드 실패 등으로) 비어 있으면 진입 시 다시 불러온다.
+                if nextStep == .region, state.sidoOptions.isEmpty {
+                    return fetchSidoList()
+                }
                 return .none
 
             case .didSubmitOnboarding(let nickname):
                 state.isSubmitting = false
                 return .send(.delegate(.didCompleteAllSteps(nickname)))
 
-            case .didFailToSubmitOnboarding:
+            case .didFailToSubmitOnboarding(let error):
                 state.isSubmitting = false
-                // TODO: 온보딩 제출 실패 알림 UI가 정해지면 State에 반영.
+                state.errorToast = error.loadFailureMessage
                 return .none
 
             case .delegate:
@@ -260,6 +262,18 @@ public struct OnboardingContainerFeature {
         state.year = clamped.year
         state.month = clamped.month
         state.day = clamped.day
+    }
+
+    private func fetchSidoList() -> Effect<Action> {
+        .run { [onboardingClient] send in
+            do {
+                let sido = try await onboardingClient.fetchSidoList()
+                await send(.sidoResponse(.success(sido.map(RegionVO.init))))
+            } catch {
+                await send(.sidoResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+        .cancellable(id: CancelID.sidoFetch, cancelInFlight: true)
     }
 
     private func fetchSigunguList(_ state: inout State) -> Effect<Action> {

@@ -6,7 +6,7 @@ import BaziDomain
 
 /// 프로필 > 알림 설정.
 /// 전체 알림은 마스터 스위치다: 끄면 하위 두 알림도 꺼지고 비활성화되며, 하위 두 알림을 모두 끄면 전체 알림도 꺼진다.
-/// 토글은 로컬에 즉시 반영하고 서버에 저장한다(저장 실패는 무시하고 되돌리지 않는다 — 최근 검색어 저장 토글과 동일).
+/// 토글은 로컬에 즉시 반영하고 서버에 저장한다(저장 실패 시 되돌리지는 않되 토스트로 알린다).
 @Reducer
 public struct NotificationSettingFeature {
 
@@ -19,6 +19,8 @@ public struct NotificationSettingFeature {
         public var isChungBaziNotificationOn: Bool
         /// 서버 조회가 성공하기 전에는 토글을 비활성화한다. (기본값 상태로 서버 설정을 덮어쓰지 않도록)
         public var hasLoaded = false
+        /// 저장 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
 
         public init(
             isAllNotificationOn: Bool = true,
@@ -42,6 +44,8 @@ public struct NotificationSettingFeature {
 
         // MARK: Internal
         case settingsResponse(Result<NotificationSettings, UseCaseError>)
+        case updateFailed(UseCaseError)
+        case dismissErrorToast
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -89,9 +93,10 @@ public struct NotificationSettingFeature {
                 state.hasLoaded = true
                 return .none
 
-            case .settingsResponse(.failure):
+            case .settingsResponse(.failure(let error)):
                 // 실제 설정을 모르는 상태이므로 토글을 계속 비활성(hasLoaded=false)으로 두어 덮어쓰기를 막는다.
-                // TODO: 실패 안내/재시도 UI가 정해지면 State에 반영.
+                // 재시도는 화면 재진입 시 onAppear가 다시 요청한다.
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
                 return .none
 
             case .didToggleAllNotification(let isOn):
@@ -113,6 +118,15 @@ public struct NotificationSettingFeature {
                 syncAllFlag(&state)
                 return updateEffect(state)
 
+            case .updateFailed(let error):
+                // 연속 토글로 인한 in-flight 취소는 사용자 오류가 아니므로 무시.
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                return .none
+
+            case .dismissErrorToast:
+                state.errorToast = nil
+                return .none
+
             case .delegate:
                 return .none
             }
@@ -127,7 +141,7 @@ public struct NotificationSettingFeature {
         state.isAllNotificationOn = state.isMyPolicyNotificationOn || state.isChungBaziNotificationOn
     }
 
-    /// 현재 설정을 서버에 저장(실패는 무시, 되돌리지 않음). 진행 중인 로드는 취소해 낡은 응답이 덮어쓰지 않게 한다.
+    /// 현재 설정을 서버에 저장(실패 시 되돌리지 않고 토스트로 알림). 진행 중인 로드는 취소해 낡은 응답이 덮어쓰지 않게 한다.
     private func updateEffect(_ state: State) -> Effect<Action> {
         let settings = NotificationSettings(
             isAllOn: state.isAllNotificationOn,
@@ -136,8 +150,12 @@ public struct NotificationSettingFeature {
         )
         return .merge(
             .cancel(id: CancelID.load),
-            .run { [notificationSettingClient] _ in
-                try? await notificationSettingClient.updateSettings(settings)
+            .run { [notificationSettingClient] send in
+                do {
+                    try await notificationSettingClient.updateSettings(settings)
+                } catch {
+                    await send(.updateFailed(UseCaseError.map(error)))
+                }
             }
             .cancellable(id: CancelID.update, cancelInFlight: true)
         )
