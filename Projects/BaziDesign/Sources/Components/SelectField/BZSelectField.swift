@@ -67,7 +67,8 @@ extension BZSelectField {
                 .foregroundColor(chevronColor)
         }
         .padding(.horizontal, 16)
-        .frame(height: 52)
+        // 고정 높이 대신 최소 높이 — 큰 글자에서 선택값이 여러 줄로 늘어나며 "…"로 잘리지 않도록.
+        .frame(minHeight: 52)
         .background(backgroundColor)
         .overlay(
             RoundedRectangle(cornerRadius: BaziRadius.medium.rawValue, style: .continuous)

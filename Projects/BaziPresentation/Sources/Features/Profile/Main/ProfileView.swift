@@ -58,11 +58,13 @@ public struct ProfileView: View {
 extension ProfileView {
 
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                header
-                profileImage
-                rows
+        VStack(spacing: 0) {
+            header
+            ScrollView {
+                VStack(spacing: 0) {
+                    profileImage
+                    rows
+                }
             }
         }
         .baziBackground(.bgWhite)

@@ -129,6 +129,8 @@ extension CalendarView {
             Text("\(day)")
                 .baziFont(.small14R)
                 .foregroundStyle(isToday ? Color.grayWhite : Color.gray700)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5) // 큰 글자에서 날짜가 "…"로 잘리지 않고 칸에 맞게 축소되도록
                 .frame(width: 36, height: 36)
                 .background(isToday ? Color.bazi(.primary) : Color.clear)
                 .clipShape(Circle())
