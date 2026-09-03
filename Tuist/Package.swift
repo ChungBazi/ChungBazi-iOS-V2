@@ -17,5 +17,6 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.26.0"),
         .package(url: "https://github.com/kakao/kakao-ios-sdk.git", exact: "2.28.0"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.17.0"),
+        .package(url: "https://github.com/amplitude/Amplitude-Swift.git", exact: "1.18.0"),
     ]
 )
