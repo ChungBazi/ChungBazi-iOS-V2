@@ -15,17 +15,14 @@ public struct CachingRegionRepository: RegionRepository {
         self.cache = cache
     }
 
+    // 캐시 조회·저장·코얼레싱·빈 결과 정책은 RegionCache가 담당한다.
     public func fetchSidoList() async throws -> [RegionInfo] {
-        if let cached = await cache.sidoList() { return cached }
-        let list = try await base.fetchSidoList()
-        await cache.setSidoList(list)
-        return list
+        try await cache.sidoList { [base] in try await base.fetchSidoList() }
     }
 
     public func fetchSigunguList(sidoCode: String) async throws -> [RegionInfo] {
-        if let cached = await cache.sigunguList(sidoCode: sidoCode) { return cached }
-        let list = try await base.fetchSigunguList(sidoCode: sidoCode)
-        await cache.setSigunguList(list, sidoCode: sidoCode)
-        return list
+        try await cache.sigunguList(sidoCode: sidoCode) { [base] in
+            try await base.fetchSigunguList(sidoCode: sidoCode)
+        }
     }
 }
