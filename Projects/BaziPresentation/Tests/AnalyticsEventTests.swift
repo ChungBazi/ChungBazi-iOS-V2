@@ -87,4 +87,30 @@ struct AnalyticsEventTests {
         let memo = AnalyticsEvent.memoSave(policyId: 2, hasContent: false).properties
         #expect(memo["has_content"] as? Bool == false)
     }
+
+    @Test("심화/생명주기 이벤트 이름")
+    func phaseDEventNames() {
+        #expect(AnalyticsEvent.customCardView(policyId: 1, position: 0).name == "custom_card_view")
+        #expect(AnalyticsEvent.aiSummaryView(policyId: 1).name == "ai_summary_view")
+        #expect(AnalyticsEvent.aiSummaryGenerated(policyId: 1, available: true).name == "ai_summary_generated")
+        #expect(AnalyticsEvent.policyDetailScroll(policyId: 1, depth: 50).name == "policy_detail_scroll")
+        #expect(AnalyticsEvent.onboardingStart.name == "onboarding_start")
+        #expect(AnalyticsEvent.onboardingComplete.name == "onboarding_complete")
+        #expect(AnalyticsEvent.policyProfileEditSave(changed: true).name == "policy_profile_edit_save")
+        #expect(AnalyticsEvent.notificationClick(notificationId: 9, policyId: nil).name == "notification_click")
+    }
+
+    @Test("심화/생명주기 이벤트 파라미터")
+    func phaseDProperties() {
+        let card = AnalyticsEvent.customCardView(policyId: 3, position: 2).properties
+        #expect(card["policy_id"] as? Int == 3)
+        #expect(card["position"] as? Int == 2)
+        #expect(AnalyticsEvent.aiSummaryGenerated(policyId: 1, available: false).properties["available"] as? Bool == false)
+        #expect(AnalyticsEvent.policyDetailScroll(policyId: 1, depth: 75).properties["depth"] as? Int == 75)
+        #expect(AnalyticsEvent.onboardingStart.properties.isEmpty)
+        let notif = AnalyticsEvent.notificationClick(notificationId: 9, policyId: 4).properties
+        #expect(notif["notification_id"] as? Int == 9)
+        #expect(notif["policy_id"] as? Int == 4)
+        #expect(AnalyticsEvent.notificationClick(notificationId: 9, policyId: nil).properties["policy_id"] == nil)
+    }
 }
