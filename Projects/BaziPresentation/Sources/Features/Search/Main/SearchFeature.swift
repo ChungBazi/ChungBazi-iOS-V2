@@ -51,7 +51,8 @@ public struct SearchFeature {
         // MARK: Internal
         case recentSearchesResponse(Result<RecentSearchResultVO, UseCaseError>)
         case suggestionsResponse(Result<[SearchSuggestionVO], UseCaseError>)
-        case deleteRecentFailed(UseCaseError)
+        case deleteRecentFailed(UseCaseError, snapshot: IdentifiedArrayOf<RecentSearchKeywordVO>)
+        case recentResyncResponse(Result<RecentSearchResultVO, UseCaseError>, snapshot: IdentifiedArrayOf<RecentSearchKeywordVO>)
         case errorToastDismissed
 
         // MARK: Child
@@ -130,29 +131,42 @@ public struct SearchFeature {
                 })
 
             case .didTapDeleteRecentKeyword(let id):
+                // 재동기화가 실패해도 되돌릴 수 있도록 삭제 전 목록을 스냅샷으로 보관한다.
+                let snapshot = state.recentKeywords
                 state.recentKeywords.remove(id: id)
                 return .run { [policySearchClient] send in
                     do {
                         try await policySearchClient.deleteRecentSearch(id)
                     } catch {
-                        await send(.deleteRecentFailed(UseCaseError.map(error)))
+                        await send(.deleteRecentFailed(UseCaseError.map(error), snapshot: snapshot))
                     }
                 }
 
             case .didTapDeleteAllRecentKeywords:
+                let snapshot = state.recentKeywords
                 state.recentKeywords.removeAll()
                 return .run { [policySearchClient] send in
                     do {
                         try await policySearchClient.deleteAllRecentSearches()
                     } catch {
-                        await send(.deleteRecentFailed(UseCaseError.map(error)))
+                        await send(.deleteRecentFailed(UseCaseError.map(error), snapshot: snapshot))
                     }
                 }
 
-            case .deleteRecentFailed(let error):
+            case let .deleteRecentFailed(error, snapshot):
                 state.errorToast = error.toastMessage
-                // 낙관적 삭제를 되돌린다 — 서버 상태로 재동기화(로컬 목록이 서버와 어긋난 채 남지 않게).
-                return fetchRecentSearches()
+                // 삭제 실패 → 서버 상태로 재동기화. 재동기화도 실패하면 삭제 전 목록으로 복원한다.
+                return resyncRecent(snapshot: snapshot)
+
+            case let .recentResyncResponse(.success(result), _):
+                state.recentKeywords = result.keywords
+                state.isAutoSaveEnabled = result.autoSaveEnabled
+                return .none
+
+            case let .recentResyncResponse(.failure, snapshot):
+                // 재동기화도 실패 → 서버엔 항목이 남아 있으므로 삭제 전 목록으로 되돌려 UI/서버 불일치를 막는다.
+                state.recentKeywords = snapshot
+                return .none
 
             case .errorToastDismissed:
                 state.errorToast = nil
@@ -202,7 +216,7 @@ public struct SearchFeature {
 
     // MARK: - Private
 
-    /// 최근 검색어 목록을 서버에서 다시 불러온다. 진입 로드와 삭제 실패 시 재동기화에 공통으로 쓴다.
+    /// 최근 검색어 목록을 서버에서 다시 불러온다. (진입 로드용)
     private func fetchRecentSearches() -> Effect<Action> {
         .run { [policySearchClient] send in
             do {
@@ -210,6 +224,19 @@ public struct SearchFeature {
                 await send(.recentSearchesResponse(.success(result)))
             } catch {
                 await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+        .cancellable(id: CancelID.recentSearches, cancelInFlight: true)
+    }
+
+    /// 삭제 실패 후 서버 상태로 재동기화한다. 재동기화도 실패하면 `snapshot`으로 복원하도록 함께 실어 보낸다.
+    private func resyncRecent(snapshot: IdentifiedArrayOf<RecentSearchKeywordVO>) -> Effect<Action> {
+        .run { [policySearchClient] send in
+            do {
+                let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
+                await send(.recentResyncResponse(.success(result), snapshot: snapshot))
+            } catch {
+                await send(.recentResyncResponse(.failure(UseCaseError.map(error)), snapshot: snapshot))
             }
         }
         .cancellable(id: CancelID.recentSearches, cancelInFlight: true)

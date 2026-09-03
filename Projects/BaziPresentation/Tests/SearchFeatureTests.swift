@@ -72,4 +72,80 @@ struct SearchFeatureTests {
             $0.recentKeywords = expected
         }
     }
+
+    @Test("개별 삭제가 실패하고 재동기화도 실패하면 삭제 전 목록으로 복원한다")
+    func deleteRecent_failure_resyncFailure_restores() async {
+        var state = SearchFeature.State()
+        state.recentKeywords = RecentSearchResultVO.mock.keywords
+        let store = TestStore(initialState: state) {
+            SearchFeature()
+        } withDependencies: {
+            $0.policySearchClient.deleteRecentSearch = { _ in throw UseCaseError.offline }
+            $0.policySearchClient.recentSearches = { _, _ in throw UseCaseError.offline }
+        }
+
+        let original = RecentSearchResultVO.mock.keywords
+        var afterDelete = original
+        afterDelete.remove(id: 1)
+
+        await store.send(.didTapDeleteRecentKeyword(id: 1)) {
+            $0.recentKeywords = afterDelete
+        }
+        await store.receive(\.deleteRecentFailed) {
+            $0.errorToast = UseCaseError.offline.toastMessage
+        }
+        await store.receive(\.recentResyncResponse) {
+            $0.recentKeywords = original
+        }
+    }
+
+    @Test("전체 삭제가 실패하고 재동기화도 실패하면 삭제 전 목록으로 복원한다")
+    func deleteAllRecent_failure_resyncFailure_restores() async {
+        var state = SearchFeature.State()
+        state.recentKeywords = RecentSearchResultVO.mock.keywords
+        let store = TestStore(initialState: state) {
+            SearchFeature()
+        } withDependencies: {
+            $0.policySearchClient.deleteAllRecentSearches = { throw UseCaseError.offline }
+            $0.policySearchClient.recentSearches = { _, _ in throw UseCaseError.offline }
+        }
+
+        let original = RecentSearchResultVO.mock.keywords
+
+        await store.send(.didTapDeleteAllRecentKeywords) {
+            $0.recentKeywords = []
+        }
+        await store.receive(\.deleteRecentFailed) {
+            $0.errorToast = UseCaseError.offline.toastMessage
+        }
+        await store.receive(\.recentResyncResponse) {
+            $0.recentKeywords = original
+        }
+    }
+
+    @Test("삭제 실패 후 재동기화에 성공하면 서버 결과로 교체한다")
+    func deleteRecent_failure_resyncSuccess_replacesWithServer() async {
+        var state = SearchFeature.State()
+        state.recentKeywords = RecentSearchResultVO.mock.keywords
+        let store = TestStore(initialState: state) {
+            SearchFeature()
+        } withDependencies: {
+            $0.policySearchClient.deleteRecentSearch = { _ in throw UseCaseError.offline }
+            $0.policySearchClient.recentSearches = { _, _ in .mock }
+        }
+
+        var afterDelete = RecentSearchResultVO.mock.keywords
+        afterDelete.remove(id: 1)
+
+        await store.send(.didTapDeleteRecentKeyword(id: 1)) {
+            $0.recentKeywords = afterDelete
+        }
+        await store.receive(\.deleteRecentFailed) {
+            $0.errorToast = UseCaseError.offline.toastMessage
+        }
+        await store.receive(\.recentResyncResponse) {
+            $0.recentKeywords = RecentSearchResultVO.mock.keywords
+            $0.isAutoSaveEnabled = RecentSearchResultVO.mock.autoSaveEnabled
+        }
+    }
 }
