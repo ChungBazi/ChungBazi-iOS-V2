@@ -78,6 +78,7 @@ public struct CustomPolicyListFeature {
     @Dependency(\.policyLikeClient) var policyLikeClient
     @Dependency(\.continuousClock) var clock
     @Dependency(\.openURL) var openURL
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -104,7 +105,12 @@ public struct CustomPolicyListFeature {
                     let urlString = state.cards.value?[id: id]?.applyUrl,
                     let url = URL(string: urlString)
                 else { return .none }
-                return .run { [openURL] _ in _ = await openURL(url) }
+                return .merge(
+                    .run { [openURL] _ in _ = await openURL(url) },
+                    .run { [analytics] _ in
+                        analytics.track(.applyClick(policyId: id, applyURL: urlString, source: .customCard))
+                    }
+                )
 
             case let .cardsResponse(.success(cards)):
                 state.cards = .loaded(IdentifiedArray(deduplicating: cards))

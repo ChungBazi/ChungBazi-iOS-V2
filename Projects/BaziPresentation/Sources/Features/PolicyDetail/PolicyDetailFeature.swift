@@ -62,6 +62,7 @@ public struct PolicyDetailFeature {
     @Dependency(\.policyLikeClient) var policyLikeClient
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.openURL) var openURL
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -101,7 +102,13 @@ public struct PolicyDetailFeature {
 
             case .didTapApply:
                 guard let url = state.detail.value?.applyURL else { return .none }
-                return .run { [openURL] _ in _ = await openURL(url) }
+                let policyId = state.policyId
+                return .merge(
+                    .run { [openURL] _ in _ = await openURL(url) },
+                    .run { [analytics] _ in
+                        analytics.track(.applyClick(policyId: policyId, applyURL: url.absoluteString, source: .detail))
+                    }
+                )
 
             case let .likeFailed(liked):
                 // 그 사이 다른 화면이 overlay를 바꿨으면 덮지 않는다(내 낙관값이 남아있을 때만 롤백).
