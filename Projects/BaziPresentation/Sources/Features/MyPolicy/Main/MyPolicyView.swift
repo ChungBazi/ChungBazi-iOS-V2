@@ -101,8 +101,8 @@ private extension MyPolicyView {
         case .idle, .loading:
             BZLoadingView()
                 .frame(maxWidth: .infinity, minHeight: 200)
-        case .failed:
-            BZRetryView { store.send(.didTapRetry) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
         case .loaded(let policies):
             let visiblePolicies = visible(policies)
             if visiblePolicies.isEmpty {

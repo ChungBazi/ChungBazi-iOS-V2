@@ -50,8 +50,8 @@ extension PolicyMemoView {
             BZLoadingView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .baziBackground(.bgWhite)
-        case .failed:
-            BZRetryView { store.send(.onAppear) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.onAppear) }
                 .baziBackground(.bgWhite)
         case .loaded(let memo):
             VStack(spacing: 0) {

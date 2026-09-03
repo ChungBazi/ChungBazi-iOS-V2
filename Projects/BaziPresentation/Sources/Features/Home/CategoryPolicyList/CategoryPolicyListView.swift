@@ -53,8 +53,8 @@ extension CategoryPolicyListView {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .baziBackground(.bgGray)
 
-        case .failed:
-            BZRetryView { store.send(.didTapRetry) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
                 .baziBackground(.bgGray)
 
         case .loaded(let policies):

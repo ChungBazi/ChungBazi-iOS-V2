@@ -96,8 +96,8 @@ extension SearchResultView {
         case .idle, .loading:
             BZLoadingView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed:
-            BZRetryView { store.send(.didTapRetry) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
         case .loaded(let policies):
             if policies.isEmpty {
                 BZEmptyView(message: "검색 결과가 없어요")

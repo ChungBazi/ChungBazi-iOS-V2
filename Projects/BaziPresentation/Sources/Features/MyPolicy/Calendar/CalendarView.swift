@@ -198,8 +198,8 @@ extension CalendarView {
         case .idle, .loading:
             BZLoadingView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed:
-            BZRetryView {
+        case let .failed(message):
+            BZRetryView(message: message) {
                 if let date = store.selectedDate { store.send(.didSelectDate(date)) }
             }
         case .loaded(let policies):

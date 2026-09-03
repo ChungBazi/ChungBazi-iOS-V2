@@ -96,8 +96,8 @@ extension RankedPolicyListView {
                 .frame(maxWidth: .infinity)
                 .frame(height: 240)
 
-        case .failed:
-            BZRetryView { store.send(.didTapRetry) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
                 .frame(height: 240)
 
         case .loaded(let policies):

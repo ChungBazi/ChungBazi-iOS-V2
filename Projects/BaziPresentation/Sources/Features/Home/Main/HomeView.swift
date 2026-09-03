@@ -60,8 +60,8 @@ extension HomeView {
                 loadingView
             case let .loaded(feed):
                 loadedContent(feed)
-            case .failed:
-                retryView
+            case let .failed(message):
+                retryView(message)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,9 +73,8 @@ extension HomeView {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var retryView: some View {
-        // .failed의 연관 메시지는 로깅용이며, 화면엔 BZRetryView의 고정 문구를 쓴다.
-        BZRetryView {
+    private func retryView(_ message: String) -> some View {
+        BZRetryView(message: message) {
             store.send(.didTapRetry)
         }
     }

@@ -62,8 +62,8 @@ extension NotificationView {
         case .idle, .loading:
             BZLoadingView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed:
-            BZRetryView { store.send(.didTapRetry) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
         case .loaded:
             if (store.notifications.value ?? []).isEmpty {
                 emptyState
