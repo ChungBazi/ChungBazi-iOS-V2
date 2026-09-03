@@ -9,11 +9,13 @@ import BaziDesign
 struct ProfileRow: View {
 
     private let title: String
+    private let trailingText: String?
     private let showsChevron: Bool
     private let action: () -> Void
 
-    init(_ title: String, showsChevron: Bool = true, action: @escaping () -> Void) {
+    init(_ title: String, trailingText: String? = nil, showsChevron: Bool = true, action: @escaping () -> Void) {
         self.title = title
+        self.trailingText = trailingText
         self.showsChevron = showsChevron
         self.action = action
     }
@@ -25,6 +27,11 @@ struct ProfileRow: View {
                     .baziFont(.body16M)
                     .foregroundStyle(Color.gray700)
                 Spacer()
+                if let trailingText {
+                    Text(trailingText)
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray400)
+                }
                 if showsChevron {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .medium))
