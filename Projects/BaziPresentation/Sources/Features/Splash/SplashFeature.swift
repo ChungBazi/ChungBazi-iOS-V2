@@ -2,6 +2,8 @@
 
 import ComposableArchitecture
 
+import BaziDomain
+
 @Reducer
 public struct SplashFeature {
 
@@ -12,6 +14,8 @@ public struct SplashFeature {
         var phase: Phase = .tagline
         var isMinimumDurationElapsed = false
         var sessionResult: SessionResult?
+        /// RemoteConfig 게이트 평가 결과. nil이면 아직 평가 전. .normal이어야 다음 화면으로 진입한다.
+        var gate: AppLaunchGate?
 
         public init() {}
     }
@@ -32,11 +36,14 @@ public struct SplashFeature {
     public enum Action {
         // MARK: View
         case onAppear
+        case didTapForceUpdate
+        case didTapMaintenanceConfirm
 
         // MARK: Internal
         case didAdvancePhase
         case didFinishMinimumDuration
         case sessionChecked(hasValidToken: Bool, hasNickname: Bool, hasCompletedOnboarding: Bool)
+        case gateResolved(AppLaunchGate)
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -44,6 +51,7 @@ public struct SplashFeature {
 
     // MARK: - Delegate
 
+    @CasePathable
     public enum Delegate: Equatable {
         case didFinishSplash(hasValidToken: Bool, hasNickname: Bool, hasCompletedOnboarding: Bool)
     }
@@ -52,6 +60,9 @@ public struct SplashFeature {
 
     @Dependency(\.continuousClock) var clock
     @Dependency(\.splashClient) var splashClient
+    @Dependency(\.appConfigClient) var appConfigClient
+    @Dependency(\.openURL) var openURL
+    @Dependency(\.exitApp) var exitApp
 
     // MARK: - Init
 
@@ -77,6 +88,9 @@ public struct SplashFeature {
                             hasNickname: session.hasNickname,
                             hasCompletedOnboarding: session.hasCompletedOnboarding
                         ))
+                    },
+                    .run { [appConfigClient] send in
+                        await send(.gateResolved(appConfigClient.evaluateGate()))
                     }
                 )
 
@@ -96,6 +110,17 @@ public struct SplashFeature {
                 )
                 return finishIfReady(state: state)
 
+            case .gateResolved(let gate):
+                state.gate = gate
+                return finishIfReady(state: state)
+
+            case .didTapForceUpdate:
+                guard let url = ProfileConstants.appStoreURL else { return .none }
+                return .run { [openURL] _ in _ = await openURL(url) }
+
+            case .didTapMaintenanceConfirm:
+                return .run { [exitApp] _ in exitApp() }
+
             case .delegate:
                 return .none
             }
@@ -104,9 +129,14 @@ public struct SplashFeature {
 
     // MARK: - Private
 
-    /// 최소 노출 시간(태그라인 1초 + 로고 1초)과 세션 체크가 모두 끝나야 다음 화면으로 넘어간다.
+    /// 최소 노출 시간(태그라인 1초 + 로고 1초)·세션 체크·게이트 평가가 모두 끝나고
+    /// 게이트가 정상일 때만 다음 화면으로 넘어간다. (점검/강제업데이트면 스플래시에 머문다)
     private func finishIfReady(state: State) -> Effect<Action> {
-        guard state.isMinimumDurationElapsed, let result = state.sessionResult else { return .none }
+        guard
+            state.isMinimumDurationElapsed,
+            let result = state.sessionResult,
+            state.gate == .normal
+        else { return .none }
         return .send(.delegate(.didFinishSplash(
             hasValidToken: result.hasValidToken,
             hasNickname: result.hasNickname,
