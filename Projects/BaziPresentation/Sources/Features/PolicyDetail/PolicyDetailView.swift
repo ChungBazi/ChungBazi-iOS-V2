@@ -40,6 +40,7 @@ public struct PolicyDetailView: View {
             trailing: .share(action: { store.send(.didTapShare) })
         )
         .toolbar(.hidden, for: .tabBar)
+        .baziToast(errorMessage: store.errorToast, onDismiss: { store.send(.dismissErrorToast) })
     }
 }
 

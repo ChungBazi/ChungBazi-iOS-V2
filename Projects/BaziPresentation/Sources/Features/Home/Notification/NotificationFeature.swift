@@ -18,6 +18,8 @@ public struct NotificationFeature {
         public var notifications: LoadingState<IdentifiedArrayOf<NotificationItemVO>> = .idle
         public var pagination = PaginationState<Int>()
         public var isDeleteAllConfirmPresented = false
+        /// 삭제 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
 
         public init() {}
     }
@@ -39,8 +41,9 @@ public struct NotificationFeature {
 
         // MARK: Internal
         case pageResponse(Result<NotificationPageVO, UseCaseError>, isFirstPage: Bool)
-        /// 삭제 요청 실패 → 서버 상태로 재동기화한다.
-        case commandFailed
+        /// 삭제 요청 실패 → 토스트로 알리고 서버 상태로 재동기화한다.
+        case commandFailed(UseCaseError)
+        case dismissErrorToast
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -147,9 +150,14 @@ public struct NotificationFeature {
                     deleteAllEffect()
                 )
 
-            case .commandFailed:
+            case .commandFailed(let error):
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
                 // 삭제 실패 → 현재 탭 1페이지로 재동기화(로딩 표시 없이 목록만 교체).
                 return fetchPage(category: state.selectedTab.serverCategory, cursor: nil, isFirstPage: true)
+
+            case .dismissErrorToast:
+                state.errorToast = nil
+                return .none
 
             case .delegate:
                 return .none
@@ -184,7 +192,7 @@ public struct NotificationFeature {
             do {
                 try await notificationClient.delete(id)
             } catch {
-                await send(.commandFailed)
+                await send(.commandFailed(UseCaseError.map(error)))
             }
         }
     }
@@ -194,7 +202,7 @@ public struct NotificationFeature {
             do {
                 try await notificationClient.deleteAll()
             } catch {
-                await send(.commandFailed)
+                await send(.commandFailed(UseCaseError.map(error)))
             }
         }
     }

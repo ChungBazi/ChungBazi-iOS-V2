@@ -13,6 +13,8 @@ public struct NicknameSetupFeature {
     public struct State: Equatable {
         public var nickname = ""
         public var isSaving = false
+        /// 저장 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
 
         public var isNicknameValid: Bool {
             let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -84,9 +86,9 @@ public struct NicknameSetupFeature {
                 state.isSaving = false
                 return .send(.delegate(.didSetNickname))
 
-            case .didFailToSetNickname:
+            case .didFailToSetNickname(let error):
                 state.isSaving = false
-                // TODO: 닉네임 저장 실패 알림 UI가 정해지면 State에 반영.
+                state.errorToast = error.loadFailureMessage
                 return .none
 
             case .delegate:

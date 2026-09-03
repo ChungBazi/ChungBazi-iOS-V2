@@ -115,6 +115,34 @@ extension View {
             }
         }
     }
+
+    /// 에러 메시지(`String?`)를 warning 토스트로 띄운다. 표시하고 2초 뒤 nil로 지운다.
+    /// 쓰기 실패 시 `state.errorToast = 메시지`만 세팅하면 되는 공용 헬퍼(BindableAction 피처용).
+    public func baziToast(errorMessage: Binding<String?>, edge: VerticalEdge = .bottom) -> some View {
+        baziToast(
+            isPresented: Binding(
+                get: { errorMessage.wrappedValue != nil },
+                set: { if !$0 { errorMessage.wrappedValue = nil } }
+            ),
+            message: errorMessage.wrappedValue ?? "",
+            style: .warning,
+            edge: edge
+        )
+    }
+
+    /// 위 헬퍼의 non-Binding 버전. `BindableAction`이 아니라 `$store` 바인딩을 못 쓰는 피처에서
+    /// 2초 뒤 `onDismiss`로 상태를 지우도록 액션을 보내게 한다.
+    public func baziToast(errorMessage: String?, onDismiss: @escaping () -> Void, edge: VerticalEdge = .bottom) -> some View {
+        baziToast(
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { onDismiss() } }
+            ),
+            message: errorMessage ?? "",
+            style: .warning,
+            edge: edge
+        )
+    }
 }
 
 // MARK: - Placement

@@ -189,7 +189,7 @@ extension CalendarView {
         .baziBackground(.bgGray)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .baziToast(isPresented: isToastPresented, message: store.toastMessage)
+        .baziToast(isPresented: isToastPresented, message: store.toastMessage, style: store.isToastWarning ? .warning : .default)
     }
 
     @ViewBuilder

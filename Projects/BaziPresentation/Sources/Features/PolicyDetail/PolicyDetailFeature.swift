@@ -14,6 +14,8 @@ public struct PolicyDetailFeature {
         public let policyId: Int
         public var detail: LoadingState<PolicyDetailVO> = .idle
         public var displayName: String = ""
+        /// 공유 실패 등에서 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
         /// 홈·내정책이 반영하는 공유 찜 오버레이(id → liked).
         @Shared(.likeOverrides) public var likeOverrides: [Int: Bool] = [:]
 
@@ -41,6 +43,8 @@ public struct PolicyDetailFeature {
         case detailResponse(Result<PolicyDetailVO, UseCaseError>)
         case likeFailed(liked: Bool)
         case recommendationLikeFailed(section: RecommendationSection, id: Int, liked: Bool)
+        case shareFailed(UseCaseError)
+        case dismissErrorToast
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -148,11 +152,23 @@ public struct PolicyDetailFeature {
                     webURL: nil
                 )
                 return .merge(
-                    .run { [policyDetailClient] _ in
-                        try? await policyDetailClient.shareToKakao(content)
+                    .run { [policyDetailClient] send in
+                        do {
+                            try await policyDetailClient.shareToKakao(content)
+                        } catch {
+                            await send(.shareFailed(UseCaseError.map(error)))
+                        }
                     },
                     .run { [analytics] _ in analytics.track(.shareClick(policyId: detail.id)) }
                 )
+
+            case .shareFailed(let error):
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                return .none
+
+            case .dismissErrorToast:
+                state.errorToast = nil
+                return .none
 
             case .didReachScrollDepth(let depth):
                 let policyId = state.policyId

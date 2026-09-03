@@ -21,6 +21,7 @@ public struct NicknameSetupView: View {
 
     public var body: some View {
         content
+            .baziToast(errorMessage: $store.errorToast)
     }
 }
 

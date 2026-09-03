@@ -33,6 +33,8 @@ public struct CalendarFeature: Sendable {
         /// 마감일 캘린더 추가 결과 토스트.
         public var toastMessage: String
         public var isToastPresented: Bool
+        /// 실패(권한거부/저장실패)는 warning, 성공은 default 스타일로 띄운다.
+        public var isToastWarning = false
         /// 마감일 추가 요청 진행 중 여부. 더블탭으로 이벤트가 중복 생성되는 것을 막는다.
         public var isAddingDeadline: Bool
 
@@ -204,6 +206,7 @@ public struct CalendarFeature: Sendable {
             case .addToCalendarSucceeded:
                 state.isAddingDeadline = false
                 state.toastMessage = "마감일을 애플 캘린더에 추가했어요"
+                state.isToastWarning = false
                 state.isToastPresented = true
                 return .none
 
@@ -215,6 +218,7 @@ public struct CalendarFeature: Sendable {
                 case .saveFailed:
                     state.toastMessage = "캘린더에 추가하지 못했어요"
                 }
+                state.isToastWarning = true
                 state.isToastPresented = true
                 return .none
 

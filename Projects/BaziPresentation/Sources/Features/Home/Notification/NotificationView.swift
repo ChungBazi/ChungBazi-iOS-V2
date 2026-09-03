@@ -41,6 +41,7 @@ public struct NotificationView: View {
                 onConfirm: { store.send(.didConfirmDeleteAll) }
             )
             .toolbar(.hidden, for: .tabBar)
+            .baziToast(errorMessage: store.errorToast, onDismiss: { store.send(.dismissErrorToast) })
     }
 }
 
