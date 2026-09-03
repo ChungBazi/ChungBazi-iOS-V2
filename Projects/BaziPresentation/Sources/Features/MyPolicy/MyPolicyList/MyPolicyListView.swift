@@ -53,8 +53,8 @@ extension MyPolicyListView {
             BZLoadingView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        case .failed:
-            BZRetryView { store.send(.didTapRetry) }
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
 
         case .loaded(let policies):
             // 다른 화면에서 찜 해제된 정책(overlay == false)은 제외한다.

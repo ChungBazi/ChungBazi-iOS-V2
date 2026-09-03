@@ -28,8 +28,8 @@ public struct PolicyDetailView: View {
             case .idle, .loading:
                 BZLoadingView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .failed:
-                BZRetryView { store.send(.didTapRetry) }
+            case let .failed(message):
+                BZRetryView(message: message) { store.send(.didTapRetry) }
             case .loaded(let detail):
                 content(detail)
             }
