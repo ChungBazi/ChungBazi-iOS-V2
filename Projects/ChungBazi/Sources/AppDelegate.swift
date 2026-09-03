@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         FirebaseApp.configure()
+        // Crashlytics는 SDK 링크 + FirebaseApp.configure() 이후 자동으로 크래시를 수집한다.
         KakaoSDK.initSDK(appKey: Config.kakaoNativeAppKey)
 
         Messaging.messaging().delegate = self

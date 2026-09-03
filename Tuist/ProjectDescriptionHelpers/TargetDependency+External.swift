@@ -10,6 +10,8 @@ public enum External: String {
     case KakaoSDKTemplate
     case FirebaseCore
     case FirebaseMessaging
+    case FirebaseCrashlytics
+    case FirebaseRemoteConfig
 }
 
 extension TargetDependency {

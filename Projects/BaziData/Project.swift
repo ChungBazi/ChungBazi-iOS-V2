@@ -18,6 +18,7 @@ let project = Project.project(
                 .external(.KakaoSDKShare),
                 .external(.KakaoSDKTemplate),
                 .external(.FirebaseMessaging),
+                .external(.FirebaseRemoteConfig),
             ]
         ),
         .tests(
