@@ -8,6 +8,8 @@ import BaziDomain
 public struct PolicyProfileClient: Sendable {
     public var getPolicyProfile: @Sendable () async throws -> OnboardingInfo
     public var updatePolicyProfile: @Sendable (_ info: OnboardingInfo) async throws -> Void
+    public var fetchSidoList: @Sendable () async throws -> [RegionInfo]
+    public var fetchSigunguList: @Sendable (_ sidoCode: String) async throws -> [RegionInfo]
 }
 
 extension PolicyProfileClient: TestDependencyKey {
@@ -26,7 +28,9 @@ extension PolicyProfileClient: TestDependencyKey {
                 specialEligibilities: [.woman]
             )
         },
-        updatePolicyProfile: { _ in }
+        updatePolicyProfile: { _ in },
+        fetchSidoList: { [RegionInfo(code: "11", name: "서울특별시"), RegionInfo(code: "26", name: "부산광역시")] },
+        fetchSigunguList: { _ in [RegionInfo(code: "11010", name: "종로구")] }
     )
 }
 
