@@ -164,10 +164,16 @@ public struct SearchFeature {
                 }
                 .cancellable(id: CancelID.recentSearches, cancelInFlight: true)
 
-            case .path(.element(_, .searchResult(.delegate(.didSelectPolicy(let id))))),
-                 .path(.element(_, .detail(.delegate(.didSelectPolicy(let id))))):
+            case .path(.element(_, .searchResult(.delegate(.didSelectPolicy(let id))))):
                 state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyDetailView(policyId: id, policyName: nil, category: nil, entryPoint: .search))
+                }
+            case .path(.element(_, .detail(.delegate(.didSelectPolicy(let id))))):
+                state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
+                return .run { [analytics] _ in
+                    analytics.track(.policyDetailView(policyId: id, policyName: nil, category: nil, entryPoint: .recommendation))
+                }
 
             case .path:
                 return .none
@@ -183,7 +189,12 @@ public struct SearchFeature {
         state.suggestions = []
         // 서버가 검색 시점에 최근검색을 저장한다. 낙관적 추가 없이 재진입(onAppear) 시 서버에서 다시 불러온다.
         state.path.append(.searchResult(SearchResultFeature.State(query: query)))
-        return .cancel(id: CancelID.suggestions)
+        return .merge(
+            .cancel(id: CancelID.suggestions),
+            .run { [analytics] _ in
+                analytics.track(.policyListView(listType: .searchResult, entryPoint: .search, category: nil))
+            }
+        )
     }
 }
 

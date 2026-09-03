@@ -36,6 +36,7 @@ public struct AppFeature {
 
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.deeplinkClient) var deeplinkClient
+    @Dependency(\.analytics) var analytics
 
     private enum CancelID { case forceLogout, deeplink }
 
@@ -164,6 +165,7 @@ extension AppFeature {
             // 같은 정책 상세가 이미 홈 스택 최상단이면 중복 push하지 않는다.
             if case .policyDetail(let top) = main.home.path.last, top.policyId == id { return }
             main.home.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
+            analytics.track(.policyDetailView(policyId: id, policyName: nil, category: nil, entryPoint: .deeplink))
         }
     }
 }

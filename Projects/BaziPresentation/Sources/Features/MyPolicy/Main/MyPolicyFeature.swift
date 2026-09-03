@@ -174,7 +174,9 @@ public struct MyPolicyFeature {
 
             case .didTapHeaderMore:
                 state.path.append(.policyList(MyPolicyListFeature.State()))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .myPolicy, entryPoint: .myPolicyMore, category: nil))
+                }
 
             case .didTapCalendarIcon:
                 // 진입 직후에는 항상 오늘 기준 달이 보여야 한다(선택된 날짜가 오늘과 다른 달일 수 있는
@@ -259,8 +261,7 @@ public struct MyPolicyFeature {
                 return .none
 
             case .didTapPolicy(let id):
-                state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
-                return .none
+                return pushDetail(id: id, entryPoint: .myPolicy, state: &state)
 
             case .didTapMemo(let id):
                 state.path.append(.memo(PolicyMemoFeature.State(policyId: id)))
@@ -269,14 +270,18 @@ public struct MyPolicyFeature {
             case .didTapEmptyBannerCTA:
                 // 찜한 정책이 없을 때 → 분야별 정책(취업·창업)으로 둘러보러 이동.
                 state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: .job)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .category, entryPoint: .myPolicyEmptyCTA, category: PolicyCategoryUI.job.rawValue))
+                }
 
-            case let .path(.element(_, .policyList(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .calendar(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .detail(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))):
-                state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
-                return .none
+            case let .path(.element(_, .policyList(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .myPolicyMore, state: &state)
+            case let .path(.element(_, .calendar(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .calendar, state: &state)
+            case let .path(.element(_, .detail(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .recommendation, state: &state)
+            case let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .myPolicy, state: &state)
 
             case .path(.element(_, .calendar(.delegate(.didTapMemo(let policyId))))):
                 state.path.append(.memo(PolicyMemoFeature.State(policyId: policyId)))
@@ -288,8 +293,11 @@ public struct MyPolicyFeature {
 
             case let .path(.element(_, .policyList(.delegate(.browsePolicies(category))))):
                 // 전체보기 빈 상태 "둘러보러 가기" → 선택한 분야의 분야별 정책(미선택 시 취업·창업).
-                state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: category ?? .job)))
-                return .none
+                let selected = category ?? .job
+                state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: selected)))
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .category, entryPoint: .myPolicyEmptyCTA, category: selected.rawValue))
+                }
 
             case .path:
                 return .none
@@ -303,6 +311,14 @@ public struct MyPolicyFeature {
     private enum CancelID: Hashable { case datePolicies, openEnded }
 
     private static let pageSize = 20
+
+    /// 정책 상세로 push하며 진입 경로와 함께 policy_detail_view를 기록한다.
+    private func pushDetail(id: Int, entryPoint: EntryPoint, state: inout State) -> Effect<Action> {
+        state.path.append(.detail(PolicyDetailFeature.State(policyId: id)))
+        return .run { [analytics] _ in
+            analytics.track(.policyDetailView(policyId: id, policyName: nil, category: nil, entryPoint: entryPoint))
+        }
+    }
 
     private func loadTeaser() -> Effect<Action> {
         .run { [myPolicyClient] send in

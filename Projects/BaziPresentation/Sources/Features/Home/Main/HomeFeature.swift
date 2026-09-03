@@ -128,11 +128,15 @@ public struct HomeFeature {
 
             case .didTapCategory(let category):
                 state.path.append(.categoryPolicyList(CategoryPolicyListFeature.State(selectedCategory: category)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .category, entryPoint: .homeCategory, category: category.rawValue))
+                }
 
             case .didTapPersonalizedMore:
                 state.path.append(.customPolicyList(CustomPolicyListFeature.State()))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .custom, entryPoint: .homePersonalizedMore, category: nil))
+                }
 
             case .didTapPersonalizedEmptyCTA:
                 state.path.append(.policyProfileEdit(PolicyProfileEditFeature.State()))
@@ -140,19 +144,31 @@ public struct HomeFeature {
 
             case .didTapPopularMore:
                 state.path.append(.rankedPolicyList(RankedPolicyListFeature.State(kind: .popular)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .rankedPopular, entryPoint: .homePopularMore, category: nil))
+                }
 
             case .didTapDeadlineMore:
                 state.path.append(.rankedPolicyList(RankedPolicyListFeature.State(kind: .deadline)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .rankedDeadline, entryPoint: .homeDeadlineMore, category: nil))
+                }
 
             case .didTapNewMore:
                 state.path.append(.rankedPolicyList(RankedPolicyListFeature.State(kind: .latest)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .rankedNew, entryPoint: .homeNewMore, category: nil))
+                }
 
-            case let .didTapPolicy(_, id):
-                state.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
-                return .none
+            case let .didTapPolicy(section, id):
+                let entry: EntryPoint = switch section {
+                case .personalized: .homePersonalizedMore
+                case .recentViewed: .homeRecent
+                case .popular: .homePopularMore
+                case .deadline: .homeDeadlineMore
+                case .newest: .homeNewMore
+                }
+                return pushDetail(id: id, entryPoint: entry, state: &state)
 
             case .didToggleLike(let section, let id):
                 guard let current = currentLike(section: section, id: id, state: state) else { return .none }
@@ -165,18 +181,23 @@ public struct HomeFeature {
                 setLiked(id: id, liked: !liked, state: &state, writeOverlay: state.likeOverrides[id] == liked)
                 return .none
 
-            // 알림·리스트·정책상세(추천 카드) 등 스택 내 모든 정책 선택은 정책 상세로 push한다.
-            case let .path(.element(_, .notification(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .rankedPolicyList(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .customPolicyList(.delegate(.didSelectPolicy(id))))),
-                 let .path(.element(_, .policyDetail(.delegate(.didSelectPolicy(id))))):
-                state.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
-                return .none
+            // 알림·리스트·정책상세(추천 카드) 등 스택 내 정책 선택은 소스별 entry_point로 정책 상세로 push한다.
+            case let .path(.element(_, .notification(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .notification, state: &state)
+            case let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .homeCategory, state: &state)
+            case let .path(.element(_, .rankedPolicyList(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .ranked, state: &state)
+            case let .path(.element(_, .customPolicyList(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .homePersonalizedMore, state: &state)
+            case let .path(.element(_, .policyDetail(.delegate(.didSelectPolicy(id))))):
+                return pushDetail(id: id, entryPoint: .recommendation, state: &state)
 
             case let .path(.element(_, .categoryPolicyList(.delegate(.didTapPersonalizedMore(category))))):
                 state.path.append(.customPolicyList(CustomPolicyListFeature.State(category: category)))
-                return .none
+                return .run { [analytics] _ in
+                    analytics.track(.policyListView(listType: .custom, entryPoint: .categoryPersonalizedMore, category: category.rawValue))
+                }
 
             case .path:
                 return .none
@@ -186,6 +207,14 @@ public struct HomeFeature {
     }
 
     // MARK: - Private
+
+    /// 정책 상세로 push하며 진입 경로와 함께 policy_detail_view를 기록한다.
+    private func pushDetail(id: Int, entryPoint: EntryPoint, state: inout State) -> Effect<Action> {
+        state.path.append(.policyDetail(PolicyDetailFeature.State(policyId: id)))
+        return .run { [analytics] _ in
+            analytics.track(.policyDetailView(policyId: id, policyName: nil, category: nil, entryPoint: entryPoint))
+        }
+    }
 
     /// 홈 피드를 조회한다. 이미 로딩 중이거나 로드 완료면 재요청하지 않는다.
     private func loadFeed(_ state: inout State) -> Effect<Action> {
