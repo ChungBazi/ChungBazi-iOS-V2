@@ -28,7 +28,8 @@ enum AppDependencies {
     static let remoteConfigService: any RemoteConfigService = RemoteConfigServiceImpl()
 
     /// Amplitude 분석 SDK 공유 인스턴스. 초기화 시 세션 자동 수집을 시작한다.
-    static let amplitude = Amplitude(configuration: Configuration(apiKey: Config.amplitudeAPIKey))
+    /// Amplitude는 내부적으로 스레드 안전하므로 nonisolated(unsafe)로 공유한다.
+    nonisolated(unsafe) static let amplitude = Amplitude(configuration: Configuration(apiKey: Config.amplitudeAPIKey))
 
     /// 홈 aggregate 인메모리 캐시(5분 TTL)와 그것을 공유하는 HomeRepository.
     /// 홈 플로우의 여러 Client(홈/분야별/랭킹/맞춤)가 같은 Repository·캐시를 쓰도록 여기서 한 번만 조립한다.
