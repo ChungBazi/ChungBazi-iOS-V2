@@ -111,6 +111,10 @@ extension NotificationView {
                 .listRowBackground(Color.clear)
                 .contentShape(Rectangle())
                 .onTapGesture { store.send(.didTapNotification(id: notification.id)) }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { store.send(.didTapNotification(id: notification.id)) }
+                .accessibilityAction(named: Text("삭제")) { store.send(.didSwipeDelete(id: notification.id)) }
                 .baziAlarmCardSwipeToDelete {
                     store.send(.didSwipeDelete(id: notification.id))
                 }

@@ -173,6 +173,8 @@ extension HomeView {
                             isLiked: likeBinding(section: .personalized, id: policy.id)
                         )
                         .onTapGesture { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -322,6 +324,8 @@ extension HomeView {
                                     isLiked: likeBinding(section: section, id: policy.id)
                                 )
                                 .onTapGesture { store.send(.didTapPolicy(section: section, id: policy.id)) }
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityAction { store.send(.didTapPolicy(section: section, id: policy.id)) }
                             }
                         }
                         .padding(.horizontal, 20)
