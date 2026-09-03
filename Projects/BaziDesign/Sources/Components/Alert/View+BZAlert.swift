@@ -20,13 +20,17 @@ public extension View {
 
     /// 화면 중앙에 `BZAlert`를 딤 처리와 함께 띄우는 커스텀 수정자.
     /// SwiftUI 기본 `.alert()`와 동일한 사용 패턴(`isPresented` 바인딩)을 따른다.
+    ///
+    /// - `cancelTitle`을 nil로 주면 취소 없이 단일 확정 버튼만 노출한다.
+    /// - `showsCloseButton`을 false로 주면 우상단 X를 숨긴다.
     func baziAlert(
         isPresented: Binding<Bool>,
         title: String,
         message: String,
-        cancelTitle: String = "취소",
+        cancelTitle: String? = "취소",
         confirmTitle: String = "확인",
         confirmType: BZAlertConfirmType = .primary,
+        showsCloseButton: Bool = true,
         onConfirm: @escaping () -> Void
     ) -> some View {
         modifier(
@@ -37,6 +41,7 @@ public extension View {
                 cancelTitle: cancelTitle,
                 confirmTitle: confirmTitle,
                 confirmType: confirmType,
+                showsCloseButton: showsCloseButton,
                 onConfirm: onConfirm
             )
         )
@@ -50,9 +55,10 @@ private struct BZAlertModifier: ViewModifier {
     @Binding var isPresented: Bool
     let title: String
     let message: String
-    let cancelTitle: String
+    let cancelTitle: String?
     let confirmTitle: String
     let confirmType: BZAlertConfirmType
+    let showsCloseButton: Bool
     let onConfirm: () -> Void
 
     // MARK: - Body
@@ -67,6 +73,7 @@ private struct BZAlertModifier: ViewModifier {
                 cancelTitle: cancelTitle,
                 confirmTitle: confirmTitle,
                 confirmType: confirmType,
+                showsCloseButton: showsCloseButton,
                 onCancel: { isPresented = false },
                 onConfirm: {
                     onConfirm()
@@ -87,9 +94,10 @@ private struct BZAlertPresentation: View {
 
     let title: String
     let message: String
-    let cancelTitle: String
+    let cancelTitle: String?
     let confirmTitle: String
     let confirmType: BZAlertConfirmType
+    let showsCloseButton: Bool
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
@@ -106,7 +114,8 @@ private struct BZAlertPresentation: View {
                 confirmType: confirmType.buttonType,
                 onCancel: onCancel,
                 onConfirm: onConfirm,
-                onClose: onCancel
+                onClose: onCancel,
+                showsCloseButton: showsCloseButton
             )
             .padding(.horizontal, 40)
         }

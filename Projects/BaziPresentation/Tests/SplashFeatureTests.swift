@@ -59,4 +59,16 @@ struct SplashFeatureTests {
         await store.finish()
         #expect(exited.value)
     }
+
+    @Test("포그라운드 복귀 시 점검이 해제되면 게이트가 풀려 스플래시를 종료한다")
+    func foregroundRecheckRecovers() async {
+        let store = TestStore(initialState: readyState(gate: .maintenance(message: "점검"))) {
+            SplashFeature()
+        } withDependencies: {
+            $0.appConfigClient.evaluateGate = { .normal }
+        }
+        await store.send(.willEnterForeground)
+        await store.receive(\.gateResolved) { $0.gate = .normal }
+        await store.receive(\.delegate.didFinishSplash)
+    }
 }
