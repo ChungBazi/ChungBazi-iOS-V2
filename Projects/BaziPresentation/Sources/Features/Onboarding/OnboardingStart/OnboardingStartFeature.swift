@@ -45,6 +45,8 @@ public struct OnboardingStartFeature {
 
     public init() {}
 
+    @Dependency(\.analytics) var analytics
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -52,7 +54,7 @@ public struct OnboardingStartFeature {
             switch action {
             case .didTapStartButton:
                 state.path.append(.onboardingContainer(OnboardingContainerFeature.State()))
-                return .none
+                return .run { [analytics] _ in analytics.track(.onboardingStart) }
 
             case .path(.element(id: _, action: .onboardingContainer(.delegate(.didTapPrevious)))):
                 state.path.removeLast()
@@ -60,7 +62,7 @@ public struct OnboardingStartFeature {
 
             case let .path(.element(id: _, action: .onboardingContainer(.delegate(.didCompleteAllSteps(nickname))))):
                 state.path.append(.onboardingComplete(OnboardingCompleteFeature.State(nickname: nickname)))
-                return .none
+                return .run { [analytics] _ in analytics.track(.onboardingComplete) }
 
             case .path(.element(id: _, action: .onboardingComplete(.delegate(.didTapConfirm)))):
                 return .send(.delegate(.didCompleteOnboarding))

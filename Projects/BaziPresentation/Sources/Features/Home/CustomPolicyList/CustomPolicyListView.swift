@@ -101,7 +101,8 @@ extension CustomPolicyListView {
                             applyPeriod: card.applyPeriod,
                             description: card.aiSummary.text ?? card.supportContent,
                             isSummarizing: card.aiSummary.isLoading,
-                            isLiked: likeBinding(id: card.id)
+                            isLiked: likeBinding(id: card.id),
+                            onFlip: { showingBack in store.send(.didFlipCard(id: card.id, showingBack: showingBack)) }
                         )
                         .frame(width: cardWidth)
                         .id(card.id)

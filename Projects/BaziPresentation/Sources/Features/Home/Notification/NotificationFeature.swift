@@ -53,6 +53,7 @@ public struct NotificationFeature {
     // MARK: - Dependencies
 
     @Dependency(\.notificationClient) var notificationClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -106,10 +107,13 @@ public struct NotificationFeature {
 
             case .didTapNotification(let id):
                 guard let notification = state.notifications.value?[id: id] else { return .none }
+                let click = Effect<Action>.run { [analytics] _ in
+                    analytics.track(.notificationClick(notificationId: id, policyId: notification.policyId))
+                }
                 // 읽음 처리는 서버가 조회 시점에 하므로, 상세 이동은 부모(홈 스택)에 위임한다.
                 // policyId가 없는 알림의 경우 상세로 이동하지 않는다.
-                guard let policyId = notification.policyId else { return .none }
-                return .send(.delegate(.didSelectPolicy(id: policyId)))
+                guard let policyId = notification.policyId else { return click }
+                return .merge(click, .send(.delegate(.didSelectPolicy(id: policyId))))
 
             case .didSwipeDelete(let id):
                 guard state.notifications.value?[id: id] != nil else { return .none }
