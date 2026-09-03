@@ -40,6 +40,30 @@ let project = Project.project(
             sources: .sources,
             resources: .default,
             entitlements: .file(path: "SupportingFiles/ChungBazi.entitlements"),
+            scripts: [
+                // Crashlytics 심볼리케이션: 빌드 후 dSYM 업로드. run 스크립트 위치가 환경(DerivedData/Tuist)마다
+                // 달라 후보 경로를 탐색하고, 없거나 실패해도 빌드를 깨지 않도록 경고만 남긴다.
+                .post(
+                    script: """
+                    RUN_SCRIPT=""
+                    CANDIDATE_A="${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
+                    CANDIDATE_B="${SRCROOT}/../../Tuist/.build/checkouts/firebase-ios-sdk/Crashlytics/run"
+                    if [ -f "$CANDIDATE_A" ]; then RUN_SCRIPT="$CANDIDATE_A"; fi
+                    if [ -z "$RUN_SCRIPT" ] && [ -f "$CANDIDATE_B" ]; then RUN_SCRIPT="$CANDIDATE_B"; fi
+                    if [ -n "$RUN_SCRIPT" ]; then
+                      "$RUN_SCRIPT" || echo "warning: Crashlytics dSYM 업로드 실패(무시)"
+                    else
+                      echo "warning: Crashlytics run 스크립트를 찾지 못해 dSYM 업로드를 건너뜁니다"
+                    fi
+                    """,
+                    name: "Crashlytics Upload Symbols",
+                    inputPaths: [
+                        "$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)",
+                        "$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
+                    ],
+                    basedOnDependencyAnalysis: false
+                ),
+            ],
             dependencies: [
                 .presentation(),
                 .data(),
@@ -51,6 +75,8 @@ let project = Project.project(
                 .external(.KakaoSDKAuth),
                 .external(.FirebaseCore),
                 .external(.FirebaseMessaging),
+                .external(.FirebaseCrashlytics),
+                .external(.FirebaseRemoteConfig),
             ],
             // CODE_SIGN_IDENTITY는 팀/개발자마다 다른 인증서 이름을 쓸 수 있어서 소스에 고정하지 않고
             // 각자의 xcconfig(Debug/Release.xcconfig, setup.sh가 생성)에서 값을 채우도록 한다.
