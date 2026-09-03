@@ -13,7 +13,10 @@ let project = Project.project(
             ]
         ),
         .tests(
-            name: BaziModule.BaziDomain.name
+            name: BaziModule.BaziDomain.name,
+            dependencies: [
+                .target(name: BaziModule.BaziDomain.name),
+            ]
         ),
     ]
 )
