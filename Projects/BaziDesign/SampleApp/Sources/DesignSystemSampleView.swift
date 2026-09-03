@@ -173,7 +173,7 @@ extension DesignSystemSampleView {
 
     private var circleButtonSection: some View {
         sectionContainer(title: "BZCircleButton") {
-            BZCircleButton {}
+            BZCircleButton(accessibilityLabel: "다음") {}
         }
     }
 }

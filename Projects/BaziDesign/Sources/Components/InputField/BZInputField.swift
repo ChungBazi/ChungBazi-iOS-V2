@@ -63,7 +63,8 @@ extension BZInputField {
                 .baziFont(.body16R)
                 .foregroundColor(Color.grayBlack)
                 .accessibilityLabel(placeholder)
-                .accessibilityValue(helperText)
+                // 검증 문구는 힌트로 제공한다(value로 두면 입력값이 가려짐).
+                .accessibilityHint(helperText)
 
             Text("\(text.count)/\(maxLength)")
                 .baziFont(.small12M)
