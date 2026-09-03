@@ -80,7 +80,7 @@ extension PolicyProfileEditView {
 
     private var birthDateSection: some View {
         VStack(alignment: .leading, spacing: 19) {
-            questionTitle(1, "생년월일이 언제인가요?")
+            questionTitle(1, PolicyProfileConstants.Question.birthDate)
             BZBirthDatePicker(year: $store.year, month: $store.month, day: $store.day)
         }
     }
@@ -92,11 +92,11 @@ extension PolicyProfileEditView {
 
     private var regionSection: some View {
         VStack(alignment: .leading, spacing: 19) {
-            questionTitle(2, "거주 중인 지역을 선택해주세요")
+            questionTitle(2, PolicyProfileConstants.Question.region)
             VStack(spacing: 8) {
                 BZSelectField(
-                    title: "시/도 선택",
-                    placeholder: "시/도 선택",
+                    title: PolicyProfileConstants.SelectTitle.sido,
+                    placeholder: PolicyProfileConstants.SelectTitle.sido,
                     options: store.sidoOptions.map(\.name),
                     selection: Binding(
                         get: { store.selectedSido?.name },
@@ -104,8 +104,8 @@ extension PolicyProfileEditView {
                     )
                 )
                 BZSelectField(
-                    title: "시/군/구 선택",
-                    placeholder: "시/군/구 선택",
+                    title: PolicyProfileConstants.SelectTitle.sigungu,
+                    placeholder: PolicyProfileConstants.SelectTitle.sigungu,
                     options: store.sigunguOptions.map(\.name),
                     selection: Binding(
                         get: { store.selectedSigungu?.name },
@@ -119,9 +119,9 @@ extension PolicyProfileEditView {
 
     private var educationSection: some View {
         VStack(alignment: .leading, spacing: 19) {
-            questionTitle(3, "현재 어떤 학업 단계에 있나요?")
+            questionTitle(3, PolicyProfileConstants.Question.education)
             BZSelectField(
-                title: "학업 단계 선택",
+                title: PolicyProfileConstants.SelectTitle.education,
                 options: EducationUI.allCases.map(\.rawValue),
                 selection: Binding(
                     get: { store.education?.rawValue },
@@ -133,9 +133,9 @@ extension PolicyProfileEditView {
 
     private var employmentSection: some View {
         VStack(alignment: .leading, spacing: 19) {
-            questionTitle(4, "현재 하고 있는 일이 있나요?")
+            questionTitle(4, PolicyProfileConstants.Question.employment)
             BZSelectField(
-                title: "직업 형태 선택",
+                title: PolicyProfileConstants.SelectTitle.employment,
                 options: EmploymentUI.allCases.map(\.rawValue),
                 selection: Binding(
                     get: { store.employment?.rawValue },
@@ -148,12 +148,12 @@ extension PolicyProfileEditView {
     private var incomeSection: some View {
         VStack(alignment: .leading, spacing: 19) {
             HStack {
-                questionTitle(5, "현재 소득분위가 어떻게 되나요?")
+                questionTitle(5, PolicyProfileConstants.Question.income)
                 Spacer()
                 IncomeInfoTooltipButton()
             }
             BZSelectField(
-                title: "소득 분위 선택",
+                title: PolicyProfileConstants.SelectTitle.income,
                 options: IncomeLevelUI.allCases.map(\.rawValue),
                 selection: Binding(
                     get: { store.income?.rawValue },

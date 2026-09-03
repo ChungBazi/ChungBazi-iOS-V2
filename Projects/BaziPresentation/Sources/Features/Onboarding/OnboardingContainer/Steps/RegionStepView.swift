@@ -26,7 +26,7 @@ struct RegionStepView: View {
 extension RegionStepView {
 
     private var titleText: some View {
-        Text("거주 중인 지역을 선택해주세요")
+        Text(PolicyProfileConstants.Question.region)
             .baziFont(.head22B)
             .foregroundStyle(Color.grayBlack)
     }
@@ -34,8 +34,8 @@ extension RegionStepView {
     private var selectFields: some View {
         VStack(spacing: 12) {
             BZSelectField(
-                title: "시/도 선택",
-                placeholder: "시/도 선택",
+                title: PolicyProfileConstants.SelectTitle.sido,
+                placeholder: PolicyProfileConstants.SelectTitle.sido,
                 options: store.sidoOptions.map(\.name),
                 selection: Binding(
                     get: { store.selectedSido?.name },
@@ -44,8 +44,8 @@ extension RegionStepView {
             )
 
             BZSelectField(
-                title: "시/군/구 선택",
-                placeholder: "시/군/구 선택",
+                title: PolicyProfileConstants.SelectTitle.sigungu,
+                placeholder: PolicyProfileConstants.SelectTitle.sigungu,
                 options: store.sigunguOptions.map(\.name),
                 selection: Binding(
                     get: { store.selectedSigungu?.name },

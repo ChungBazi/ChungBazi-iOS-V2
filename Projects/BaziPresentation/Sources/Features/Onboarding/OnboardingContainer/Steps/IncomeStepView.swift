@@ -27,7 +27,7 @@ extension IncomeStepView {
 
     private var titleRow: some View {
         HStack(spacing: 6) {
-            Text("현재 소득분위가 어떻게 되나요?")
+            Text(PolicyProfileConstants.Question.income)
                 .baziFont(.head22B)
                 .foregroundStyle(Color.grayBlack)
 
@@ -37,7 +37,7 @@ extension IncomeStepView {
 
     private var selectField: some View {
         BZSelectField(
-            title: "소득 분위 선택",
+            title: PolicyProfileConstants.SelectTitle.income,
             options: IncomeLevelUI.allCases.map(\.rawValue),
             selection: Binding(
                 get: { store.income?.rawValue },
