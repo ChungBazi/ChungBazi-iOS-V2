@@ -14,6 +14,7 @@ public struct BZFlipCard: View {
     // MARK: - Properties
 
     @State private var isFlipped = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let image: Image?
     private let category: String
@@ -70,13 +71,13 @@ public struct BZFlipCard: View {
         .aspectRatio(Self.cardAspectRatio, contentMode: .fit)
         .shadow(color: Color.grayBlack.opacity(0.11), radius: 5.67, x: 0, y: 1.89)
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
                 isFlipped.toggle()
             }
             onFlip?(isFlipped)
         }
         .accessibilityAction(named: Text(isFlipped ? "정책 정보 보기" : "정책 요약 보기")) {
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
                 isFlipped.toggle()
             }
             onFlip?(isFlipped)

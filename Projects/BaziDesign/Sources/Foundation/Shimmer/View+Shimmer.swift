@@ -10,28 +10,33 @@ public extension View {
 }
 
 private struct BaziShimmerModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isAnimating = false
 
     func body(content: Content) -> some View {
         content
             .overlay {
-                GeometryReader { geo in
-                    let width = geo.size.width
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: Color.grayWhite.opacity(0.75), location: 0.5),
-                            .init(color: .clear, location: 1),
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: width)
-                    .offset(x: isAnimating ? width : -width)
+                // 동작 줄이기 설정 시 흐르는 하이라이트를 없애고 정적 스켈레톤만 보여준다.
+                if !reduceMotion {
+                    GeometryReader { geo in
+                        let width = geo.size.width
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: Color.grayWhite.opacity(0.75), location: 0.5),
+                                .init(color: .clear, location: 1),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: width)
+                        .offset(x: isAnimating ? width : -width)
+                    }
                 }
             }
             .mask(content)
             .onAppear {
+                guard !reduceMotion else { return }
                 withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
                     isAnimating = true
                 }
