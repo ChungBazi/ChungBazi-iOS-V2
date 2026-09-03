@@ -124,6 +124,8 @@ extension PolicyDetailView {
                     .baziFont(.small12R)
             }
             .foregroundStyle(Color.gray400)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("조회수 \(detail.viewCount.formatted())회")
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)

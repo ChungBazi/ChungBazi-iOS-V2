@@ -194,6 +194,7 @@ extension BZFlipCard {
             HStack(spacing: 3) {
                 Image(systemName: "sparkle")
                     .font(.system(size: 14))
+                    .accessibilityHidden(true)
                 Text("AI가 요약하고 있어요")
                     .baziFont(.small14R)
             }

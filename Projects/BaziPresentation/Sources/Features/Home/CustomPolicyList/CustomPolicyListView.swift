@@ -166,6 +166,7 @@ extension CustomPolicyListView {
                         .scaledToFit()
                         .frame(width: 119)
                         .foregroundStyle(Color.grayWhite)
+                        .accessibilityHidden(true)
                     Text(step.message)
                         .baziFont(.head18B)
                         .foregroundStyle(Color.grayWhite)

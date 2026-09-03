@@ -137,6 +137,7 @@ extension SearchView {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("검색 기록 삭제")
         }
         .frame(height: 48)
     }
