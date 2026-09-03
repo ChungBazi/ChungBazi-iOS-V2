@@ -26,7 +26,7 @@ struct BirthDateStepView: View {
 extension BirthDateStepView {
 
     private var titleText: some View {
-        Text("생년월일이 언제인가요?")
+        Text(PolicyProfileConstants.Question.birthDate)
             .baziFont(.head22B)
             .foregroundStyle(Color.grayBlack)
     }

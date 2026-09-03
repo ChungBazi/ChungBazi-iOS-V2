@@ -26,14 +26,14 @@ struct EmploymentStepView: View {
 extension EmploymentStepView {
 
     private var titleText: some View {
-        Text("현재 하고 있는 일이 있나요?")
+        Text(PolicyProfileConstants.Question.employment)
             .baziFont(.head22B)
             .foregroundStyle(Color.grayBlack)
     }
 
     private var selectField: some View {
         BZSelectField(
-            title: "취업 상태 선택",
+            title: PolicyProfileConstants.SelectTitle.employment,
             options: EmploymentUI.allCases.map(\.rawValue),
             selection: Binding(
                 get: { store.employment?.rawValue },

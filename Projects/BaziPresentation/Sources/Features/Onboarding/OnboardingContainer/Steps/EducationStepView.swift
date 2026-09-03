@@ -26,14 +26,14 @@ struct EducationStepView: View {
 extension EducationStepView {
 
     private var titleText: some View {
-        Text("현재 어떤 학업 단계에 있나요?")
+        Text(PolicyProfileConstants.Question.education)
             .baziFont(.head22B)
             .foregroundStyle(Color.grayBlack)
     }
 
     private var selectField: some View {
         BZSelectField(
-            title: "학업 단계 선택",
+            title: PolicyProfileConstants.SelectTitle.education,
             options: EducationUI.allCases.map(\.rawValue),
             selection: Binding(
                 get: { store.education?.rawValue },
