@@ -103,10 +103,8 @@ public struct BZCard: View {
         .baziRadius(.medium)
         .contentShape(Rectangle())
         .onTapGesture { onOpen?() }
-        // 카드 정보는 요약 요소 하나로 읽고(탭=열기), 액세서리 버튼은 개별 포커스로 남긴다.
-        .background(cardAccessibilityElement)
-        // 요약 요소와 액세서리 버튼이 병합되지 않게 묶는다(요약 먼저, 그다음 각 버튼).
-        .accessibilityElement(children: .contain)
+        // 접근성 요약은 제목(titleText)에 붙인다. 카드 전체를 덮는 요약 요소는 별을 흡수하므로
+        // (VoiceOver 병합·음성제어 번호 누락) 별과 겹치지 않는 제목 행에 둔다.
     }
 }
 
@@ -123,26 +121,6 @@ extension BZCard {
         parts.append("조회수 \(viewCount.formatted())회")
         if case .like = accessory, isLiked { parts.append("찜함") }
         return parts.joined(separator: ", ")
-    }
-
-    /// 카드 프레임 전체를 덮는 투명 요약 요소. 정보 서브뷰는 숨기고 이 요소 하나로 읽는다.
-    /// `onOpen`이 있으면 버튼(활성화 = 열기)으로, 없으면 읽기 전용 텍스트로 노출한다.
-    @ViewBuilder
-    private var cardAccessibilityElement: some View {
-        if let onOpen {
-            Color.clear
-                .accessibilityElement()
-                .accessibilityLabel(cardAccessibilityLabel)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { onOpen() }
-                // 액세서리 버튼(sortPriority 0)보다 먼저 포커스되도록 우선순위를 높인다.
-                .accessibilitySortPriority(1)
-        } else {
-            Color.clear
-                .accessibilityElement()
-                .accessibilityLabel(cardAccessibilityLabel)
-                .accessibilitySortPriority(1)
-        }
     }
 }
 
@@ -172,12 +150,10 @@ extension BZCard {
                     .baziFont(.small12SB)
                     .foregroundStyle(dDayColor)
             }
-            // 태그·D-day는 카드 요약 요소(cardAccessibilityElement)로 대체해 읽는다.
+            // 태그·D-day는 카드 요약(titleText)으로 대체해 읽는다.
             .accessibilityHidden(true)
             Spacer(minLength: 8)
-            // 단일 버튼(찜/메모)도 요약 요소에 병합되지 않고 개별 포커스되도록 자체 컨테이너로 감싼다.
             accessoryView
-                .accessibilityElement(children: .contain)
         }
     }
 
@@ -227,7 +203,11 @@ extension BZCard {
             .foregroundStyle(Color.grayBlack)
             .lineLimit(size == .small ? 2 : 1)
             .truncationMode(.tail)
-            .accessibilityHidden(true)
+            // 이 요소 하나로 카드 정보를 읽고(탭=열기). 액세서리보다 먼저 포커스되게 우선순위를 높인다.
+            .accessibilityLabel(cardAccessibilityLabel)
+            .accessibilityAddTraits(onOpen != nil ? .isButton : [])
+            .accessibilityAction { onOpen?() }
+            .accessibilitySortPriority(1)
     }
 
     private var viewCountRow: some View {
