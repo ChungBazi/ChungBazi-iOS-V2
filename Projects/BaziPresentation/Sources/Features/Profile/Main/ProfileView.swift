@@ -94,7 +94,12 @@ extension ProfileView {
             ProfileRow("서비스 이용약관") { store.send(.didTapTermsRow) }
             ProfileRow("개인정보 처리방침") { store.send(.didTapPrivacyRow) }
             ProfileRow("문의하기") { store.send(.didTapInquiry) }
-            ProfileRow("현재 버전 \(AppInfo.version)") { store.send(.didTapAppStore) }
+            ProfileRow(
+                "현재 버전 \(AppInfo.version)",
+                trailingText: store.isUpdateAvailable ? "업데이트하기" : nil
+            ) {
+                store.send(.didTapAppStore)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 24)

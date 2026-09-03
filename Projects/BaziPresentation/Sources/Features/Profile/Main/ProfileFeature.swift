@@ -25,6 +25,7 @@ public struct ProfileFeature {
     public struct State: Equatable {
         public var path = StackState<Path.State>()
         public var nickname = ""
+        public var isUpdateAvailable = false
 
         public init() {}
     }
@@ -59,6 +60,7 @@ public struct ProfileFeature {
 
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.openURL) var openURL
+    @Dependency(\.appConfigClient) var appConfigClient
 
     // MARK: - Init
 
@@ -71,6 +73,7 @@ public struct ProfileFeature {
             switch action {
             case .onAppear:
                 state.nickname = sessionClient.displayName()
+                state.isUpdateAvailable = appConfigClient.isUpdateAvailable()
                 return .none
 
             case .didTapInquiry:
