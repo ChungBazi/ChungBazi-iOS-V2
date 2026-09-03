@@ -22,4 +22,9 @@ extension UseCaseError {
             return "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요"
         }
     }
+
+    /// 경고 토스트용 메시지. 취소(`.cancelled`)는 오류가 아니므로 nil.
+    var toastMessage: String? {
+        self == .cancelled ? nil : loadFailureMessage
+    }
 }

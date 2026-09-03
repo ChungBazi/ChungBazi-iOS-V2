@@ -28,7 +28,7 @@ public struct LoginFeature {
 
         // MARK: Internal
         case loginResponse(Result<AccountStatus, UseCaseError>)
-        case dismissErrorToast
+        case errorToastDismissed
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -105,10 +105,10 @@ public struct LoginFeature {
             case .loginResponse(.failure(let error)):
                 state.isLoading = false
                 // 사용자가 로그인 창을 닫은 취소는 오류로 띄우지 않는다.
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 return .none
 
-            case .dismissErrorToast:
+            case .errorToastDismissed:
                 state.errorToast = nil
                 return .none
 
