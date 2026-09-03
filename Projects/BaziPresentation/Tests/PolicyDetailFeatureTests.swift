@@ -34,7 +34,7 @@ struct PolicyDetailFeatureTests {
         let store = TestStore(initialState: state) {
             PolicyDetailFeature()
         } withDependencies: {
-            $0.policyLikeClient.setLike = { _, _ in throw UseCaseError.network }
+            $0.policyLikeClient.setLike = { _, _ in throw UseCaseError.offline }
         }
 
         var liked = PolicyDetailVO.mock(id: 1)
@@ -57,7 +57,7 @@ struct PolicyDetailFeatureTests {
         let store = TestStore(initialState: state) {
             PolicyDetailFeature()
         } withDependencies: {
-            $0.policyLikeClient.setLike = { _, _ in throw UseCaseError.network }
+            $0.policyLikeClient.setLike = { _, _ in throw UseCaseError.offline }
         }
 
         var expected = PolicyDetailVO.mock(id: 1)

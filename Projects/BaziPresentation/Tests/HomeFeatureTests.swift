@@ -33,7 +33,7 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: HomeFeature.State()) {
             HomeFeature()
         } withDependencies: {
-            $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.network }
+            $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.offline }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }

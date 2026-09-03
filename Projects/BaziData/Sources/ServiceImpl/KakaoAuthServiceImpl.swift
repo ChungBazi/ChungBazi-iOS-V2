@@ -4,6 +4,7 @@ import Foundation
 
 import BaziDomain
 import KakaoSDKAuth
+import KakaoSDKCommon
 import KakaoSDKUser
 
 public struct KakaoAuthServiceImpl: KakaoAuthService {
@@ -14,11 +15,11 @@ public struct KakaoAuthServiceImpl: KakaoAuthService {
         try await withCheckedThrowingContinuation { continuation in
             let completion: (OAuthToken?, Error?) -> Void = { token, error in
                 if let error {
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: Self.mapLoginError(error))
                 } else if let token {
                     continuation.resume(returning: token.accessToken)
                 } else {
-                    continuation.resume(throwing: UseCaseError.unknown("카카오 로그인 응답이 비어 있습니다."))
+                    continuation.resume(throwing: UseCaseError.unknown)
                 }
             }
 
@@ -30,6 +31,14 @@ public struct KakaoAuthServiceImpl: KakaoAuthService {
                 }
             }
         }
+    }
+
+    /// 카카오 SDK 에러를 도메인 에러로 옮긴다. 사용자가 로그인 창을 닫으면 오류가 아니라 취소로 매핑한다.
+    private static func mapLoginError(_ error: Error) -> UseCaseError {
+        if let sdkError = error as? SdkError, case .ClientFailed(.Cancelled, _) = sdkError {
+            return .cancelled
+        }
+        return .unknown
     }
 
     public func unlink() async throws {
