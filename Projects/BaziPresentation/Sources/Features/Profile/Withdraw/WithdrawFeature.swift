@@ -48,7 +48,8 @@ public struct WithdrawFeature {
         case didDismissError
 
         // MARK: Internal
-        case didFinishWithdraw
+        // 요청 시점의 이유 스냅샷을 함께 전달해 완료 이벤트가 실제 요청 내용과 일치하도록 한다.
+        case didFinishWithdraw(reasons: [String])
         case didFailWithdraw
 
         // MARK: Delegate
@@ -81,6 +82,8 @@ public struct WithdrawFeature {
                 return .none
 
             case .didToggleReason(let reason):
+                // 탈퇴 처리 중에는 이유 변경을 막는다(서버 요청 이유와 완료 이벤트 이유의 불일치 방지).
+                guard !state.isWithdrawing else { return .none }
                 if state.selectedReasons.contains(reason) {
                     state.selectedReasons.remove(reason)
                 } else {
@@ -105,27 +108,25 @@ public struct WithdrawFeature {
                 state.activeAlert = nil
                 state.isWithdrawing = true
                 // 선택 순서와 무관하게 표시 순서(allCases)로 정렬해 서버 코드로 매핑한다.
-                let reasons = WithdrawReasonUI.allCases
-                    .filter { state.selectedReasons.contains($0) }
-                    .map { $0.toDomain() }
+                let selected = WithdrawReasonUI.allCases.filter { state.selectedReasons.contains($0) }
+                let reasons = selected.map { $0.toDomain() }
                 let trimmed = state.detailText.trimmingCharacters(in: .whitespacesAndNewlines)
                 let request = WithdrawRequest(reasons: reasons, detail: trimmed.isEmpty ? nil : trimmed)
+                // 요청 시점의 이유를 스냅샷해 완료 이벤트로 전달한다(요청 중 이유 변경과의 불일치 방지).
+                let eventReasons = selected.map(\.rawValue)
                 return .run { [withdrawClient] send in
                     // 서버 탈퇴가 성공해야 완료 처리한다.
                     do {
                         try await withdrawClient.withdraw(request)
-                        await send(.didFinishWithdraw)
+                        await send(.didFinishWithdraw(reasons: eventReasons))
                     } catch {
                         await send(.didFailWithdraw)
                     }
                 }
 
-            case .didFinishWithdraw:
+            case let .didFinishWithdraw(reasons):
                 state.isWithdrawing = false
                 state.activeAlert = .completion
-                let reasons = WithdrawReasonUI.allCases
-                    .filter { state.selectedReasons.contains($0) }
-                    .map(\.rawValue)
                 return .run { [analytics] _ in analytics.track(.withdrawComplete(reasons: reasons)) }
 
             case .didFailWithdraw:
