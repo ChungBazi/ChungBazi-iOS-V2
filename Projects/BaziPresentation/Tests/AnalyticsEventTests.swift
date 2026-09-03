@@ -60,4 +60,31 @@ struct AnalyticsEventTests {
         #expect(apply["apply_url"] as? String == "https://x")
         #expect(apply["source"] as? String == "custom_card")
     }
+
+    @Test("검색/기능 이벤트 이름")
+    func phaseCEventNames() {
+        #expect(AnalyticsEvent.search(keyword: "청년", source: .submit).name == "search")
+        #expect(AnalyticsEvent.sortApply(listType: .category, sortOrder: "DEADLINE").name == "sort_apply")
+        #expect(AnalyticsEvent.categoryFilter(listType: .searchResult, category: "취업·창업").name == "category_filter")
+        #expect(AnalyticsEvent.likeToggle(policyId: 1, liked: true, source: .home).name == "like_toggle")
+        #expect(AnalyticsEvent.calendarAdd(policyId: 1).name == "calendar_add")
+        #expect(AnalyticsEvent.memoSave(policyId: 1, hasContent: true).name == "memo_save")
+        #expect(AnalyticsEvent.shareClick(policyId: 1).name == "share_click")
+    }
+
+    @Test("검색/기능 이벤트 파라미터")
+    func phaseCProperties() {
+        let search = AnalyticsEvent.search(keyword: "청년", source: .suggestion).properties
+        #expect(search["keyword"] as? String == "청년")
+        #expect(search["source"] as? String == "suggestion")
+        let like = AnalyticsEvent.likeToggle(policyId: 5, liked: false, source: .myPolicyList).properties
+        #expect(like["policy_id"] as? Int == 5)
+        #expect(like["liked"] as? Bool == false)
+        #expect(like["source"] as? String == "my_policy_list")
+        let sort = AnalyticsEvent.sortApply(listType: .myPolicy, sortOrder: "LATEST").properties
+        #expect(sort["list_type"] as? String == "my_policy")
+        #expect(sort["sort_order"] as? String == "LATEST")
+        let memo = AnalyticsEvent.memoSave(policyId: 2, hasContent: false).properties
+        #expect(memo["has_content"] as? Bool == false)
+    }
 }

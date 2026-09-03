@@ -11,6 +11,15 @@ public enum AnalyticsEvent: Equatable, Sendable {
     case policyListView(listType: ListType, entryPoint: EntryPoint, category: String?)
     case policyDetailView(policyId: Int, policyName: String?, category: String?, entryPoint: EntryPoint)
     case applyClick(policyId: Int, applyURL: String, source: ApplySource)
+    // MARK: 검색/필터 (Phase C)
+    case search(keyword: String, source: SearchSource)
+    case sortApply(listType: ListType, sortOrder: String)
+    case categoryFilter(listType: ListType, category: String)
+    // MARK: 기능 채택 (Phase C)
+    case likeToggle(policyId: Int, liked: Bool, source: LikeSource)
+    case calendarAdd(policyId: Int)
+    case memoSave(policyId: Int, hasContent: Bool)
+    case shareClick(policyId: Int)
 
     /// Amplitude 이벤트명(snake_case).
     public var name: String {
@@ -22,6 +31,13 @@ public enum AnalyticsEvent: Equatable, Sendable {
         case .policyListView: return "policy_list_view"
         case .policyDetailView: return "policy_detail_view"
         case .applyClick: return "apply_click"
+        case .search: return "search"
+        case .sortApply: return "sort_apply"
+        case .categoryFilter: return "category_filter"
+        case .likeToggle: return "like_toggle"
+        case .calendarAdd: return "calendar_add"
+        case .memoSave: return "memo_save"
+        case .shareClick: return "share_click"
         }
     }
 
@@ -47,6 +63,20 @@ public enum AnalyticsEvent: Equatable, Sendable {
             return props
         case let .applyClick(policyId, applyURL, source):
             return ["policy_id": policyId, "apply_url": applyURL, "source": source.rawValue]
+        case let .search(keyword, source):
+            return ["keyword": keyword, "source": source.rawValue]
+        case let .sortApply(listType, sortOrder):
+            return ["list_type": listType.rawValue, "sort_order": sortOrder]
+        case let .categoryFilter(listType, category):
+            return ["list_type": listType.rawValue, "category": category]
+        case let .likeToggle(policyId, liked, source):
+            return ["policy_id": policyId, "liked": liked, "source": source.rawValue]
+        case let .calendarAdd(policyId):
+            return ["policy_id": policyId]
+        case let .memoSave(policyId, hasContent):
+            return ["policy_id": policyId, "has_content": hasContent]
+        case let .shareClick(policyId):
+            return ["policy_id": policyId]
         }
     }
 }
@@ -100,4 +130,22 @@ public enum EntryPoint: String, Sendable {
 public enum ApplySource: String, Sendable {
     case detail
     case customCard = "custom_card"
+}
+
+/// 검색 실행 방식.
+public enum SearchSource: String, Sendable {
+    case submit
+    case suggestion
+}
+
+/// 찜 토글 발생 화면.
+public enum LikeSource: String, Sendable {
+    case home
+    case customList = "custom_list"
+    case ranked
+    case category
+    case searchResult = "search_result"
+    case myPolicyList = "my_policy_list"
+    case detail
+    case recommendation
 }
