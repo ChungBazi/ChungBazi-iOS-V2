@@ -45,7 +45,7 @@ public struct NotificationSettingFeature {
         // MARK: Internal
         case settingsResponse(Result<NotificationSettings, UseCaseError>)
         case updateFailed(UseCaseError)
-        case dismissErrorToast
+        case errorToastDismissed
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -76,6 +76,8 @@ public struct NotificationSettingFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                // 재조회 중엔 토글을 잠가, 실패 시 오래된 값으로 서버를 덮어쓰지 않게 한다.
+                state.hasLoaded = false
                 return .run { [notificationSettingClient] send in
                     do {
                         let settings = try await notificationSettingClient.getSettings()
@@ -94,9 +96,9 @@ public struct NotificationSettingFeature {
                 return .none
 
             case .settingsResponse(.failure(let error)):
-                // 실제 설정을 모르는 상태이므로 토글을 계속 비활성(hasLoaded=false)으로 두어 덮어쓰기를 막는다.
-                // 재시도는 화면 재진입 시 onAppear가 다시 요청한다.
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                // 설정을 모르는 상태이므로 토글을 잠그고(hasLoaded=false), 재진입 시 onAppear가 재요청한다.
+                state.hasLoaded = false
+                state.errorToast = error.toastMessage
                 return .none
 
             case .didToggleAllNotification(let isOn):
@@ -120,10 +122,10 @@ public struct NotificationSettingFeature {
 
             case .updateFailed(let error):
                 // 연속 토글로 인한 in-flight 취소는 사용자 오류가 아니므로 무시.
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 return .none
 
-            case .dismissErrorToast:
+            case .errorToastDismissed:
                 state.errorToast = nil
                 return .none
 
