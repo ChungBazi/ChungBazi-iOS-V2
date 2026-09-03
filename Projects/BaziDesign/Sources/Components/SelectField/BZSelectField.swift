@@ -42,7 +42,7 @@ public struct BZSelectField: View {
         .accessibilityLabel("\(title), \(selection ?? placeholder)")
         .accessibilityHint("탭하여 선택")
         .sheet(isPresented: $isPresented) {
-            BZBottomSheet(title: title, options: options) { option in
+            BZBottomSheet(title: title, options: options, selection: selection) { option in
                 selection = option
                 isPresented = false
             }

@@ -75,11 +75,17 @@ public struct BZFlipCard: View {
             }
             onFlip?(isFlipped)
         }
-        .accessibilityAction(named: Text(isFlipped ? "카드 앞면 보기" : "정책 요약 보기")) {
+        .accessibilityAction(named: Text(isFlipped ? "정책 정보 보기" : "정책 요약 보기")) {
             withAnimation(.easeInOut(duration: 0.4)) {
                 isFlipped.toggle()
             }
             onFlip?(isFlipped)
+        }
+        .onChange(of: isSummarizing) { _, summarizing in
+            // 뒷면을 보는 중 요약 생성이 끝나면 VoiceOver로 알린다.
+            if !summarizing, isFlipped {
+                AccessibilityNotification.Announcement("정책 요약이 준비됐어요").post()
+            }
         }
     }
 }

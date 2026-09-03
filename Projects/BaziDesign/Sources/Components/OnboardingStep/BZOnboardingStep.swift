@@ -31,6 +31,9 @@ public struct BZOnboardingStep: View {
             }
         }
         .frame(height: 4)
+        .accessibilityElement()
+        .accessibilityLabel("진행 단계")
+        .accessibilityValue("\(totalSteps)단계 중 \(currentStep)단계")
     }
 }
 
