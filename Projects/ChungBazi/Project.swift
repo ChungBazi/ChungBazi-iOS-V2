@@ -42,8 +42,8 @@ let project = Project.project(
             resources: .default,
             entitlements: .file(path: "SupportingFiles/ChungBazi.entitlements"),
             scripts: [
-                // Crashlytics 심볼리케이션: 빌드 후 dSYM 업로드. run 스크립트 위치가 환경(DerivedData/Tuist)마다
-                // 달라 후보 경로를 탐색하고, 없거나 실패해도 빌드를 깨지 않도록 경고만 남긴다.
+                // Crashlytics 심볼리케이션: 빌드 후 dSYM 업로드. 후보 경로를 탐색하며,
+                // Debug는 실패해도 경고만, Release는 심볼리케이션 누락 방지를 위해 실패 시 빌드를 실패시킨다.
                 .post(
                     script: """
                     RUN_SCRIPT=""
@@ -52,7 +52,14 @@ let project = Project.project(
                     if [ -f "$CANDIDATE_A" ]; then RUN_SCRIPT="$CANDIDATE_A"; fi
                     if [ -z "$RUN_SCRIPT" ] && [ -f "$CANDIDATE_B" ]; then RUN_SCRIPT="$CANDIDATE_B"; fi
                     if [ -n "$RUN_SCRIPT" ]; then
-                      "$RUN_SCRIPT" || echo "warning: Crashlytics dSYM 업로드 실패(무시)"
+                      if ! "$RUN_SCRIPT"; then
+                        if [ "$CONFIGURATION" = "Release" ]; then
+                          echo "error: Crashlytics dSYM 업로드 실패 (Release는 심볼리케이션 누락을 허용하지 않음)"; exit 1
+                        fi
+                        echo "warning: Crashlytics dSYM 업로드 실패(무시)"
+                      fi
+                    elif [ "$CONFIGURATION" = "Release" ]; then
+                      echo "error: Crashlytics run 스크립트를 찾지 못했습니다 (Release)"; exit 1
                     else
                       echo "warning: Crashlytics run 스크립트를 찾지 못해 dSYM 업로드를 건너뜁니다"
                     fi
