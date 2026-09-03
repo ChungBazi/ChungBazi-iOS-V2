@@ -9,7 +9,8 @@ import BaziDomain
 @MainActor
 struct LinkedAccountsFeatureTests {
 
-    private static let profile = UserProfile(nickname: "바지", email: "chungbazi@kakao.com", socialType: .kakao)
+    // @Sendable인 getProfile 클로저에서 오프-액터로 접근하므로 nonisolated로 둔다. (UserProfile은 Sendable)
+    private nonisolated static let profile = UserProfile(nickname: "바지", email: "chungbazi@kakao.com", socialType: .kakao)
 
     @Test("진입 시 프로필 조회에 성공하면 loaded가 된다")
     func onAppear_success_loaded() async {
