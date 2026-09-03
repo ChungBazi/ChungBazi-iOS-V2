@@ -16,6 +16,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         FirebaseApp.configure()
         // Crashlytics는 SDK 링크 + FirebaseApp.configure() 이후 자동으로 크래시를 수집한다.
+        // Amplitude 초기화(세션 자동 수집 시작). 인스턴스는 AppDependencies에서 공유.
+        _ = AppDependencies.amplitude
         KakaoSDK.initSDK(appKey: Config.kakaoNativeAppKey)
 
         Messaging.messaging().delegate = self

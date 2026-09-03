@@ -11,6 +11,7 @@ let project = Project.project(
             infoPlist: .extendingDefault(with: [
                 "BASE_URL": .string("$(BASE_URL)"),
                 "KAKAO_NATIVE_APP_KEY": .string("$(KAKAO_NATIVE_APP_KEY)"),
+                "AMPLITUDE_API_KEY": .string("$(AMPLITUDE_API_KEY)"),
                 // 앱 표시 이름 / 마케팅 버전
                 "CFBundleDisplayName": .string("청바지"),
                 "CFBundleName": .string("청바지"),
@@ -77,6 +78,7 @@ let project = Project.project(
                 .external(.FirebaseMessaging),
                 .external(.FirebaseCrashlytics),
                 .external(.FirebaseRemoteConfig),
+                .external(.AmplitudeSwift),
             ],
             // CODE_SIGN_IDENTITY는 팀/개발자마다 다른 인증서 이름을 쓸 수 있어서 소스에 고정하지 않고
             // 각자의 xcconfig(Debug/Release.xcconfig, setup.sh가 생성)에서 값을 채우도록 한다.

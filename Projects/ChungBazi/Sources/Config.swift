@@ -23,4 +23,11 @@ enum Config {
       }
       return appKey
     }()
+
+    static let amplitudeAPIKey: String = {
+      guard let key = infoDictionary["AMPLITUDE_API_KEY"] as? String else {
+        fatalError()
+      }
+      return key
+    }()
 }
