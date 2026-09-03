@@ -28,6 +28,8 @@ public struct SearchFeature {
         public var recentKeywords: IdentifiedArrayOf<RecentSearchKeywordVO> = []
         public var isAutoSaveEnabled: Bool = true
         public var suggestions: [SearchSuggestionVO] = []
+        /// 최근검색 삭제 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
 
         public var isTyping: Bool { !query.isEmpty }
 
@@ -49,6 +51,8 @@ public struct SearchFeature {
         // MARK: Internal
         case recentSearchesResponse(Result<RecentSearchResultVO, UseCaseError>)
         case suggestionsResponse(Result<[SearchSuggestionVO], UseCaseError>)
+        case deleteRecentFailed(UseCaseError)
+        case dismissErrorToast
 
         // MARK: Child
         case path(StackActionOf<Path>)
@@ -135,15 +139,31 @@ public struct SearchFeature {
 
             case .didTapDeleteRecentKeyword(let id):
                 state.recentKeywords.remove(id: id)
-                return .run { [policySearchClient] _ in
-                    try? await policySearchClient.deleteRecentSearch(id)
+                return .run { [policySearchClient] send in
+                    do {
+                        try await policySearchClient.deleteRecentSearch(id)
+                    } catch {
+                        await send(.deleteRecentFailed(UseCaseError.map(error)))
+                    }
                 }
 
             case .didTapDeleteAllRecentKeywords:
                 state.recentKeywords.removeAll()
-                return .run { [policySearchClient] _ in
-                    try? await policySearchClient.deleteAllRecentSearches()
+                return .run { [policySearchClient] send in
+                    do {
+                        try await policySearchClient.deleteAllRecentSearches()
+                    } catch {
+                        await send(.deleteRecentFailed(UseCaseError.map(error)))
+                    }
                 }
+
+            case .deleteRecentFailed(let error):
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                return .none
+
+            case .dismissErrorToast:
+                state.errorToast = nil
+                return .none
 
             case .didToggleAutoSave:
                 let enabled = !state.isAutoSaveEnabled

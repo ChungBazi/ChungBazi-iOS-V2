@@ -27,6 +27,7 @@ public struct NicknameEditView: View {
                 dismiss()
             }
             .baziToast(isPresented: $store.isSuccessToastPresented, message: "닉네임이 수정되었어요")
+            .baziToast(errorMessage: $store.errorToast)
     }
 }
 

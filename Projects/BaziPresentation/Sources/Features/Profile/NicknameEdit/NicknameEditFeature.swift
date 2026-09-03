@@ -16,6 +16,8 @@ public struct NicknameEditFeature {
         public var draftNickname = ""
         public var isSaving = false
         public var isSuccessToastPresented = false
+        /// 저장 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
         /// onAppear 초기화를 최초 1회만 수행하기 위한 플래그. (탭 전환 등으로 화면이 재등장할 때
         /// 입력 중이던 draftNickname이 세션 값으로 초기화되는 것을 막는다)
         public var hasLoaded = false
@@ -113,9 +115,9 @@ public struct NicknameEditFeature {
                 state.isSuccessToastPresented = true
                 return .send(.delegate(.didSaveNickname(name)))
 
-            case .didFailToSaveNickname:
+            case .didFailToSaveNickname(let error):
                 state.isSaving = false
-                // TODO: 닉네임 저장 실패 알림 UI가 정해지면 State에 반영.
+                state.errorToast = error.loadFailureMessage
                 return .none
 
             case .delegate:

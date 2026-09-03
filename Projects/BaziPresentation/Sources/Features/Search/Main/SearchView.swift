@@ -25,6 +25,7 @@ public struct SearchView: View {
         ) {
             content
                 .task { store.send(.onAppear) }
+                .baziToast(errorMessage: store.errorToast, onDismiss: { store.send(.dismissErrorToast) })
         } destination: { store in
             switch store.case {
             case .searchResult(let store):
