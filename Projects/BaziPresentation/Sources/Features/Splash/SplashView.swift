@@ -90,6 +90,7 @@ extension SplashView {
             .scaledToFit()
             .frame(width: 100)
             .foregroundStyle(Color.grayWhite)
+            .accessibilityLabel("청바지")
     }
 }
 

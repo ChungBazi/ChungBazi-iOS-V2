@@ -83,6 +83,7 @@ enum BZNavigationBarItemBuilder {
                 .scaledToFit()
                 .frame(width: 61.5)
                 .foregroundStyle(Color.bazi(.primary))
+                .accessibilityLabel("청바지")
         }
     }
 }

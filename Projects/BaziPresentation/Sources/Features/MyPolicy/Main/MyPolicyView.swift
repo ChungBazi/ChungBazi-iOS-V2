@@ -216,6 +216,7 @@ private extension MyPolicyView {
         }
         .buttonStyle(.plain)
         .padding(.vertical, 12)
+        .accessibilityLabel("\(BaziDateFormat.yearMonth.string(from: store.selectedDate)), 정책 마감 캘린더 열기")
     }
 
     var weekStrip: some View {

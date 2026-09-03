@@ -13,6 +13,9 @@ public struct LoginView: View {
 
     let store: StoreOf<LoginFeature>
 
+    /// 소셜 로그인 버튼 글자 크기. 고정 시스템 폰트라 Dynamic Type에 맞춰 스케일한다.
+    @ScaledMetric(relativeTo: .body) private var loginFontSize: CGFloat = 15
+
     // MARK: - Init
 
     public init(store: StoreOf<LoginFeature>) {
@@ -105,11 +108,11 @@ extension LoginView {
                     .blendMode(iconBlendMode)
 
                 Text(title)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: loginFontSize, weight: .medium))
             }
             .foregroundStyle(foreground)
             .frame(maxWidth: .infinity)
-            .frame(height: 45)
+            .frame(minHeight: 45)
             .background(background)
             .baziRadius(.small)
         }
