@@ -36,6 +36,7 @@ public struct SplashFeature {
     public enum Action {
         // MARK: View
         case onAppear
+        case willEnterForeground
         case didTapForceUpdate
         case didTapMaintenanceConfirm
 
@@ -93,6 +94,12 @@ public struct SplashFeature {
                         await send(.gateResolved(appConfigClient.evaluateGate()))
                     }
                 )
+
+            case .willEnterForeground:
+                // 백그라운드 복귀 시 게이트 재평가(점검 해제/버전 갱신 반영).
+                return .run { [appConfigClient] send in
+                    await send(.gateResolved(appConfigClient.evaluateGate()))
+                }
 
             case .didAdvancePhase:
                 state.phase = .logo
