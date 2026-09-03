@@ -128,6 +128,7 @@ public struct MyPolicyFeature {
     @Dependency(\.myPolicyClient) var myPolicyClient
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -139,6 +140,7 @@ public struct MyPolicyFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                let screenView = Effect<Action>.run { [analytics] _ in analytics.track(.screenView(.myPolicy)) }
                 // 최초 1회: 오늘 기준으로 맞추고 로드한다.
                 if !state.didLoad {
                     state.didLoad = true
@@ -146,7 +148,7 @@ public struct MyPolicyFeature {
                     state.today = today
                     state.selectedDate = today
                     state.lastSyncedLikeOverrides = state.likeOverrides
-                    return .merge(loadTeaser(), reloadDatePolicies(&state), reloadOpenEnded(&state))
+                    return .merge(loadTeaser(), reloadDatePolicies(&state), reloadOpenEnded(&state), screenView)
                 }
                 // 재진입: 신규 찜(추가)이 생겼을 때만 재조회한다.
                 // 해제는 overlay 필터가 반응형으로 처리하므로 재조회가 필요 없고, 추가만 목록에 없어 서버 재조회가 필요하다.
@@ -154,12 +156,13 @@ public struct MyPolicyFeature {
                 let synced = state.lastSyncedLikeOverrides
                 let hasNewLike = overrides.contains { $0.value && synced[$0.key] != true }
                 state.lastSyncedLikeOverrides = overrides
-                guard hasNewLike else { return .none }
+                guard hasNewLike else { return screenView }
                 // 신규 찜이 정책/상시 어느 탭이든 진입 즉시 보이도록 티저 + 두 탭 모두 재조회(.loading 없이 → 깜빡임 방지).
                 return .merge(
                     loadTeaser(),
                     fetchDatePolicies(state: state),
-                    fetchOpenEnded(state: state, isFirstPage: true)
+                    fetchOpenEnded(state: state, isFirstPage: true),
+                    screenView
                 )
 
             case .didTapRetry:

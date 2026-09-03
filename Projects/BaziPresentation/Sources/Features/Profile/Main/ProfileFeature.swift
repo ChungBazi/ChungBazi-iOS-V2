@@ -61,6 +61,7 @@ public struct ProfileFeature {
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.openURL) var openURL
     @Dependency(\.appConfigClient) var appConfigClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -74,7 +75,7 @@ public struct ProfileFeature {
             case .onAppear:
                 state.nickname = sessionClient.displayName()
                 state.isUpdateAvailable = appConfigClient.isUpdateAvailable()
-                return .none
+                return .run { [analytics] _ in analytics.track(.screenView(.profile)) }
 
             case .didTapInquiry:
                 guard let url = ProfileConstants.inquiryFormURL else { return .none }

@@ -12,6 +12,7 @@ public struct LoginFeature {
     @ObservableState
     public struct State: Equatable {
         public var isLoading = false
+        var loginMethod: String?
 
         public init() {}
     }
@@ -40,6 +41,7 @@ public struct LoginFeature {
     // MARK: - Dependencies
 
     @Dependency(\.authClient) var authClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -59,6 +61,7 @@ public struct LoginFeature {
             case .didTapKakaoLoginButton:
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
+                state.loginMethod = "kakao"
                 return .run { [authClient] send in
                     do {
                         let result = try await authClient.loginWithKakao()
@@ -72,6 +75,7 @@ public struct LoginFeature {
             case .didTapAppleLoginButton:
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
+                state.loginMethod = "apple"
                 return .run { [authClient] send in
                     do {
                         let result = try await authClient.loginWithApple()
@@ -84,10 +88,15 @@ public struct LoginFeature {
 
             case .loginResponse(.success(let result)):
                 state.isLoading = false
-                return .send(.delegate(.didLogin(
-                    hasNickname: result.hasNickname,
-                    hasCompletedOnboarding: result.hasCompletedOnboarding
-                )))
+                return .merge(
+                    .send(.delegate(.didLogin(
+                        hasNickname: result.hasNickname,
+                        hasCompletedOnboarding: result.hasCompletedOnboarding
+                    ))),
+                    .run { [analytics, method = state.loginMethod ?? "", isNewUser = !result.hasNickname] _ in
+                        analytics.track(.login(method: method, isNewUser: isNewUser))
+                    }
+                )
 
             case .loginResponse(.failure):
                 state.isLoading = false

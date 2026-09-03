@@ -75,6 +75,7 @@ public struct HomeFeature {
     @Dependency(\.homeClient) var homeClient
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.policyLikeClient) var policyLikeClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -87,7 +88,10 @@ public struct HomeFeature {
             switch action {
             case .onAppear:
                 state.displayName = sessionClient.displayName()
-                return loadFeed(&state)
+                return .merge(
+                    loadFeed(&state),
+                    .run { [analytics] _ in analytics.track(.screenView(.home)) }
+                )
 
             case .didTapRetry:
                 return loadFeed(&state)
