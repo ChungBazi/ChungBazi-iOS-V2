@@ -42,6 +42,7 @@ public struct BZToastMessage: View {
     public var body: some View {
         HStack(spacing: 8) {
             icon
+                .accessibilityHidden(true)
             Text(message)
                 .baziFont(.small14SB)
                 .foregroundStyle(style.foreground)
