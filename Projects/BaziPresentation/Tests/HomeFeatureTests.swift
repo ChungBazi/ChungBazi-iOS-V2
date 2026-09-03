@@ -43,7 +43,7 @@ struct HomeFeatureTests {
             $0.feed = .loading
         }
         await store.receive(\.feedResponse.failure) {
-            $0.feed = .failed("네트워크 연결을 확인해 주세요.")
+            $0.feed = .failed(UseCaseError.offline.loadFailureMessage)
         }
     }
 
