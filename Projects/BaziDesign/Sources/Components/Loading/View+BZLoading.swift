@@ -9,19 +9,24 @@ extension View {
     ///   - isLoading: true면 스피너를 표시한다.
     ///   - dimmed: true면 뒤에 딤(Black 45%)을 깐다. false면 딤 없이 스피너만 얹는다(투명 터치 차단).
     public func baziLoading(_ isLoading: Bool, dimmed: Bool = true) -> some View {
-        overlay {
-            if isLoading {
-                ZStack {
-                    if dimmed {
-                        BZDimOverlay(level: .dim1)
-                    } else {
-                        Color.clear
-                            .ignoresSafeArea()
-                            .contentShape(Rectangle())
+        // 로딩 중엔 뒤 콘텐츠를 VoiceOver 트리에서 숨기고, 시작 시 "로딩 중"을 안내한다.
+        accessibilityHidden(isLoading)
+            .overlay {
+                if isLoading {
+                    ZStack {
+                        if dimmed {
+                            BZDimOverlay(level: .dim1)
+                        } else {
+                            Color.clear
+                                .ignoresSafeArea()
+                                .contentShape(Rectangle())
+                        }
+                        BZLoadingView()
                     }
-                    BZLoadingView()
                 }
             }
-        }
+            .task(id: isLoading) {
+                if isLoading { AccessibilityNotification.Announcement("로딩 중").post() }
+            }
     }
 }

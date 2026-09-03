@@ -208,6 +208,7 @@ extension PolicyDetailView {
             Text(title)
                 .baziFont(.head18B)
                 .foregroundStyle(Color.gray900)
+                .accessibilityAddTraits(.isHeader)
                 .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {

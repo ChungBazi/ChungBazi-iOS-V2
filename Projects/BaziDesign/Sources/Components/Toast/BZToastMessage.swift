@@ -105,6 +105,8 @@ extension View {
                         .transition(.opacity.animation(.easeInOut(duration: 0.3)))
                         .id(message)
                         .task {
+                            // 상태 토스트는 자동 낭독되지 않으므로, 뜰 때 VoiceOver로 메시지를 읽어준다.
+                            AccessibilityNotification.Announcement(message).post()
                             try? await Task.sleep(for: .seconds(2.0))
                             isPresented.wrappedValue = false
                         }

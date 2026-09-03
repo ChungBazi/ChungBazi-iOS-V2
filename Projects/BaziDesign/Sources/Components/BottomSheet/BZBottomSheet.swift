@@ -15,6 +15,7 @@ public struct BZBottomSheet: View {
 
     private let title: String
     private let options: [String]
+    private let selection: String?
     private let maxVisibleRows: Int
     private let onSelect: (String) -> Void
 
@@ -27,11 +28,13 @@ public struct BZBottomSheet: View {
     public init(
         title: String,
         options: [String],
+        selection: String? = nil,
         maxVisibleRows: Int = 7,
         onSelect: @escaping (String) -> Void
     ) {
         self.title = title
         self.options = options
+        self.selection = selection
         self.maxVisibleRows = maxVisibleRows
         self.onSelect = onSelect
     }
@@ -58,6 +61,7 @@ extension BZBottomSheet {
         Text(title)
             .baziFont(.body16SB)
             .foregroundColor(Color.gray900)
+            .accessibilityAddTraits(.isHeader)
             .frame(maxWidth: .infinity)
             .padding(.top, 26)
             .padding(.bottom, 18)
@@ -83,6 +87,7 @@ extension BZBottomSheet {
                         Text(option)
                     }
                     .buttonStyle(BZBottomSheetRowStyle())
+                    .accessibilityAddTraits(option == selection ? .isSelected : [])
 
                     if index < options.count - 1 {
                         Rectangle()
