@@ -42,7 +42,8 @@ public struct PolicyProfileEditFeature {
         // MARK: Save
         public var isSaving = false
         public var isSuccessToastPresented = false
-        public var isFailureToastPresented = false
+        /// 저장·로드(지역/프로필) 실패 시 표시할 경고 토스트 메시지(nil이면 미표시).
+        public var errorToast: String?
         /// onAppear 프리필을 최초 1회만 수행하기 위한 플래그. (탭 전환 등으로 화면이 재등장할 때
         /// 저장하지 않은 편집이 서버 값으로 되돌아가는 것을 막는다)
         public var hasLoaded = false
@@ -174,8 +175,10 @@ public struct PolicyProfileEditFeature {
                 state.sidoOptions = list
                 return .none
 
-            case .sidoResponse(.failure):
-                // TODO: 시도 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+            case .sidoResponse(.failure(let error)):
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                // 로드 실패면 프리필이 없으므로, 재진입 시 다시 시도할 수 있게 1회 가드를 푼다.
+                state.hasLoaded = false
                 return .none
 
             case .profileResponse(.success(let profile)):
@@ -187,8 +190,9 @@ public struct PolicyProfileEditFeature {
                 state.savedSnapshot = baseline
                 return fetchSigunguList(&state)
 
-            case .profileResponse(.failure):
-                // TODO: 정책 맞춤 조건 조회 실패 알림 UI가 정해지면 State에 반영.
+            case .profileResponse(.failure(let error)):
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.hasLoaded = false
                 return .none
 
             case .didSelectSido(let sido):
@@ -205,8 +209,9 @@ public struct PolicyProfileEditFeature {
                 }
                 return .none
 
-            case .sigunguResponse(.failure):
-                // TODO: 시군구 목록 로드 실패 알림 UI가 정해지면 State에 반영.
+            case .sigunguResponse(.failure(let error)):
+                // 시군구는 시도 재선택으로 다시 시도할 수 있어 토스트만 띄운다.
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
                 return .none
 
             case .didSelectSigungu(let sigungu):
@@ -270,16 +275,16 @@ public struct PolicyProfileEditFeature {
 
             case .didSaveProfile(let requestedSnapshot):
                 state.isSaving = false
-                state.isFailureToastPresented = false
+                state.errorToast = nil
                 state.isSuccessToastPresented = true
                 // 실제로 저장 요청에 사용한 스냅샷만 기준으로 삼는다. (저장 중 편집분은 미저장으로 유지)
                 state.savedSnapshot = requestedSnapshot
                 return .run { [analytics] _ in analytics.track(.policyProfileEditSave(changed: true)) }
 
-            case .didFailToSaveProfile:
+            case .didFailToSaveProfile(let error):
                 state.isSaving = false
                 state.isSuccessToastPresented = false
-                state.isFailureToastPresented = true
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
                 return .none
 
             case .delegate:

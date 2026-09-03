@@ -33,7 +33,7 @@ public struct PolicyProfileEditView: View {
             }
             .toolbar(.hidden, for: .tabBar)
             .baziToast(isPresented: $store.isSuccessToastPresented, message: "정책 맞춤 조건이 수정되었어요")
-            .baziToast(isPresented: $store.isFailureToastPresented, message: "저장에 실패했어요. 다시 시도해 주세요", style: .warning)
+            .baziToast(errorMessage: $store.errorToast)
     }
 }
 

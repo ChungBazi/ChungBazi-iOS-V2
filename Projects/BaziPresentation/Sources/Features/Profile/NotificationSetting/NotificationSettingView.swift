@@ -26,6 +26,7 @@ public struct NotificationSettingView: View {
             .baziNavigationBar_backWithTitle("알림 설정") {
                 dismiss()
             }
+            .baziToast(errorMessage: store.errorToast, onDismiss: { store.send(.dismissErrorToast) })
     }
 }
 

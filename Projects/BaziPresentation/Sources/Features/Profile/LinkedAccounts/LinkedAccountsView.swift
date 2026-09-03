@@ -34,14 +34,23 @@ public struct LinkedAccountsView: View {
 extension LinkedAccountsView {
 
     private var content: some View {
-        VStack {
-            if let profile = store.profile {
-                accountRow(profile)
+        Group {
+            switch store.profile {
+            case .idle, .loading:
+                BZLoadingView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .loaded(let profile):
+                VStack {
+                    accountRow(profile)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+            case let .failed(message):
+                BZRetryView(message: message) { store.send(.didTapRetry) }
             }
-            Spacer()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .baziBackground(.bgWhite)
     }
 

@@ -13,6 +13,8 @@ public struct LoginFeature {
     public struct State: Equatable {
         public var isLoading = false
         var loginMethod: String?
+        /// 로그인 실패 시 표시할 경고 토스트 메시지(nil이면 미표시). 사용자 취소는 미표시.
+        public var errorToast: String?
 
         public init() {}
     }
@@ -26,6 +28,7 @@ public struct LoginFeature {
 
         // MARK: Internal
         case loginResponse(Result<AccountStatus, UseCaseError>)
+        case dismissErrorToast
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -99,9 +102,14 @@ public struct LoginFeature {
                     )))
                 )
 
-            case .loginResponse(.failure):
+            case .loginResponse(.failure(let error)):
                 state.isLoading = false
-                // TODO: 로그인 실패 알림 UI가 정해지면 State에 반영.
+                // 사용자가 로그인 창을 닫은 취소는 오류로 띄우지 않는다.
+                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                return .none
+
+            case .dismissErrorToast:
+                state.errorToast = nil
                 return .none
 
             case .delegate:

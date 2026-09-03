@@ -26,6 +26,7 @@ public struct LoginView: View {
 
     public var body: some View {
         content
+            .baziToast(errorMessage: store.errorToast, onDismiss: { store.send(.dismissErrorToast) })
     }
 }
 
