@@ -10,7 +10,10 @@ let project = Project.project(
             sources: .sources
         ),
         .tests(
-            name: BaziModule.BaziCore.name
+            name: BaziModule.BaziCore.name,
+            dependencies: [
+                .target(name: BaziModule.BaziCore.name),
+            ]
         ),
     ]
 )
