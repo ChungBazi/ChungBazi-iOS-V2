@@ -69,6 +69,8 @@ public struct SplashFeature {
 
     public init() {}
 
+    private enum CancelID { case gate }
+
     // MARK: - Body
 
     public var body: some ReducerOf<Self> {
@@ -90,16 +92,12 @@ public struct SplashFeature {
                             hasCompletedOnboarding: session.hasCompletedOnboarding
                         ))
                     },
-                    .run { [appConfigClient] send in
-                        await send(.gateResolved(appConfigClient.evaluateGate()))
-                    }
+                    evaluateGateEffect()
                 )
 
             case .willEnterForeground:
                 // 백그라운드 복귀 시 게이트 재평가(점검 해제/버전 갱신 반영).
-                return .run { [appConfigClient] send in
-                    await send(.gateResolved(appConfigClient.evaluateGate()))
-                }
+                return evaluateGateEffect()
 
             case .didAdvancePhase:
                 state.phase = .logo
@@ -135,6 +133,14 @@ public struct SplashFeature {
     }
 
     // MARK: - Private
+
+    /// 게이트 평가 effect. cancelInFlight로 이전 평가를 취소해 항상 최신 결과만 반영한다.
+    private func evaluateGateEffect() -> Effect<Action> {
+        .run { [appConfigClient] send in
+            await send(.gateResolved(appConfigClient.evaluateGate()))
+        }
+        .cancellable(id: CancelID.gate, cancelInFlight: true)
+    }
 
     /// 최소 노출 시간(태그라인 1초 + 로고 1초)·세션 체크·게이트 평가가 모두 끝나고
     /// 게이트가 정상일 때만 다음 화면으로 넘어간다. (점검/강제업데이트면 스플래시에 머문다)

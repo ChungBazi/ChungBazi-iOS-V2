@@ -71,4 +71,31 @@ struct SplashFeatureTests {
         await store.receive(\.gateResolved) { $0.gate = .normal }
         await store.receive(\.delegate.didFinishSplash)
     }
+
+    @Test("포그라운드 재평가 중 이전 게이트 평가가 늦게 끝나도 최신 결과만 반영된다")
+    func staleGateEvaluationDoesNotOverride() async {
+        let clock = TestClock()
+        let callCount = LockIsolated(0)
+        let store = TestStore(initialState: readyState(gate: .maintenance(message: "점검"))) {
+            SplashFeature()
+        } withDependencies: {
+            $0.continuousClock = clock
+            $0.appConfigClient.evaluateGate = {
+                let n = callCount.withValue { $0 += 1; return $0 }
+                if n == 1 {
+                    // 이전(느린) 평가 — cancelInFlight로 취소되어야 하며, 결과가 반영되면 안 된다.
+                    try? await clock.sleep(for: .seconds(5))
+                    return .maintenance(message: "점검")
+                }
+                // 최신(빠른) 평가 — 점검 해제.
+                return .normal
+            }
+        }
+        store.exhaustivity = .off
+        await store.send(.willEnterForeground)          // 이전 평가 시작(대기 중)
+        await store.send(.willEnterForeground)          // cancelInFlight → 이전 취소, 최신 .normal 반영
+        await clock.advance(by: .seconds(5))            // 이전 평가 대기시간 경과(취소됐으면 무반영)
+        await store.skipReceivedActions()
+        #expect(store.state.gate == .normal)
+    }
 }
