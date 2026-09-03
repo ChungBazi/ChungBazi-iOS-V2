@@ -26,7 +26,7 @@ public struct NotificationFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didTapRetry
@@ -43,7 +43,7 @@ public struct NotificationFeature {
         case pageResponse(Result<NotificationPageVO, UseCaseError>, isFirstPage: Bool)
         /// 삭제 요청 실패 → 토스트로 알리고 서버 상태로 재동기화한다.
         case commandFailed(UseCaseError)
-        case dismissErrorToast
+        case errorToastDismissed
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -151,11 +151,11 @@ public struct NotificationFeature {
                 )
 
             case .commandFailed(let error):
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 // 삭제 실패 → 현재 탭 1페이지로 재동기화(로딩 표시 없이 목록만 교체).
                 return fetchPage(category: state.selectedTab.serverCategory, cursor: nil, isFirstPage: true)
 
-            case .dismissErrorToast:
+            case .errorToastDismissed:
                 state.errorToast = nil
                 return .none
 

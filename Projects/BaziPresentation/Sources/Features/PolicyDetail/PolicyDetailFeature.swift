@@ -28,7 +28,7 @@ public struct PolicyDetailFeature {
 
     // MARK: - Action
 
-    public enum Action {
+    public enum Action: Equatable {
         // MARK: View
         case onAppear
         case didTapRetry
@@ -44,7 +44,7 @@ public struct PolicyDetailFeature {
         case likeFailed(liked: Bool)
         case recommendationLikeFailed(section: RecommendationSection, id: Int, liked: Bool)
         case shareFailed(UseCaseError)
-        case dismissErrorToast
+        case errorToastDismissed
 
         // MARK: Delegate
         case delegate(Delegate)
@@ -163,10 +163,10 @@ public struct PolicyDetailFeature {
                 )
 
             case .shareFailed(let error):
-                if error != .cancelled { state.errorToast = error.loadFailureMessage }
+                state.errorToast = error.toastMessage
                 return .none
 
-            case .dismissErrorToast:
+            case .errorToastDismissed:
                 state.errorToast = nil
                 return .none
 
