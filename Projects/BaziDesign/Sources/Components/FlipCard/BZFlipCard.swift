@@ -70,24 +70,32 @@ public struct BZFlipCard: View {
         }
         .aspectRatio(Self.cardAspectRatio, contentMode: .fit)
         .shadow(color: Color.grayBlack.opacity(0.11), radius: 5.67, x: 0, y: 1.89)
-        .onTapGesture {
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
-                isFlipped.toggle()
-            }
-            onFlip?(isFlipped)
-        }
-        .accessibilityAction(named: Text(isFlipped ? "정책 정보 보기" : "정책 요약 보기")) {
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
-                isFlipped.toggle()
-            }
-            onFlip?(isFlipped)
-        }
+        .onTapGesture { flip() }
         .onChange(of: isSummarizing) { _, summarizing in
             // 뒷면을 보는 중 요약 생성이 끝나면 VoiceOver로 알린다.
             if !summarizing, isFlipped {
                 AccessibilityNotification.Announcement("정책 요약이 준비됐어요").post()
             }
         }
+    }
+}
+
+// MARK: - Actions & Accessibility
+
+extension BZFlipCard {
+
+    private func flip() {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
+            isFlipped.toggle()
+        }
+        onFlip?(isFlipped)
+    }
+
+    /// 앞면 정보(카테고리·D-day·제목·부제·신청기간)를 하나로 읽기 위한 합쳐진 라벨.
+    fileprivate var frontAccessibilityLabel: String {
+        var parts = [category, dDay, title, subtitle, "신청 기간 \(applyPeriod)"]
+        if isLiked { parts.append("찜함") }
+        return parts.joined(separator: ", ")
     }
 }
 
@@ -131,6 +139,8 @@ extension BZFlipCard {
                 .baziFont(.small12SB)
                 .foregroundStyle(Color.gray700)
         }
+        // 태그·D-day는 앞면 요약 요소(titleAndSubtitle)로 대체해 읽는다.
+        .accessibilityHidden(true)
     }
 
     private var titleAndSubtitle: some View {
@@ -142,6 +152,14 @@ extension BZFlipCard {
                 .baziFont(.small14R)
                 .foregroundStyle(Color.gray500)
         }
+        // 앞면 정보를 이 요소 하나로 읽고, 활성화하면 뒤집어 요약을 본다.
+        // 별(headerRow)과 다른 행이라 개별 포커스가 유지되고, 요약이 먼저 포커스되게 우선순위를 높인다.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(frontAccessibilityLabel)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("뒤집어 정책 요약 보기")
+        .accessibilityAction { flip() }
+        .accessibilitySortPriority(1)
     }
 
     private var applyPeriodSection: some View {
@@ -156,6 +174,8 @@ extension BZFlipCard {
                     .foregroundStyle(Color.gray600)
             }
         }
+        // 신청 기간은 앞면 요약 요소(titleAndSubtitle)에 포함해 읽는다.
+        .accessibilityHidden(true)
     }
 
     private var thumbnail: some View {
@@ -165,10 +185,10 @@ extension BZFlipCard {
                 .scaledToFill()
                 .frame(width: geometry.size.width, height: geometry.size.height)
                 .clipped()
-                .accessibilityHidden(true)
         }
         .aspectRatio(Self.thumbnailAspectRatio, contentMode: .fit)
         .baziRadius(.small)
+        .accessibilityHidden(true)
     }
 }
 
@@ -203,6 +223,11 @@ extension BZFlipCard {
                 endPoint: .bottomTrailing
             )
         )
+        // 뒷면(요약/로딩)을 하나로 읽고, 활성화하면 앞면으로 돌아간다.
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("뒤집어 앞면 보기")
+        .accessibilityAction { flip() }
     }
 
     private var summarizingView: some View {
