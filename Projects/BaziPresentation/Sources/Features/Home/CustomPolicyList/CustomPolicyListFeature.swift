@@ -53,6 +53,7 @@ public struct CustomPolicyListFeature {
         case didTapDetail(id: Int)
         case didTapApply(id: Int)
         case didShowCard(id: Int)
+        case didFlipCard(id: Int, showingBack: Bool)
         case didTapGuideNext
 
         // MARK: Internal
@@ -123,21 +124,25 @@ public struct CustomPolicyListFeature {
                 return .none
 
             case .didShowCard(let id):
+                let position = state.cards.value?.index(id: id) ?? 0
+                let cardView = Effect<Action>.run { [analytics] _ in
+                    analytics.track(.customCardView(policyId: id, position: position))
+                }
                 // 지원 기기면 현재 보이는 카드를 미리 요약. 스크롤로 지나친 카드는 debounce+취소로 추론을 생략한다.
                 guard
                     customPolicyClient.isAISummaryAvailable(),
                     let card = state.cards.value?[id: id],
                     card.aiSummary == .idle
-                else { return .none }
+                else { return cardView }
                 let content = card.supportContent
-                return .run { [customPolicyClient, clock] send in
+                return .merge(cardView, .run { [customPolicyClient, clock] send in
                     // 스크롤이 정착한 카드만 요약. 지나친 카드는 아래 cancellable로 취소돼 .idle로 남는다.
                     try await clock.sleep(for: .milliseconds(300))
                     await send(.summarizeStarted(id: id))
                     let summary = await customPolicyClient.summarize(content)
                     await send(.summaryResponse(id: id, summary: summary))
                 }
-                .cancellable(id: CancelID.summarize, cancelInFlight: true)
+                .cancellable(id: CancelID.summarize, cancelInFlight: true))
 
             case .summarizeStarted(let id):
                 guard var cards = state.cards.value, cards[id: id]?.aiSummary == .idle else { return .none }
@@ -149,7 +154,12 @@ public struct CustomPolicyListFeature {
                 guard var cards = state.cards.value else { return .none }
                 cards[id: id]?.aiSummary = summary.map(CardSummaryState.ready) ?? .unavailable
                 state.cards = .loaded(cards)
-                return .none
+                return .run { [analytics] _ in analytics.track(.aiSummaryGenerated(policyId: id, available: summary != nil)) }
+
+            case let .didFlipCard(id, showingBack):
+                // 카드 뒷면(AI 요약/상세)을 열람할 때만 기록한다.
+                guard showingBack else { return .none }
+                return .run { [analytics] _ in analytics.track(.aiSummaryView(policyId: id)) }
 
             case .didToggleLike(let id):
                 guard var cards = state.cards.value, let localLiked = cards[id: id]?.isLiked else { return .none }

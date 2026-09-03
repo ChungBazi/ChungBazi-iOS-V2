@@ -133,6 +133,7 @@ public struct PolicyProfileEditFeature {
     @Dependency(\.policyProfileClient) var policyProfileClient
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -274,7 +275,7 @@ public struct PolicyProfileEditFeature {
                 state.isSuccessToastPresented = true
                 // 실제로 저장 요청에 사용한 스냅샷만 기준으로 삼는다. (저장 중 편집분은 미저장으로 유지)
                 state.savedSnapshot = requestedSnapshot
-                return .none
+                return .run { [analytics] _ in analytics.track(.policyProfileEditSave(changed: true)) }
 
             case .didFailToSaveProfile:
                 state.isSaving = false

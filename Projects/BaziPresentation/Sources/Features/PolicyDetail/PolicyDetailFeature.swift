@@ -33,6 +33,7 @@ public struct PolicyDetailFeature {
         case didTapLike
         case didTapApply
         case didTapShare
+        case didReachScrollDepth(Int)
         case didToggleRecommendationLike(section: RecommendationSection, id: Int)
         case didTapPolicy(id: Int)
 
@@ -152,6 +153,10 @@ public struct PolicyDetailFeature {
                     },
                     .run { [analytics] _ in analytics.track(.shareClick(policyId: detail.id)) }
                 )
+
+            case .didReachScrollDepth(let depth):
+                let policyId = state.policyId
+                return .run { [analytics] _ in analytics.track(.policyDetailScroll(policyId: policyId, depth: depth)) }
 
             case .didTapPolicy(let id):
                 return .send(.delegate(.didSelectPolicy(id: id)))

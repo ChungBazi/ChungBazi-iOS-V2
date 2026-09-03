@@ -23,6 +23,7 @@ public struct BZFlipCard: View {
     private let applyPeriod: String
     private let description: String
     private let isSummarizing: Bool
+    private let onFlip: ((Bool) -> Void)?
     @Binding private var isLiked: Bool
 
     // MARK: - Init
@@ -36,7 +37,8 @@ public struct BZFlipCard: View {
         applyPeriod: String,
         description: String,
         isSummarizing: Bool = false,
-        isLiked: Binding<Bool>
+        isLiked: Binding<Bool>,
+        onFlip: ((Bool) -> Void)? = nil
     ) {
         self.image = image
         self.category = category
@@ -47,6 +49,7 @@ public struct BZFlipCard: View {
         self.description = description
         self.isSummarizing = isSummarizing
         self._isLiked = isLiked
+        self.onFlip = onFlip
     }
 
     // MARK: - Body
@@ -68,6 +71,7 @@ public struct BZFlipCard: View {
             withAnimation(.easeInOut(duration: 0.4)) {
                 isFlipped.toggle()
             }
+            onFlip?(isFlipped)
         }
     }
 }

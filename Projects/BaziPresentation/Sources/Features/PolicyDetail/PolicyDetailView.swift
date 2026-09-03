@@ -11,6 +11,9 @@ public struct PolicyDetailView: View {
 
     @Bindable var store: StoreOf<PolicyDetailFeature>
     @Environment(\.dismiss) private var dismiss
+    @State private var viewportHeight: CGFloat = 0
+    @State private var reachedDepths: Set<Int> = []
+    private static let scrollSpace = "policyDetailScroll"
 
     // MARK: - Init
 
@@ -68,7 +71,27 @@ extension PolicyDetailView {
                         )
                     }
                 }
+                .background(
+                    GeometryReader { contentGeo in
+                        Color.clear.preference(
+                            key: ScrollDepthKey.self,
+                            value: ScrollDepthMetrics(
+                                offset: -contentGeo.frame(in: .named(Self.scrollSpace)).minY,
+                                contentHeight: contentGeo.size.height
+                            )
+                        )
+                    }
+                )
             }
+            .coordinateSpace(name: Self.scrollSpace)
+            .background(
+                GeometryReader { viewGeo in
+                    Color.clear
+                        .onAppear { viewportHeight = viewGeo.size.height }
+                        .onChange(of: viewGeo.size.height) { viewportHeight = $1 }
+                }
+            )
+            .onPreferenceChange(ScrollDepthKey.self) { fireScrollMilestones($0) }
             ctaButtons
         }
         .baziBackground(.bgWhite)
@@ -251,6 +274,34 @@ extension PolicyDetailView {
             },
             set: { _ in store.send(.didToggleRecommendationLike(section: section, id: id)) }
         )
+    }
+}
+
+// MARK: - Scroll Depth
+
+extension PolicyDetailView {
+
+    /// 스크롤 깊이 25/50/75/100% 마일스톤을 각 1회씩 기록한다.
+    fileprivate func fireScrollMilestones(_ metrics: ScrollDepthMetrics) {
+        let scrollable = metrics.contentHeight - viewportHeight
+        guard scrollable > 0 else { return }
+        let percent = Int(min(1, max(0, metrics.offset / scrollable)) * 100)
+        for milestone in [25, 50, 75, 100] where percent >= milestone && !reachedDepths.contains(milestone) {
+            reachedDepths.insert(milestone)
+            store.send(.didReachScrollDepth(milestone))
+        }
+    }
+}
+
+private struct ScrollDepthMetrics: Equatable {
+    var offset: CGFloat
+    var contentHeight: CGFloat
+}
+
+private struct ScrollDepthKey: PreferenceKey {
+    static let defaultValue = ScrollDepthMetrics(offset: 0, contentHeight: 0)
+    static func reduce(value: inout ScrollDepthMetrics, nextValue: () -> ScrollDepthMetrics) {
+        value = nextValue()
     }
 }
 
