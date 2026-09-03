@@ -49,12 +49,12 @@ extension AppDelegate: MessagingDelegate {
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
 
-    /// 포그라운드에서도 배너/사운드/뱃지를 그대로 보여준다.
+    /// 포그라운드에서도 배너/사운드/뱃지를 그대로 보여주고, 알림센터에도 남긴다.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound, .badge]
+        [.banner, .list, .sound, .badge]
     }
 
     nonisolated func userNotificationCenter(
