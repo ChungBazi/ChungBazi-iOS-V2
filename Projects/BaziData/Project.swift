@@ -22,7 +22,11 @@ let project = Project.project(
             ]
         ),
         .tests(
-            name: BaziModule.BaziData.name
+            name: BaziModule.BaziData.name,
+            dependencies: [
+                .target(name: BaziModule.BaziData.name),
+                .domain(),
+            ]
         ),
     ]
 )

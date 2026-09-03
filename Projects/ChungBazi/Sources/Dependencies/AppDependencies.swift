@@ -39,6 +39,12 @@ enum AppDependencies {
         cache: policyCache
     )
 
+    /// 시도/시군구는 세션 내내 고정이라 캐싱 데코레이터로 감싼다. 온보딩·정책맞춤조건 편집이
+    /// 서로 다른 Client를 쓰더라도 같은 캐시를 공유하도록 여기서 한 번만 조립한다.
+    static let regionRepository: any RegionRepository = CachingRegionRepository(
+        wrapping: RegionRepositoryImpl(networkProvider: networkProvider)
+    )
+
     /// 로그아웃/탈퇴 시 사용자 범위 인메모리 캐시를 비운다(재로그인 시 이전 계정 데이터 노출 방지).
     static func clearUserScopedCaches() async {
         await policyCache.clear()
