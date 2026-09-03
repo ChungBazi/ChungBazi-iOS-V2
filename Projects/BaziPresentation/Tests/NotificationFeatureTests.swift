@@ -30,14 +30,14 @@ struct NotificationFeatureTests {
         let store = TestStore(initialState: NotificationFeature.State()) {
             NotificationFeature()
         } withDependencies: {
-            $0.notificationClient.fetch = { _, _, _ in throw UseCaseError.network }
+            $0.notificationClient.fetch = { _, _, _ in throw UseCaseError.offline }
         }
 
         await store.send(.onAppear) {
             $0.notifications = .loading
         }
         await store.receive(\.pageResponse) {
-            $0.notifications = .failed(UseCaseError.network.loadFailureMessage)
+            $0.notifications = .failed(UseCaseError.offline.loadFailureMessage)
         }
     }
 

@@ -15,7 +15,7 @@ public struct PolicyShareServiceImpl: PolicyShareService {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
             Task { @MainActor in
                 guard ShareApi.isKakaoTalkSharingAvailable() else {
-                    continuation.resume(throwing: UseCaseError.unknown("카카오톡이 설치되어 있지 않아 공유할 수 없습니다."))
+                    continuation.resume(throwing: UseCaseError.message("카카오톡이 설치되어 있지 않아 공유할 수 없어요."))
                     return
                 }
                 let params = ["policyId": "\(content.policyId)"]
@@ -41,7 +41,7 @@ public struct PolicyShareServiceImpl: PolicyShareService {
                     } else if let result {
                         continuation.resume(returning: result.url)
                     } else {
-                        continuation.resume(throwing: UseCaseError.unknown("카카오 공유 결과가 비어 있습니다."))
+                        continuation.resume(throwing: UseCaseError.unknown)
                     }
                 }
             }

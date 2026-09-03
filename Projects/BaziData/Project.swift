@@ -13,6 +13,7 @@ let project = Project.project(
                 .network(),
                 .storage(),
                 .core(),
+                .external(.KakaoSDKCommon),
                 .external(.KakaoSDKAuth),
                 .external(.KakaoSDKUser),
                 .external(.KakaoSDKShare),

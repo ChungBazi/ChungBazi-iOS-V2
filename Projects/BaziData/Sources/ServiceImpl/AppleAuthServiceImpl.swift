@@ -63,7 +63,7 @@ extension AppleAuthServiceImpl: ASAuthorizationControllerDelegate {
             let identityTokenData = credential.identityToken,
             let idToken = String(data: identityTokenData, encoding: .utf8)
         else {
-            finish(.failure(UseCaseError.unknown("애플 로그인 응답이 비어 있습니다.")))
+            finish(.failure(UseCaseError.unknown))
             return
         }
 
@@ -79,8 +79,12 @@ extension AppleAuthServiceImpl: ASAuthorizationControllerDelegate {
         didCompleteWithError error: Error
     ) {
         authController = nil
-        // 사용자 취소를 포함한 실패는 그대로 던진다. (상위에서 UseCaseError로 매핑)
-        finish(.failure(error))
+        // 사용자 취소는 오류가 아니라 취소로 매핑한다. 그 외는 그대로 던져 상위에서 매핑.
+        if let authError = error as? ASAuthorizationError, authError.code == .canceled {
+            finish(.failure(UseCaseError.cancelled))
+        } else {
+            finish(.failure(error))
+        }
     }
 }
 

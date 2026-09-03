@@ -43,7 +43,7 @@ struct CategoryPolicyListFeatureTests {
         let store = TestStore(initialState: state) {
             CategoryPolicyListFeature()
         } withDependencies: {
-            $0.policyLikeClient.setLike = { _, _ in throw UseCaseError.network }
+            $0.policyLikeClient.setLike = { _, _ in throw UseCaseError.offline }
         }
 
         await store.send(.didToggleLike(id: 1)) {
