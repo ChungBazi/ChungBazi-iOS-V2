@@ -33,7 +33,7 @@ public struct BZOnboardingStep: View {
         .frame(height: 4)
         .accessibilityElement()
         .accessibilityLabel("진행 단계")
-        .accessibilityValue("\(totalSteps)단계 중 \(currentStep)단계")
+        .accessibilityValue(accessibilityStepValue)
     }
 }
 
@@ -45,6 +45,14 @@ extension BZOnboardingStep {
         guard totalSteps > 0 else { return 0 }
         let clampedStep = min(max(currentStep, 0), totalSteps)
         return CGFloat(clampedStep) / CGFloat(totalSteps)
+    }
+
+    /// 접근성 값도 `fraction`과 같은 보정을 적용해 표시와 일치시킨다.
+    private var accessibilityStepValue: String {
+        let steps = max(totalSteps, 0)
+        guard steps > 0 else { return "0단계 중 0단계" }
+        let clampedStep = min(max(currentStep, 0), steps)
+        return "\(steps)단계 중 \(clampedStep)단계"
     }
 }
 

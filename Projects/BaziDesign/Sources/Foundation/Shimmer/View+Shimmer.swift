@@ -35,11 +35,21 @@ private struct BaziShimmerModifier: ViewModifier {
                 }
             }
             .mask(content)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
-                    isAnimating = true
+            .onAppear { startIfNeeded() }
+            .onChange(of: reduceMotion) { _, isReduced in
+                // 마운트된 채 설정이 바뀌면 onAppear가 다시 안 불리므로 여기서 동기화한다(켜짐=정지, 꺼짐=재시작).
+                if isReduced {
+                    isAnimating = false
+                } else {
+                    startIfNeeded()
                 }
             }
+    }
+
+    private func startIfNeeded() {
+        guard !reduceMotion else { return }
+        withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
+            isAnimating = true
+        }
     }
 }

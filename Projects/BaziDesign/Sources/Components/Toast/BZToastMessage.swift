@@ -108,7 +108,12 @@ extension View {
                         .task {
                             // 상태 토스트는 자동 낭독되지 않으므로, 뜰 때 VoiceOver로 메시지를 읽어준다.
                             AccessibilityNotification.Announcement(message).post()
-                            try? await Task.sleep(for: .seconds(2.0))
+                            // 메시지 교체로 .task가 취소되면(.id(message)) 이전 작업이 새 토스트를 지우지 않도록 즉시 반환한다.
+                            do {
+                                try await Task.sleep(for: .seconds(2.0))
+                            } catch {
+                                return
+                            }
                             isPresented.wrappedValue = false
                         }
                 }

@@ -196,18 +196,25 @@ extension BZCard {
         .accessibilityLabel(label)
     }
 
+    @ViewBuilder
     private var titleText: some View {
         // small만 2줄, 나머지는 1줄. 넘치면 말줄임(…)으로 잘린다(Text 기본 tail 트렁케이션).
-        Text(title.byCharWrapping)
+        let base = Text(title.byCharWrapping)
             .baziFont(size.titleFont)
             .foregroundStyle(Color.grayBlack)
             .lineLimit(size == .small ? 2 : 1)
             .truncationMode(.tail)
-            // 이 요소 하나로 카드 정보를 읽고(탭=열기). 액세서리보다 먼저 포커스되게 우선순위를 높인다.
+            // 이 요소 하나로 카드 정보를 읽는다. 액세서리보다 먼저 포커스되게 우선순위를 높인다.
             .accessibilityLabel(cardAccessibilityLabel)
-            .accessibilityAddTraits(onOpen != nil ? .isButton : [])
-            .accessibilityAction { onOpen?() }
             .accessibilitySortPriority(1)
+        if let onOpen {
+            // onOpen이 있을 때만 탭(=열기)을 버튼 액션으로 노출한다(nil이면 무동작 액션을 달지 않음).
+            base
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onOpen() }
+        } else {
+            base
+        }
     }
 
     private var viewCountRow: some View {
