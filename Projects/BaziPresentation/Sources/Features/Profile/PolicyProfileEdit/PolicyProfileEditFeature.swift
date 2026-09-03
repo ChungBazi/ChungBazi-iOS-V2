@@ -129,7 +129,6 @@ public struct PolicyProfileEditFeature {
 
     // MARK: - Dependencies
 
-    @Dependency(\.onboardingClient) var onboardingClient
     @Dependency(\.policyProfileClient) var policyProfileClient
     @Dependency(\.date.now) var now
     @Dependency(\.calendar) var calendar
@@ -156,9 +155,9 @@ public struct PolicyProfileEditFeature {
                 guard !state.hasLoaded else { return .none }
                 state.hasLoaded = true
                 // 시도 목록을 먼저 받은 뒤 프로필을 받아, sidoCode를 시도 VO로 역매핑할 수 있게 한다.
-                return .run { [onboardingClient, policyProfileClient] send in
+                return .run { [policyProfileClient] send in
                     do {
-                        let sido = try await onboardingClient.fetchSidoList()
+                        let sido = try await policyProfileClient.fetchSidoList()
                         await send(.sidoResponse(.success(sido.map(RegionVO.init))))
                     } catch {
                         await send(.sidoResponse(.failure(UseCaseError.map(error))))
@@ -351,9 +350,9 @@ public struct PolicyProfileEditFeature {
         guard let sidoCode = state.selectedSido?.code else {
             return .cancel(id: CancelID.sigunguFetch)
         }
-        return .run { [onboardingClient] send in
+        return .run { [policyProfileClient] send in
             do {
-                let list = try await onboardingClient.fetchSigunguList(sidoCode)
+                let list = try await policyProfileClient.fetchSigunguList(sidoCode)
                 await send(.sigunguResponse(.success(list.map(RegionVO.init))))
             } catch {
                 await send(.sigunguResponse(.failure(UseCaseError.map(error))))
