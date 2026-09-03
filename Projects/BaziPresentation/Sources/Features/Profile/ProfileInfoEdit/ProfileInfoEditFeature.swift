@@ -57,6 +57,7 @@ public struct ProfileInfoEditFeature {
     // MARK: - Dependencies
 
     @Dependency(\.sessionClient) var sessionClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -94,7 +95,10 @@ public struct ProfileInfoEditFeature {
                 }
 
             case .didCompleteLogout:
-                return .send(.delegate(.didLogout))
+                return .merge(
+                    .send(.delegate(.didLogout)),
+                    .run { [analytics] _ in analytics.track(.logout) }
+                )
 
             case .didFailLogout:
                 state.activeAlert = .error

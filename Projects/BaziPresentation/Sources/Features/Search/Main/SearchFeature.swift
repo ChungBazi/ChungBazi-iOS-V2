@@ -58,6 +58,7 @@ public struct SearchFeature {
 
     @Dependency(\.policySearchClient) var policySearchClient
     @Dependency(\.continuousClock) var clock
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -72,15 +73,18 @@ public struct SearchFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                return .run { [policySearchClient] send in
-                    do {
-                        let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
-                        await send(.recentSearchesResponse(.success(result)))
-                    } catch {
-                        await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
+                return .merge(
+                    .run { [policySearchClient] send in
+                        do {
+                            let result = try await policySearchClient.recentSearches(nil, Self.recentSize)
+                            await send(.recentSearchesResponse(.success(result)))
+                        } catch {
+                            await send(.recentSearchesResponse(.failure(UseCaseError.map(error))))
+                        }
                     }
-                }
-                .cancellable(id: CancelID.recentSearches, cancelInFlight: true)
+                    .cancellable(id: CancelID.recentSearches, cancelInFlight: true),
+                    .run { [analytics] _ in analytics.track(.screenView(.search)) }
+                )
 
             case let .recentSearchesResponse(.success(result)):
                 state.recentKeywords = result.keywords

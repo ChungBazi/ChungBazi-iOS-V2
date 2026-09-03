@@ -65,6 +65,7 @@ public struct WithdrawFeature {
 
     @Dependency(\.sessionClient) var sessionClient
     @Dependency(\.withdrawClient) var withdrawClient
+    @Dependency(\.analytics) var analytics
 
     // MARK: - Init
 
@@ -122,7 +123,10 @@ public struct WithdrawFeature {
             case .didFinishWithdraw:
                 state.isWithdrawing = false
                 state.activeAlert = .completion
-                return .none
+                let reasons = WithdrawReasonUI.allCases
+                    .filter { state.selectedReasons.contains($0) }
+                    .map(\.rawValue)
+                return .run { [analytics] _ in analytics.track(.withdrawComplete(reasons: reasons)) }
 
             case .didFailWithdraw:
                 state.isWithdrawing = false
