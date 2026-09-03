@@ -8,8 +8,9 @@ public struct AnalyticsClient: Sendable {
 }
 
 extension AnalyticsClient: TestDependencyKey {
-    public static let testValue = AnalyticsClient()
-    public static let previewValue = AnalyticsClient()
+    // 분석은 fire-and-forget 부수효과라 테스트/프리뷰에선 no-op으로 둔다.
+    public static let testValue = AnalyticsClient(track: { _ in })
+    public static let previewValue = AnalyticsClient(track: { _ in })
 }
 
 extension DependencyValues {
