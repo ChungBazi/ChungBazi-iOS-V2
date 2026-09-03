@@ -11,7 +11,6 @@ public struct PolicyDetailView: View {
 
     @Bindable var store: StoreOf<PolicyDetailFeature>
     @Environment(\.dismiss) private var dismiss
-    @State private var viewportHeight: CGFloat = 0
     @State private var reachedDepths: Set<Int> = []
     private static let scrollSpace = "policyDetailScroll"
 
@@ -50,48 +49,43 @@ extension PolicyDetailView {
 
     private func content(_ detail: PolicyDetailVO) -> some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    headerSection(detail)
-                    qnaSection(detail)
-                    if !detail.personalized.isEmpty {
-                        recommendationSection(
-                            title: "\(store.displayName)님 이런 정책은 어때요?",
-                            background: Color.green100,
-                            policies: detail.personalized,
-                            section: .personalized
-                        )
-                    }
-                    if !detail.popular.isEmpty {
-                        recommendationSection(
-                            title: "\(detail.category.rawValue) 분야의 가장 인기 있는 정책",
-                            background: Color.green50,
-                            policies: detail.popular,
-                            section: .popular
-                        )
-                    }
-                }
-                .background(
-                    GeometryReader { contentGeo in
-                        Color.clear.preference(
-                            key: ScrollDepthKey.self,
-                            value: ScrollDepthMetrics(
-                                offset: -contentGeo.frame(in: .named(Self.scrollSpace)).minY,
-                                contentHeight: contentGeo.size.height
+            // ScrollView를 GeometryReader로 감싸 뷰포트 높이를 얻고, 콘텐츠 배경 GeometryReader에서 스크롤 비율을 계산해 onChange로 25/50/75/100% 도달을 감지한다.
+            GeometryReader { scrollGeo in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        headerSection(detail)
+                        qnaSection(detail)
+                        if !detail.personalized.isEmpty {
+                            recommendationSection(
+                                title: "\(store.displayName)님 이런 정책은 어때요?",
+                                background: Color.green100,
+                                policies: detail.personalized,
+                                section: .personalized
                             )
-                        )
+                        }
+                        if !detail.popular.isEmpty {
+                            recommendationSection(
+                                title: "\(detail.category.rawValue) 분야의 가장 인기 있는 정책",
+                                background: Color.green50,
+                                policies: detail.popular,
+                                section: .popular
+                            )
+                        }
                     }
-                )
-            }
-            .coordinateSpace(name: Self.scrollSpace)
-            .background(
-                GeometryReader { viewGeo in
-                    Color.clear
-                        .onAppear { viewportHeight = viewGeo.size.height }
-                        .onChange(of: viewGeo.size.height) { viewportHeight = $1 }
+                    .background(
+                        GeometryReader { contentGeo in
+                            let scrollable = contentGeo.size.height - scrollGeo.size.height
+                            let offset = -contentGeo.frame(in: .named(Self.scrollSpace)).minY
+                            let percent = scrollable > 0 ? Int(min(1, max(0, offset / scrollable)) * 100) : 0
+                            Color.clear
+                                .onChange(of: percent) { _, newPercent in
+                                    fireScrollMilestones(percent: newPercent)
+                                }
+                        }
+                    )
                 }
-            )
-            .onPreferenceChange(ScrollDepthKey.self) { fireScrollMilestones($0) }
+                .coordinateSpace(name: Self.scrollSpace)
+            }
             ctaButtons
         }
         .baziBackground(.bgWhite)
@@ -282,26 +276,11 @@ extension PolicyDetailView {
 extension PolicyDetailView {
 
     /// 스크롤 깊이 25/50/75/100% 마일스톤을 각 1회씩 기록한다.
-    fileprivate func fireScrollMilestones(_ metrics: ScrollDepthMetrics) {
-        let scrollable = metrics.contentHeight - viewportHeight
-        guard scrollable > 0 else { return }
-        let percent = Int(min(1, max(0, metrics.offset / scrollable)) * 100)
+    fileprivate func fireScrollMilestones(percent: Int) {
         for milestone in [25, 50, 75, 100] where percent >= milestone && !reachedDepths.contains(milestone) {
             reachedDepths.insert(milestone)
             store.send(.didReachScrollDepth(milestone))
         }
-    }
-}
-
-private struct ScrollDepthMetrics: Equatable {
-    var offset: CGFloat
-    var contentHeight: CGFloat
-}
-
-private struct ScrollDepthKey: PreferenceKey {
-    static let defaultValue = ScrollDepthMetrics(offset: 0, contentHeight: 0)
-    static func reduce(value: inout ScrollDepthMetrics, nextValue: () -> ScrollDepthMetrics) {
-        value = nextValue()
     }
 }
 
