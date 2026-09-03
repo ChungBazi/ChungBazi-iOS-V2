@@ -29,6 +29,7 @@ public struct BZChoiceChip: View {
             Text(title)
         }
         .buttonStyle(BZChoiceChipStyle(isSelected: isSelected))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

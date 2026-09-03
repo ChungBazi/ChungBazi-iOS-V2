@@ -113,6 +113,7 @@ extension WithdrawView {
                         .scaledToFit()
                         .frame(width: 5)
                         .padding(.top, 5)
+                        .accessibilityHidden(true)
                     Text(item)
                 }
                 .baziFont(.small14R)
@@ -185,6 +186,7 @@ extension WithdrawView {
             .baziFont(.small14R)
             .foregroundStyle(Color.grayBlack)
             .scrollContentBackground(.hidden)
+            .accessibilityLabel("기타 불편했던 점 입력")
             .frame(height: 150)
             .padding(8)
             .overlay {
@@ -195,6 +197,7 @@ extension WithdrawView {
                         .padding(16)
                         .allowsHitTesting(false)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .accessibilityHidden(true)
                 }
             }
             .overlay(
