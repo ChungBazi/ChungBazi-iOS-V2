@@ -72,6 +72,7 @@ extension BZAlert {
                     .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(Color.gray500)
             }
+            .accessibilityLabel("닫기")
         }
     }
 

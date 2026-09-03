@@ -166,7 +166,7 @@ private extension MyPolicyView {
                     .foregroundStyle(Color.gray600)
             }
             Spacer(minLength: 12)
-            BZCircleButton {
+            BZCircleButton(accessibilityLabel: "정책 둘러보러 가기") {
                 store.send(.didTapEmptyBannerCTA)
             }
         }

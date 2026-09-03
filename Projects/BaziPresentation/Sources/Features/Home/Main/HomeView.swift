@@ -198,7 +198,7 @@ extension HomeView {
                         .foregroundStyle(Color.gray600)
                 }
                 Spacer()
-                BZCircleButton {
+                BZCircleButton(accessibilityLabel: "맞춤 조건 다시 설정하기") {
                     store.send(.didTapPersonalizedEmptyCTA)
                 }
             }
@@ -215,6 +215,7 @@ extension HomeView {
                 .frame(width: 75)
                 .padding(.trailing, 15)
                 .padding(.top, 5)
+                .accessibilityHidden(true)
         }
         .padding(.horizontal, 20)
     }

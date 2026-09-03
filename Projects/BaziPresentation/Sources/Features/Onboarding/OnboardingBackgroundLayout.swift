@@ -28,6 +28,7 @@ struct OnboardingBackgroundLayout<BottomContent: View>: View {
                 Image.bazi(background)
                     .resizable()
                     .scaledToFit()
+                    .accessibilityHidden(true)
                 VStack(spacing: 0) {
                     Text(title)
                         .baziFont(.head24B)

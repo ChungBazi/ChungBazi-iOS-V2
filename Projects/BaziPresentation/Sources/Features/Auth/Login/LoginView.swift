@@ -50,6 +50,7 @@ extension LoginView {
         Image.bazi(.loginBackground)
             .resizable()
             .scaledToFit()
+            .accessibilityHidden(true)
     }
 
     private var buttonStack: some View {

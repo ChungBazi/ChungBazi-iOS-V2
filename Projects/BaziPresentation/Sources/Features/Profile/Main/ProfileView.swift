@@ -84,6 +84,7 @@ extension ProfileView {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 91)
+                    .accessibilityHidden(true)
             }
     }
 

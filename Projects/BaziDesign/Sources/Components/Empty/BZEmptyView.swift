@@ -25,6 +25,7 @@ public struct BZEmptyView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 105)
+                .accessibilityHidden(true)
             Text(message)
                 .baziFont(.body16SB)
                 .foregroundStyle(Color.gray400)

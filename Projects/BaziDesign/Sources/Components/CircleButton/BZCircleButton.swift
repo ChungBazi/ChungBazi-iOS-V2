@@ -7,11 +7,13 @@ public struct BZCircleButton: View {
 
     // MARK: - Properties
 
+    private let accessibilityLabel: String
     private let action: () -> Void
 
     // MARK: - Init
 
-    public init(action: @escaping () -> Void) {
+    public init(accessibilityLabel: String, action: @escaping () -> Void) {
+        self.accessibilityLabel = accessibilityLabel
         self.action = action
     }
 
@@ -26,11 +28,12 @@ public struct BZCircleButton: View {
                 .background(Color.bazi(.primary))
                 .clipShape(Circle())
         }
+        .accessibilityLabel(accessibilityLabel)
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    BZCircleButton {}
+    BZCircleButton(accessibilityLabel: "다음") {}
 }
