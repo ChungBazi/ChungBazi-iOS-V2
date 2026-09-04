@@ -27,22 +27,27 @@ struct IncomeInfoTooltipButton: View {
     }
 
     private var sheetView: some View {
-        VStack(spacing: 18) {
-            Text("소득분위가 뭔가요?")
-                .baziFont(.body16SB)
-                .foregroundStyle(Color.gray900)
-            Text("소득분위는 가구 소득을 기준으로 전체 인구를 10등급으로 나눈 것이에요. 1분위에 가까울수록 소득이 낮고, 10분위에 가까울수록 소득이 높아요.".byCharWrapping)
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray700)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            boxTextView
-            Text("모르겠다면 '잘 모르겠어요'를 선택해도 괜찮아요.\n프로필에서 나중에 수정할 수 있어요.".byCharWrapping)
-                .baziFont(.small14R)
-                .foregroundStyle(Color.gray500)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollView {
+            VStack(spacing: 18) {
+                Text("소득분위가 뭔가요?")
+                    .baziFont(.body16SB)
+                    .foregroundStyle(Color.gray900)
+                Text("소득분위는 가구 소득을 기준으로 전체 인구를 10등급으로 나눈 것이에요. 1분위에 가까울수록 소득이 낮고, 10분위에 가까울수록 소득이 높아요.".byCharWrapping)
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray700)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                boxTextView
+                Text("모르겠다면 '잘 모르겠어요'를 선택해도 괜찮아요.\n프로필에서 나중에 수정할 수 있어요.".byCharWrapping)
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray500)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 30)
+            .padding(.vertical, 24)
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, 30)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // 내용이 시트 높이를 넘칠 때만 스크롤(넉넉하면 스크롤/바운스 안 함).
+        .scrollBounceBehavior(.basedOnSize)
         .baziBackground(.bgWhite)
     }
 
@@ -51,11 +56,15 @@ struct IncomeInfoTooltipButton: View {
             Text("어디서 확인하나요?")
                 .baziFont(.small14SB)
                 .foregroundStyle(Color.bazi(.primary))
-            Text("건강보험료 납부 금액으로 대략 확인할 수 있어요.\n국민건강보험 앱 또는 홈페이지에서 조회 가능해요.")
+            Text("건강보험료 납부 금액으로 대략 확인할 수 있어요.\n국민건강보험 앱 또는 홈페이지에서 조회 가능해요.".byCharWrapping)
                 .baziFont(.small14R)
                 .foregroundStyle(Color.gray700)
+                // 형제 텍스트와 동일하게 폭을 꽉 채워 감싸고, 고정 높이 시트에서도 잘리지 않게 한다.
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
         .padding(.vertical, 17)
         .background(Color.blue50)
         .baziRadius(.small)
