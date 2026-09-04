@@ -151,10 +151,13 @@ public struct PolicyDetailFeature {
                     // 앱 복귀는 iosExecutionParams(policyId)로 처리하므로 webURL은 두지 않는다.
                     webURL: nil
                 )
+                let category = detail.category
                 return .merge(
                     .run { [policyDetailClient] send in
+                        // 카테고리 카드 이미지를 썸네일로 첨부한다(JPEG 인코딩은 이펙트에서 처리).
+                        let thumbnail = category.shareThumbnail
                         do {
-                            try await policyDetailClient.shareToKakao(content)
+                            try await policyDetailClient.shareToKakao(content, thumbnail)
                         } catch {
                             await send(.shareFailed(UseCaseError.map(error)))
                         }
