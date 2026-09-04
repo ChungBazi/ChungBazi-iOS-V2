@@ -1,5 +1,7 @@
 // Copyright © 2026 ChungBazi. All rights reserved.
 
+import UIKit
+
 import BaziDesign
 import BaziDomain
 
@@ -58,6 +60,27 @@ extension PolicyCategoryUI {
         case .study:         return .growth
         case .livingSupport: return .lifeSupport
         case .activity:      return .activity
+        }
+    }
+}
+
+// MARK: - Kakao Share Thumbnail
+
+extension PolicyCategoryUI {
+
+    /// 카카오 공유 썸네일. 카테고리 카드 이미지를 JPEG로 인코딩하고, rawValue를 업로드 URL 캐시 키로 쓴다.
+    var shareThumbnail: ShareThumbnail? {
+        guard let data = cardUIImage.jpegData(compressionQuality: 0.8) else { return nil }
+        return ShareThumbnail(cacheKey: rawValue, imageData: data)
+    }
+
+    private var cardUIImage: UIImage {
+        switch self {
+        case .job:           return BaziDesignAsset.jobCard.image
+        case .dwelling:      return BaziDesignAsset.housingCard.image
+        case .study:         return BaziDesignAsset.growthCard.image
+        case .livingSupport: return BaziDesignAsset.lifesupportCard.image
+        case .activity:      return BaziDesignAsset.activityCard.image
         }
     }
 }

@@ -9,7 +9,7 @@ import BaziDomain
 @DependencyClient
 public struct PolicyDetailClient: Sendable {
     public var fetch: @Sendable (_ policyId: Int) async throws -> PolicyDetailVO
-    public var shareToKakao: @Sendable (_ content: PolicyShareContent) async throws -> Void
+    public var shareToKakao: @Sendable (_ content: PolicyShareContent, _ thumbnail: ShareThumbnail?) async throws -> Void
 }
 
 extension PolicyDetailClient: TestDependencyKey {
@@ -17,7 +17,7 @@ extension PolicyDetailClient: TestDependencyKey {
 
     public static let previewValue = PolicyDetailClient(
         fetch: { .mock(id: $0) },
-        shareToKakao: { _ in }
+        shareToKakao: { _, _ in }
     )
 }
 
