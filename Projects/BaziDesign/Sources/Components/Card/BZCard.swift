@@ -162,7 +162,7 @@ extension BZCard {
         case "D-3", "D-2", "D-1", "D-Day":
             return Color.bazi(.accent)
         case "상시":
-            return Color.blue800
+            return Color.blue700
         default:
             return Color.gray700
         }
