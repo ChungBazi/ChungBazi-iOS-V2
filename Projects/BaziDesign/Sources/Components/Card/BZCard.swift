@@ -179,7 +179,7 @@ extension BZCard {
 
         case let .calendarAndMemo(onAddCalendar, onMemo):
             HStack(spacing: 20) {
-                iconButton(.addCalendarIcon, label: "마감일 캘린더에 추가", action: onAddCalendar)
+                iconButton(.addCalendarIcon, label: "마감일 캘린더에 추가", size: 26, action: onAddCalendar)
                 iconButton(.memoIcon, label: "메모", action: onMemo)
             }
         }
