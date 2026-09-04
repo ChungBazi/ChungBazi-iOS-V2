@@ -32,7 +32,7 @@ extension NicknameSetupView {
     private var content: some View {
         VStack(spacing: 36) {
             titleText
-                .padding(.top, 35)
+                .padding(.top, 64)
             inputField
             Spacer()
             confirmButton
