@@ -22,9 +22,9 @@ extension PolicyDetailClient: @retroactive DependencyKey {
             fetch: { policyId in
                 PolicyDetailVO(try await fetchUseCase.execute(policyId: policyId))
             },
-            shareToKakao: { content in
+            shareToKakao: { content, thumbnail in
                 // 공유 URL 생성은 서비스가, 앱 전환(open)은 Composition Root가 담당한다.
-                let url = try await shareService.makeKakaoShareURL(content)
+                let url = try await shareService.makeKakaoShareURL(content, thumbnail: thumbnail)
                 await MainActor.run { UIApplication.shared.open(url) }
             }
         )
