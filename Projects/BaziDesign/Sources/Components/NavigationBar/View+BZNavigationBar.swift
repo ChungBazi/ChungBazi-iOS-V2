@@ -10,10 +10,9 @@ public extension View {
         center: BZNavigationBarItem? = nil,
         trailing: BZNavigationBarItem? = nil
     ) -> some View {
+        // 배경/하단 하이라인은 전역 UINavigationBarAppearance(흰 배경 + shadowColor=.clear)에 맡긴다.
         self
             .navigationBarBackButtonHidden(true)
-            .toolbarBackground(Color.bazi(.bgWhite), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 if let leading {
                     ToolbarItem(placement: .topBarLeading) {

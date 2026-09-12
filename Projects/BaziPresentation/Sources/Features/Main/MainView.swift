@@ -101,7 +101,10 @@ extension MainView {
 
 extension MainView {
 
-    private static let configureAppearanceOnce: Void = configureTabBarAppearance()
+    private static let configureAppearanceOnce: Void = {
+        configureTabBarAppearance()
+        configureNavigationBarAppearance()
+    }()
     private static let configureLegacyLayoutOnce: Void = configureLegacyTabBarLayoutIfNeeded()
 
     private static func configureTabBarAppearance() {
@@ -112,6 +115,17 @@ extension MainView {
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor(Color.gray600)]
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
+    /// 내비게이션 바 하단 하이라인(shadow) 제거 + 흰 배경 통일. (SwiftUI엔 직접 모디파이어가 없어 appearance로 처리)
+    private static func configureNavigationBarAppearance() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Color.bazi(.bgWhite))
+        appearance.shadowColor = .clear
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
     }
 
     private static func configureLegacyTabBarLayoutIfNeeded() {
