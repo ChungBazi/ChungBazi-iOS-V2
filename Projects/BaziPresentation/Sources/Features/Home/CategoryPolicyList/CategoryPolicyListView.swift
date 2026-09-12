@@ -104,7 +104,8 @@ extension CategoryPolicyListView {
                             dDay: policy.dDay,
                             title: policy.title,
                             viewCount: policy.viewCount,
-                            isLiked: teaserLikeBinding(id: policy.id)
+                            isLiked: teaserLikeBinding(id: policy.id),
+                            onOpen: { store.send(.didTapPolicy(id: policy.id)) }
                         )
                     }
                 }
