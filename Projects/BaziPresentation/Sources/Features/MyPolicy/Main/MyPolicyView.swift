@@ -49,22 +49,29 @@ public struct MyPolicyView: View {
 
 private extension MyPolicyView {
 
-    /// 고정 헤더 아래 스크롤 영역.
-    /// teaser는 섹션 앞에 있어 먼저 스크롤되어 사라지고, `pinnedControls`(달력·탭·툴바)는 섹션 헤더로 상단에 고정된다.
-    /// 그 아래 리스트만 스크롤된다.
+    /// teaser는 스크롤되어 사라지고 `pinnedControls`(달력·탭·툴바)는 섹션 헤더로 고정된다.
+    /// (iOS 18 ScrollView pinned 진동 이슈로 `List` 사용)
     var content: some View {
-        ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                teaser
-                Section {
-                    results
-                } header: {
-                    pinnedControls
-                }
+        List {
+            teaser
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+            Section {
+                resultsRows
+            } header: {
+                pinnedControls
+                    .listRowInsets(EdgeInsets())
             }
         }
-        .refreshable { await store.send(.pullToRefresh).finish() }
+        .listStyle(.plain)
+        .listSectionSeparator(.hidden)
+        .listSectionSpacing(0)
+        .environment(\.defaultMinListRowHeight, 0)
+        .scrollContentBackground(.hidden)
         .baziBackground(.bgGray)
+        .refreshable { await store.send(.pullToRefresh).finish() }
     }
 
     /// "내 정책" 상단 헤더. 스크롤과 무관하게 항상 고정된다.
@@ -95,20 +102,43 @@ private extension MyPolicyView {
         }
     }
 
+    /// 섹션(고정 헤더 아래) 내용 행들. 상태에 따라 로딩/실패/빈/정책 목록 행을 낸다.
     @ViewBuilder
-    var results: some View {
+    var resultsRows: some View {
         switch store.currentPolicies {
         case .idle, .loading:
             BZLoadingView()
                 .frame(maxWidth: .infinity, minHeight: 200)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         case let .failed(message):
             BZRetryView(message: message) { store.send(.didTapRetry) }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         case .loaded(let policies):
             let visiblePolicies = visible(policies)
             if visiblePolicies.isEmpty {
                 emptyPolicyList
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             } else {
-                policyList(visiblePolicies)
+                ForEach(visiblePolicies) { policy in
+                    let topInset: CGFloat = policy.id == visiblePolicies.first?.id ? 8 : 6
+                    policyCard(policy, size: .medium)
+                        .listRowInsets(EdgeInsets(top: topInset, leading: 20, bottom: 6, trailing: 20))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+                // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
+                Color.clear
+                    .frame(height: 1)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .onAppear { store.send(.didReachListEnd) }
             }
         }
     }
@@ -298,21 +328,6 @@ private extension MyPolicyView {
         // 두 탭 모두 정렬 없이 갯수만 표시한다.
         BZResultsToolbar(count: store.currentTotalCount)
             .baziBackground(.bgGray)
-    }
-
-    func policyList(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
-        LazyVStack(spacing: 12) {
-            ForEach(policies) { policy in
-                policyCard(policy, size: .medium)
-            }
-            // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
-            Color.clear
-                .frame(height: 1)
-                .onAppear { store.send(.didReachListEnd) }
-        }
-        .padding(.top, 8)
-        .padding(.bottom, 20)
-        .padding(.horizontal, 20)
     }
 
     var emptyPolicyList: some View {
