@@ -95,19 +95,14 @@ extension NotificationView {
     private var notificationList: some View {
         let items = store.notifications.value ?? []
         return List {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, notification in
+            ForEach(items) { notification in
                 BZAlarmCard(
                     icon: notification.kind.iconType,
                     title: notification.title,
                     message: notification.message,
                     timeAgo: notification.elapsedTime
                 )
-                .listRowInsets(EdgeInsets(
-                    top: index == 0 ? 20 : 6,
-                    leading: 20,
-                    bottom: index == items.count - 1 ? 20 : 6,
-                    trailing: 20
-                ))
+                .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
                 .contentShape(Rectangle())
@@ -128,6 +123,8 @@ extension NotificationView {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .contentMargins(.vertical, 14, for: .scrollContent)
+        .environment(\.defaultMinListRowHeight, 0)
         .refreshable { await store.send(.pullToRefresh).finish() }
     }
 
