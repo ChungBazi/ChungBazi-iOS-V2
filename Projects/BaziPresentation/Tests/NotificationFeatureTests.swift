@@ -23,6 +23,8 @@ struct NotificationFeatureTests {
         await store.receive(\.pageResponse) {
             $0.notifications = .loaded(IdentifiedArray(uniqueElements: NotificationItemVO.mockList))
         }
+        // 1페이지 조회 성공 = 서버가 읽음 처리한 시점 → 부모(홈)에 위임한다.
+        await store.receive(\.delegate)
     }
 
     @Test("첫 페이지 조회에 실패하면 failed가 된다")
