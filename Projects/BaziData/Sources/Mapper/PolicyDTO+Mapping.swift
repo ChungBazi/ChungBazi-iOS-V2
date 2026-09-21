@@ -24,7 +24,6 @@ extension HomePolicySectionResponseDTO {
     func toDomain() -> HomeFeed {
         HomeFeed(
             userName: nickname,
-            hasUnreadNotification: hasUnreadNotification,
             personalized: personalizedPolicies.map { $0.toDomain() },
             recentViewed: recentViewedPolicies.map { $0.toDomain() },
             popular: popularPolicies.map { $0.toDomain() },

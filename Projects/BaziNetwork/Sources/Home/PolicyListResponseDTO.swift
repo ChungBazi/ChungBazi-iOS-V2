@@ -4,7 +4,6 @@ import Foundation
 
 public struct HomePolicySectionResponseDTO: Decodable, Sendable {
     public let nickname: String
-    public let hasUnreadNotification: Bool
     public let personalizedPolicies: [PolicyItemDTO]
     public let recentViewedPolicies: [PolicyItemDTO]
     public let popularPolicies: [PolicyItemDTO]
