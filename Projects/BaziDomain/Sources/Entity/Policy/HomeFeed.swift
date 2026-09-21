@@ -5,7 +5,6 @@ import Foundation
 /// 홈 메인 화면의 섹션별 정책 묶음
 public struct HomeFeed: Equatable, Sendable {
     public let userName: String
-    public let hasUnreadNotification: Bool
     public let personalized: [PolicySummary]
     public let recentViewed: [PolicySummary]
     public let popular: [PolicySummary]
@@ -14,7 +13,6 @@ public struct HomeFeed: Equatable, Sendable {
 
     public init(
         userName: String,
-        hasUnreadNotification: Bool,
         personalized: [PolicySummary],
         recentViewed: [PolicySummary],
         popular: [PolicySummary],
@@ -22,7 +20,6 @@ public struct HomeFeed: Equatable, Sendable {
         latest: [PolicySummary]
     ) {
         self.userName = userName
-        self.hasUnreadNotification = hasUnreadNotification
         self.personalized = personalized
         self.recentViewed = recentViewed
         self.popular = popular
@@ -37,7 +34,6 @@ public struct HomeFeed: Equatable, Sendable {
         }
         return HomeFeed(
             userName: userName,
-            hasUnreadNotification: hasUnreadNotification,
             personalized: apply(personalized),
             recentViewed: apply(recentViewed),
             popular: apply(popular),
