@@ -40,7 +40,7 @@ extension OnboardingContainerView {
                 .padding(.top, 28)
             
             stepContent
-            Spacer()
+                .frame(maxHeight: .infinity, alignment: .top)
             buttonRow
                 .padding(.bottom, 5)
         }
