@@ -15,7 +15,9 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in .mock }
-            $0.homeClient.fetchUnreadStatus = { true }
+            // .onAppear가 loadFeed와 fetchUnreadStatus를 .merge로 동시 실행하므로,
+            // 완료 순서를 가정하지 않기 위해 이 테스트와 무관한 쪽은 끝나지 않게 둔다.
+            $0.homeClient.fetchUnreadStatus = { try await Task.never() }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }
@@ -27,9 +29,8 @@ struct HomeFeatureTests {
         await store.receive(\.feedResponse.success) {
             $0.feed = .loaded(.mock)
         }
-        await store.receive(\.unreadStatusResponse.success) {
-            $0.hasUnreadNotification = true
-        }
+        // fetchUnreadStatus는 이 테스트에서 검증 대상이 아니라 일부러 끝나지 않게 뒀으므로, 남은 이펙트는 무시한다.
+        await store.skipInFlightEffects()
     }
 
     @Test("조회에 실패하면 feed가 failed가 된다")
@@ -38,7 +39,8 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.offline }
-            $0.homeClient.fetchUnreadStatus = { false }
+            // 완료 순서를 가정하지 않기 위해 이 테스트와 무관한 쪽은 끝나지 않게 둔다.
+            $0.homeClient.fetchUnreadStatus = { try await Task.never() }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }
@@ -50,9 +52,30 @@ struct HomeFeatureTests {
         await store.receive(\.feedResponse.failure) {
             $0.feed = .failed(UseCaseError.offline.loadFailureMessage)
         }
-        await store.receive(\.unreadStatusResponse.success) {
-            $0.hasUnreadNotification = false
+        // fetchUnreadStatus는 이 테스트에서 검증 대상이 아니라 일부러 끝나지 않게 뒀으므로, 남은 이펙트는 무시한다.
+        await store.skipInFlightEffects()
+    }
+
+    @Test("홈 진입 시 배지 상태 조회에 성공하면 반영된다")
+    func task_success_updatesUnreadStatus() async {
+        let store = TestStore(initialState: HomeFeature.State()) {
+            HomeFeature()
+        } withDependencies: {
+            $0.homeClient.fetchHomeFeed = { _ in try await Task.never() }
+            $0.homeClient.fetchUnreadStatus = { true }
+            $0.sessionClient.userName = { nil }
+            $0.sessionClient.displayName = { "회원" }
         }
+
+        await store.send(.onAppear) {
+            $0.displayName = "회원"
+            $0.feed = .loading
+        }
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = true
+        }
+        // fetchHomeFeed는 이 테스트에서 검증 대상이 아니라 일부러 끝나지 않게 뒀으므로, 남은 이펙트는 무시한다.
+        await store.skipInFlightEffects()
     }
 
     @Test("안읽음 배지 상태 조회가 실패해도 기존 배지 상태를 그대로 유지한다")
