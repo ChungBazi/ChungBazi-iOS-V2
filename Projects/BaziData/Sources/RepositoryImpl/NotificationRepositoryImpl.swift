@@ -20,6 +20,11 @@ public struct NotificationRepositoryImpl: NotificationRepository {
         return dto.toDomain()
     }
 
+    public func fetchUnreadStatus() async throws -> Bool {
+        let dto: UnreadNotificationStatusResponseDTO = try await networkProvider.request(NotificationAPI.getUnreadStatus)
+        return dto.hasUnreadNotification
+    }
+
     public func deleteNotification(notificationId: Int) async throws {
         try await networkProvider.requestStatusCode(NotificationAPI.deleteNotification(notificationId: notificationId))
     }
