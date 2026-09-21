@@ -37,6 +37,7 @@ extension SpecialEligibilityStepView {
             .baziFont(.head22B)
             .foregroundStyle(Color.grayBlack)
             .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var subtitleText: some View {
