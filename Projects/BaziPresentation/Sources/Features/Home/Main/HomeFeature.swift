@@ -37,6 +37,8 @@ public struct HomeFeature {
     public struct State: Equatable {
         public var path = StackState<Path.State>()
         public var feed: LoadingState<HomeFeedVO> = .idle
+        /// 벨 아이콘 배지. 홈 피드 캐시와 무관하게 진입할 때마다 별도로 최신 조회한다.
+        public var hasUnreadNotification = false
         /// 인사말·맞춤정책 타이틀용 사용자 이름. 세션(로컬 저장)에서 읽는다.
         public var displayName = ""
         /// 다른 화면에서 바뀐 찜 상태를 반영하는 공유 오버레이. 하트 표시는 `likeOverrides[id] ?? isLiked`.
@@ -64,6 +66,7 @@ public struct HomeFeature {
 
         // MARK: Internal
         case feedResponse(Result<HomeFeedVO, UseCaseError>)
+        case unreadStatusResponse(Result<Bool, UseCaseError>)
         case likeFailed(id: Int, liked: Bool)
 
         // MARK: Child
@@ -90,6 +93,7 @@ public struct HomeFeature {
                 state.displayName = sessionClient.displayName()
                 return .merge(
                     loadFeed(&state),
+                    fetchUnreadStatus(),
                     .run { [analytics] _ in analytics.track(.screenView(.home)) }
                 )
 
@@ -120,6 +124,14 @@ public struct HomeFeature {
                 if state.feed.value == nil {
                     state.feed = .failed(error.loadFailureMessage)
                 }
+                return .none
+
+            case let .unreadStatusResponse(.success(hasUnread)):
+                state.hasUnreadNotification = hasUnread
+                return .none
+
+            case .unreadStatusResponse(.failure):
+                // 배지 갱신 실패는 조용히 무시하고 기존 배지 상태를 유지한다.
                 return .none
 
             case .didTapBell:
@@ -228,6 +240,18 @@ public struct HomeFeature {
                 await send(.feedResponse(.success(feed)))
             } catch {
                 await send(.feedResponse(.failure(UseCaseError.map(error))))
+            }
+        }
+    }
+
+    /// 안읽음 알림 배지 상태를 조회한다. `feed`의 캐시 여부와 무관하게 진입할 때마다 새로 확인한다.
+    private func fetchUnreadStatus() -> Effect<Action> {
+        .run { [homeClient] send in
+            do {
+                let hasUnread = try await homeClient.fetchUnreadStatus()
+                await send(.unreadStatusResponse(.success(hasUnread)))
+            } catch {
+                await send(.unreadStatusResponse(.failure(UseCaseError.map(error))))
             }
         }
     }

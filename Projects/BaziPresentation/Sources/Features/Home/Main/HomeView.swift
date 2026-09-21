@@ -26,7 +26,7 @@ public struct HomeView: View {
             content
                 .task { store.send(.onAppear) }
                 .baziNavigationBar_home(
-                    hasUnread: store.feed.value?.hasUnreadNotification ?? false
+                    hasUnread: store.hasUnreadNotification
                 ) {
                     store.send(.didTapBell)
                 }

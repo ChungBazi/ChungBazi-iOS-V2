@@ -15,6 +15,7 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in .mock }
+            $0.homeClient.fetchUnreadStatus = { true }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }
@@ -26,6 +27,9 @@ struct HomeFeatureTests {
         await store.receive(\.feedResponse.success) {
             $0.feed = .loaded(.mock)
         }
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = true
+        }
     }
 
     @Test("조회에 실패하면 feed가 failed가 된다")
@@ -34,6 +38,7 @@ struct HomeFeatureTests {
             HomeFeature()
         } withDependencies: {
             $0.homeClient.fetchHomeFeed = { _ in throw UseCaseError.offline }
+            $0.homeClient.fetchUnreadStatus = { false }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }
@@ -45,6 +50,20 @@ struct HomeFeatureTests {
         await store.receive(\.feedResponse.failure) {
             $0.feed = .failed(UseCaseError.offline.loadFailureMessage)
         }
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = false
+        }
+    }
+
+    @Test("안읽음 배지 상태 조회가 실패해도 기존 배지 상태를 그대로 유지한다")
+    func unreadStatusResponse_failure_isIgnored() async {
+        var state = HomeFeature.State()
+        state.hasUnreadNotification = true
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        }
+
+        await store.send(.unreadStatusResponse(.failure(.offline)))
     }
 
     @Test("찜 토글은 모든 섹션의 해당 정책 찜 상태를 뒤집는다")
@@ -66,19 +85,23 @@ struct HomeFeatureTests {
         }
     }
 
-    @Test("이미 로드된 상태에서 재진입하면 재요청하지 않는다")
-    func task_whenAlreadyLoaded_isNoop() async {
+    @Test("이미 로드된 상태에서 재진입하면 feed는 재요청하지 않지만 배지 상태는 다시 조회한다")
+    func task_whenAlreadyLoaded_skipsFeedButRefreshesUnreadStatus() async {
         var state = HomeFeature.State()
         state.feed = .loaded(.mock)
         let store = TestStore(initialState: state) {
             HomeFeature()
         } withDependencies: {
+            $0.homeClient.fetchUnreadStatus = { false }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }
 
         await store.send(.onAppear) {
             $0.displayName = "회원"
+        }
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = false
         }
     }
 }
