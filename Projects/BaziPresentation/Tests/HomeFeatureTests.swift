@@ -115,7 +115,8 @@ struct HomeFeatureTests {
         let store = TestStore(initialState: state) {
             HomeFeature()
         } withDependencies: {
-            $0.homeClient.fetchUnreadStatus = { false }
+            // 기본값(false)과 다른 값을 반환해야 배지가 실제로 갱신됐는지 검증할 수 있다.
+            $0.homeClient.fetchUnreadStatus = { true }
             $0.sessionClient.userName = { nil }
             $0.sessionClient.displayName = { "회원" }
         }
@@ -124,7 +125,7 @@ struct HomeFeatureTests {
             $0.displayName = "회원"
         }
         await store.receive(\.unreadStatusResponse.success) {
-            $0.hasUnreadNotification = false
+            $0.hasUnreadNotification = true
         }
     }
 
