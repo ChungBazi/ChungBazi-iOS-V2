@@ -245,6 +245,7 @@ public struct HomeFeature {
     }
 
     /// 안읽음 알림 배지 상태를 조회한다. `feed`의 캐시 여부와 무관하게 진입할 때마다 새로 확인한다.
+    /// 여러 트리거(재진입·당김새로고침·재시도·알림 조회 후 복귀)가 겹칠 수 있어 최신 요청만 남긴다.
     private func fetchUnreadStatus() -> Effect<Action> {
         .run { [homeClient] send in
             do {
@@ -254,9 +255,13 @@ public struct HomeFeature {
                 await send(.unreadStatusResponse(.failure(UseCaseError.map(error))))
             }
         }
+        .cancellable(id: CancelID.unreadStatus, cancelInFlight: true)
     }
 
-    private enum CancelID: Hashable { case like(Int) }
+    private enum CancelID: Hashable {
+        case like(Int)
+        case unreadStatus
+    }
 
     private func currentLike(section: PolicySection, id: Int, state: State) -> Bool? {
         guard let feed = state.feed.value else { return nil }
