@@ -19,3 +19,8 @@ public struct NotificationItemDTO: Decodable, Sendable {
     public let read: Bool
     public let elapsedTime: String
 }
+
+/// 읽지 않은 알림 존재 여부 조회 Response DTO
+public struct UnreadNotificationStatusResponseDTO: Decodable, Sendable {
+    public let hasUnreadNotification: Bool
+}

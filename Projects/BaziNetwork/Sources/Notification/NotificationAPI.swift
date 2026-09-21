@@ -5,6 +5,7 @@ import Moya
 
 public enum NotificationAPI {
     case getNotifications(category: String?, cursor: Int?, size: Int)
+    case getUnreadStatus
     case markAsRead(notificationId: Int)
     case deleteNotification(notificationId: Int)
     case deleteAllNotifications
@@ -17,6 +18,7 @@ extension NotificationAPI: APITargetType {
         switch self {
         case .getNotifications,
              .deleteAllNotifications:              return ""
+        case .getUnreadStatus:                     return "/unread-status"
         case .markAsRead(let notificationId):      return "/\(notificationId)/read"
         case .deleteNotification(let notificationId): return "/\(notificationId)"
         }
@@ -24,7 +26,8 @@ extension NotificationAPI: APITargetType {
 
     public var method: Moya.Method {
         switch self {
-        case .getNotifications:      return .get
+        case .getNotifications,
+             .getUnreadStatus:      return .get
         case .markAsRead:            return .patch
         case .deleteNotification,
              .deleteAllNotifications: return .delete
@@ -39,7 +42,8 @@ extension NotificationAPI: APITargetType {
             if let cursor { params["cursor"] = cursor }
             return .requestParameters(parameters: params, encoding: URLEncoding.queryString)
 
-        case .markAsRead,
+        case .getUnreadStatus,
+             .markAsRead,
              .deleteNotification,
              .deleteAllNotifications:
             return .requestPlain
