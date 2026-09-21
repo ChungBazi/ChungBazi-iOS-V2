@@ -18,8 +18,8 @@ let project = Project.project(
                 // 앱 표시 이름 / 마케팅 버전
                 "CFBundleDisplayName": .string("청바지"),
                 "CFBundleName": .string("청바지"),
-                "CFBundleShortVersionString": .string("2.0.0"),
-                "CFBundleVersion": .string("3"),
+                "CFBundleShortVersionString": .string("2.0.2"),
+                "CFBundleVersion": .string("1"),
                 // 다크모드 미지원 — 시스템 설정과 무관하게 앱 전체를 라이트모드로 고정한다.
                 "UIUserInterfaceStyle": .string("Light"),
                 "UILaunchScreen": .dictionary([:]),
