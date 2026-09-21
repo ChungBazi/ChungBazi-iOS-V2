@@ -186,4 +186,21 @@ struct HomeFeatureTests {
         }
         await store.skipInFlightEffects()
     }
+
+    @Test("알림 목록 조회 후 복귀(didViewNotifications)하면 배지 상태를 다시 조회한다")
+    func pathDelegate_didViewNotifications_refreshesUnreadStatus() async {
+        var state = HomeFeature.State()
+        state.hasUnreadNotification = true
+        state.path.append(.notification(NotificationFeature.State()))
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            $0.homeClient.fetchUnreadStatus = { false }
+        }
+
+        await store.send(.path(.element(id: 0, action: .notification(.delegate(.didViewNotifications)))))
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = false
+        }
+    }
 }

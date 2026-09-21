@@ -50,6 +50,8 @@ public struct NotificationFeature {
 
         public enum Delegate: Equatable {
             case didSelectPolicy(id: Int)
+            /// 알림 목록 1페이지 조회 성공(=서버가 읽음 처리한 시점)을 부모에게 알린다.
+            case didViewNotifications
         }
     }
 
@@ -99,7 +101,8 @@ public struct NotificationFeature {
                     state.notifications = .loaded(items)
                 }
                 state.pagination.apply(page)
-                return .none
+                // 1페이지 조회 성공 = 서버가 읽음 처리한 시점 → 홈 벨 배지를 다시 확인하도록 알린다.
+                return isFirstPage ? .send(.delegate(.didViewNotifications)) : .none
 
             case let .pageResponse(.failure(error), isFirstPage):
                 state.pagination.isLoadingNext = false

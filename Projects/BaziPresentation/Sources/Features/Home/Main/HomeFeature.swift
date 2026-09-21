@@ -201,6 +201,9 @@ public struct HomeFeature {
             // 알림·리스트·정책상세(추천 카드) 등 스택 내 정책 선택은 소스별 entry_point로 정책 상세로 push한다.
             case let .path(.element(_, .notification(.delegate(.didSelectPolicy(id))))):
                 return pushDetail(id: id, entryPoint: .notification, state: &state)
+            // 알림 목록 조회 = 서버가 읽음 처리한 시점 → 벨 배지를 다시 확인한다.
+            case .path(.element(_, .notification(.delegate(.didViewNotifications)))):
+                return fetchUnreadStatus()
             case let .path(.element(_, .categoryPolicyList(.delegate(.didSelectPolicy(id))))):
                 return pushDetail(id: id, entryPoint: .homeCategory, state: &state)
             case let .path(.element(_, .rankedPolicyList(.delegate(.didSelectPolicy(id))))):
