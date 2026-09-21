@@ -98,18 +98,21 @@ public struct HomeFeature {
                 )
 
             case .didTapRetry:
-                return loadFeed(&state)
+                return .merge(loadFeed(&state), fetchUnreadStatus())
 
             case .pullToRefresh:
                 // 당김 새로고침: .loading으로 바꾸지 않고 캐시를 우회해 다시 가져온다.
-                return .run { [homeClient] send in
-                    do {
-                        let feed = try await homeClient.fetchHomeFeed(true)
-                        await send(.feedResponse(.success(feed)))
-                    } catch {
-                        await send(.feedResponse(.failure(UseCaseError.map(error))))
-                    }
-                }
+                return .merge(
+                    .run { [homeClient] send in
+                        do {
+                            let feed = try await homeClient.fetchHomeFeed(true)
+                            await send(.feedResponse(.success(feed)))
+                        } catch {
+                            await send(.feedResponse(.failure(UseCaseError.map(error))))
+                        }
+                    },
+                    fetchUnreadStatus()
+                )
 
             case let .feedResponse(.success(feed)):
                 state.feed = .loaded(feed)

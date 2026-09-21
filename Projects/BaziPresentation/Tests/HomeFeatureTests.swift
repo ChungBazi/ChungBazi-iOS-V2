@@ -104,4 +104,86 @@ struct HomeFeatureTests {
             $0.hasUnreadNotification = false
         }
     }
+
+    @Test("당김 새로고침은 feed를 갱신한다")
+    func pullToRefresh_refreshesFeed() async {
+        var state = HomeFeature.State()
+        state.feed = .loaded(.mock)
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            $0.homeClient.fetchHomeFeed = { _ in .mock }
+            // 배지 쪽은 이 테스트의 검증 대상이 아니므로 일부러 끝나지 않게 둔다.
+            $0.homeClient.fetchUnreadStatus = { try await Task.never() }
+            $0.sessionClient.userName = { nil }
+        }
+
+        await store.send(.pullToRefresh)
+        await store.receive(\.feedResponse.success)
+        await store.skipInFlightEffects()
+    }
+
+    @Test("당김 새로고침은 배지 상태도 함께 갱신한다")
+    func pullToRefresh_refreshesUnreadStatus() async {
+        var state = HomeFeature.State()
+        state.feed = .loaded(.mock)
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            // feed 쪽은 이 테스트의 검증 대상이 아니므로 일부러 끝나지 않게 둔다.
+            $0.homeClient.fetchHomeFeed = { _ in try await Task.never() }
+            $0.homeClient.fetchUnreadStatus = { true }
+            $0.sessionClient.userName = { nil }
+        }
+
+        await store.send(.pullToRefresh)
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = true
+        }
+        await store.skipInFlightEffects()
+    }
+
+    @Test("피드 로드 실패 후 재시도는 feed를 다시 조회한다")
+    func didTapRetry_refetchesFeed() async {
+        var state = HomeFeature.State()
+        state.feed = .failed("offline")
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            $0.homeClient.fetchHomeFeed = { _ in .mock }
+            // 배지 쪽은 이 테스트의 검증 대상이 아니므로 일부러 끝나지 않게 둔다.
+            $0.homeClient.fetchUnreadStatus = { try await Task.never() }
+            $0.sessionClient.userName = { nil }
+        }
+
+        await store.send(.didTapRetry) {
+            $0.feed = .loading
+        }
+        await store.receive(\.feedResponse.success) {
+            $0.feed = .loaded(.mock)
+        }
+        await store.skipInFlightEffects()
+    }
+
+    @Test("피드 로드 실패 후 재시도는 배지 상태도 함께 다시 조회한다")
+    func didTapRetry_refetchesUnreadStatus() async {
+        var state = HomeFeature.State()
+        state.feed = .failed("offline")
+        let store = TestStore(initialState: state) {
+            HomeFeature()
+        } withDependencies: {
+            // feed 쪽은 이 테스트의 검증 대상이 아니므로 일부러 끝나지 않게 둔다.
+            $0.homeClient.fetchHomeFeed = { _ in try await Task.never() }
+            $0.homeClient.fetchUnreadStatus = { true }
+            $0.sessionClient.userName = { nil }
+        }
+
+        await store.send(.didTapRetry) {
+            $0.feed = .loading
+        }
+        await store.receive(\.unreadStatusResponse.success) {
+            $0.hasUnreadNotification = true
+        }
+        await store.skipInFlightEffects()
+    }
 }
