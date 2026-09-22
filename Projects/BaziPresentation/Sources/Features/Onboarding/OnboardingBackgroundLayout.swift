@@ -25,10 +25,11 @@ struct OnboardingBackgroundLayout<BottomContent: View>: View {
         GeometryReader { proxy in
             ZStack {
                 Color.bazi(.primary)
-                Image.bazi(background)
-                    .resizable()
-                    .scaledToFit()
-                    .accessibilityHidden(true)
+                ResponsiveBackground(
+                    background,
+                    size: proxy.size,
+                    shortScreenOffset: -75
+                )
                 VStack(spacing: 0) {
                     Text(title)
                         .baziFont(.head24B)
