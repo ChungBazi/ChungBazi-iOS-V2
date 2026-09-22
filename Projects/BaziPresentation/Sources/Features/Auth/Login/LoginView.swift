@@ -38,7 +38,11 @@ extension LoginView {
         GeometryReader { proxy in
             ZStack {
                 Color.bazi(.primary)
-                background
+                ResponsiveBackground(
+                    .loginBackground,
+                    size: proxy.size,
+                    shortScreenOffset: -70
+                )
                 VStack {
                     Spacer()
                     buttonStack
@@ -48,13 +52,6 @@ extension LoginView {
             }
         }
         .ignoresSafeArea()
-    }
-
-    private var background: some View {
-        Image.bazi(.loginBackground)
-            .resizable()
-            .scaledToFit()
-            .accessibilityHidden(true)
     }
 
     private var buttonStack: some View {
