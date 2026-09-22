@@ -53,14 +53,25 @@ extension OnboardingContainerView {
     @ViewBuilder
     private var adaptiveStepContent: some View {
         if store.currentStep == .specialEligibility || store.currentStep == .interest {
-            // 진행 바와 버튼은 교체하지 않고 본문의 위아래 여백만 선택한다.
+            // 여백을 줄여도 본문이 들어가지 않으면 본문만 스크롤한다.
             ViewThatFits(in: .vertical) {
                 paddedStepContent(spacing: 64)
                 paddedStepContent(spacing: 32)
+                scrollableStepContent
             }
         } else {
             paddedStepContent(spacing: 64)
         }
+    }
+
+    private var scrollableStepContent: some View {
+        ScrollView(showsIndicators: false) {
+            stepContent
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .id(store.currentStep)
     }
 
     private func paddedStepContent(spacing: CGFloat) -> some View {
