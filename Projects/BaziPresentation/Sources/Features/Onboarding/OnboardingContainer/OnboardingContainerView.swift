@@ -32,20 +32,41 @@ public struct OnboardingContainerView: View {
 extension OnboardingContainerView {
 
     private var content: some View {
-        VStack(spacing: 64) {
+        VStack(spacing: 0) {
+            // 단계나 본문 레이아웃이 바뀌어도 동일한 진행 바를 유지한다.
             BZOnboardingStep(
                 currentStep: store.currentStep.rawValue,
                 totalSteps: OnboardingContainerFeature.Step.allCases.count
             )
                 .padding(.top, 28)
-            
-            stepContent
+
+            adaptiveStepContent
                 .frame(maxHeight: .infinity, alignment: .top)
+
             buttonRow
                 .padding(.bottom, 5)
         }
         .padding(.horizontal, 20)
         .baziBackground(.bgWhite)
+    }
+
+    @ViewBuilder
+    private var adaptiveStepContent: some View {
+        if store.currentStep == .specialEligibility || store.currentStep == .interest {
+            // 진행 바와 버튼은 교체하지 않고 본문의 위아래 여백만 선택한다.
+            ViewThatFits(in: .vertical) {
+                paddedStepContent(spacing: 64)
+                paddedStepContent(spacing: 32)
+            }
+        } else {
+            paddedStepContent(spacing: 64)
+        }
+    }
+
+    private func paddedStepContent(spacing: CGFloat) -> some View {
+        stepContent
+            .frame(maxHeight: .infinity, alignment: .top)
+            .padding(.vertical, spacing)
     }
 
     @ViewBuilder
