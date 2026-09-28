@@ -87,6 +87,15 @@ extension NetworkError {
     }
 }
 
+extension NetworkError {
+    /// 토큰 재발급 실패가 강제 로그아웃 대상인지. 확정적 인증 실패(.unauthorized)만 해당.
+    /// 오프라인·타임아웃·서버오류·디코딩 실패 등은 세션을 유지한 채 재시도 가능한 오류로 다룬다.
+    public var requiresForceLogout: Bool {
+        if case .unauthorized = self { return true }
+        return false
+    }
+}
+
 // 비-2xx 응답 바디에서 서버 code/message만 추출한다(result 형태와 무관하게 디코딩).
 private struct ErrorEnvelope: Decodable {
     let code: String
