@@ -64,5 +64,14 @@ public final class RefreshCoordinator: @unchecked Sendable {
             pendingCompletion.removeAll()
             isRefreshing = false
         }
+        // 대기 중이던 completion 개수와 무관하게 이 배치당 정확히 1회만 알린다.
+        // NotificationCenter.post는 스레드 세이프해서 액터 격리 없이 바로 호출한다.
+        if case .forceLogout = outcome {
+            NotificationCenter.default.post(name: .forceLogout, object: nil)
+        }
     }
+}
+
+public extension Notification.Name {
+    static let forceLogout = Notification.Name("ChungBazi.forceLogout")
 }

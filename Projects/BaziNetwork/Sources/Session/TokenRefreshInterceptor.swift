@@ -53,28 +53,14 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
             return completion(.doNotRetry)
         }
 
-        // 동시 401 제어(single-flight)와 강제 로그아웃 판단은 RefreshCoordinator가 전담한다.
+        // 동시 401 제어(single-flight)와 강제 로그아웃 판단·통지는 RefreshCoordinator가 전담한다.
         refreshCoordinator.refresh { outcome in
             switch outcome {
             case .retry:
                 completion(.retry)
-
-            case .forceLogout(let networkError):
-                completion(.doNotRetryWithError(networkError))
-                Task { await self.notifyForceLogout() }
-
-            case .keepSession(let networkError):
+            case .forceLogout(let networkError), .keepSession(let networkError):
                 completion(.doNotRetryWithError(networkError))
             }
         }
     }
-
-    @MainActor
-    private func notifyForceLogout() {
-        NotificationCenter.default.post(name: .forceLogout, object: nil)
-    }
-}
-
-public extension Notification.Name {
-    static let forceLogout = Notification.Name("ChungBazi.forceLogout")
 }
