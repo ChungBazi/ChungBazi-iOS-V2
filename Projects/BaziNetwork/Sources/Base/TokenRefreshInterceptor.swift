@@ -4,16 +4,14 @@ import Alamofire
 import Foundation
 import BaziCore
 
-// @unchecked Sendable: NSLock으로 직접 thread-safety를 보장하므로 컴파일러 검사 해제
+// @unchecked Sendable: RefreshCoordinator가 자체적으로 lock으로 동시성을 보장한다.
 public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Sendable {
     private let tokenStorage: any TokenStorage
-    private var isRefreshing = false
-    private var pendingCompletion: [(RetryResult) -> Void] = []
-    // withLock 클로저 형태로만 사용 — async context에서 lock()/unlock() 분리 호출 금지 (Swift 6)
-    private let lock = NSLock()
+    private let refreshCoordinator: RefreshCoordinator
 
-    public init(tokenStorage: any TokenStorage) {
+    public init(tokenStorage: any TokenStorage, tokenReissuer: any TokenReissuer = URLSessionTokenReissuer()) {
         self.tokenStorage = tokenStorage
+        self.refreshCoordinator = RefreshCoordinator(tokenStorage: tokenStorage, tokenReissuer: tokenReissuer)
     }
 
     // 로그인/재발급처럼 인증이 필요 없는 엔드포인트. accessToken이 남아있어도 붙이지 않는다.
@@ -55,86 +53,20 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
             return completion(.doNotRetry)
         }
 
-        // 동시에 401이 여러 개 와도 reissue는 1회만 실행
-        // 나머지는 pendingCompletion 큐에서 대기 후 reissue 결과에 따라 일괄 처리
-        let shouldRefresh = lock.withLock {
-            pendingCompletion.append(completion)
-            guard !isRefreshing else { return false }
-            isRefreshing = true
-            return true
-        }
+        // 동시 401 제어(single-flight)와 강제 로그아웃 판단은 RefreshCoordinator가 전담한다.
+        refreshCoordinator.refresh { outcome in
+            switch outcome {
+            case .retry:
+                completion(.retry)
 
-        guard shouldRefresh else { return }
+            case .forceLogout(let networkError):
+                completion(.doNotRetryWithError(networkError))
+                Task { await self.notifyForceLogout() }
 
-        Task {
-            do {
-                let newTokens = try await reissueTokens()
-                tokenStorage.saveTokens(
-                    accessToken: newTokens.accessToken,
-                    refreshToken: newTokens.refreshToken
-                )
-                lock.withLock {
-                    pendingCompletion.forEach { $0(.retry) }
-                    pendingCompletion.removeAll()
-                    isRefreshing = false
-                }
-            } catch {
-                // reissueTokens()는 항상 NetworkError를 던지므로 이 캐스팅은 사실상 항상 성공한다.
-                let networkError = error as? NetworkError ?? .unknown(error)
-                lock.withLock {
-                    pendingCompletion.forEach { $0(.doNotRetryWithError(networkError)) }
-                    pendingCompletion.removeAll()
-                    isRefreshing = false
-                }
-                // 확정적 인증 실패(401/404)만 강제 로그아웃한다.
-                // 오프라인·타임아웃·서버오류(5xx)는 세션을 유지하고 재시도 가능한 오류로만 알린다.
-                if networkError.requiresForceLogout {
-                    await notifyForceLogout()
-                }
+            case .keepSession(let networkError):
+                completion(.doNotRetryWithError(networkError))
             }
         }
-    }
-
-    // MARK: - reissue
-    // MoyaProvider/Session을 거치지 않고 URLSession 직접 호출
-    // → 같은 interceptor를 통하면 401 → retry → 401 → retry 무한루프 발생
-    private func reissueTokens() async throws -> ReissueResponseDTO {
-        guard let refreshToken = tokenStorage.refreshToken else {
-            throw NetworkError.unauthorized
-        }
-
-        let url = APIDomain.authURL.appendingPathComponent("reissue")
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        // 서버 계약: refreshToken은 body로만 받는다. Authorization 헤더에 refreshToken을 실으면
-        // 서버 인증 필터가 이를 access token으로 검증하려다 401을 내어 강제 로그아웃되므로 붙이지 않는다.
-        urlRequest.httpBody = try JSONEncoder().encode(ReissueRequestDTO(refreshToken: refreshToken))
-
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await URLSession.shared.data(for: urlRequest)
-        } catch {
-            // 오프라인·타임아웃 등 네트워크 레벨 실패. 확정적 인증 실패가 아니므로 세션은 유지한다.
-            throw NetworkError.from(error)
-        }
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw NetworkError.unknown(URLError(.badServerResponse))
-        }
-        guard (200...299).contains(httpResponse.statusCode) else {
-            let body = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
-            Log.error("토큰 재발급 실패: status=\(httpResponse.statusCode) body=\(body)", category: .auth)
-            // 401/404는 확정적 인증 실패(강제 로그아웃), 5xx 등은 일시적 실패(세션 유지)로 분류한다.
-            throw ReissueFailureClassifier.classify(statusCode: httpResponse.statusCode, data: data)
-        }
-
-        let decoded = try JSONDecoder().decode(CommonResponse<ReissueResponseDTO>.self, from: data)
-        guard decoded.isSuccess else {
-            throw NetworkError.serverError(code: decoded.code, message: decoded.message)
-        }
-        return decoded.result
     }
 
     @MainActor
