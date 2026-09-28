@@ -79,12 +79,18 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
                     isRefreshing = false
                 }
             } catch {
+                // reissueTokens()는 항상 NetworkError를 던지므로 이 캐스팅은 사실상 항상 성공한다.
+                let networkError = error as? NetworkError ?? .unknown(error)
                 lock.withLock {
-                    pendingCompletion.forEach { $0(.doNotRetryWithError(NetworkError.unauthorized)) }
+                    pendingCompletion.forEach { $0(.doNotRetryWithError(networkError)) }
                     pendingCompletion.removeAll()
                     isRefreshing = false
                 }
-                await notifyForceLogout()
+                // 확정적 인증 실패(401/404)만 강제 로그아웃한다.
+                // 오프라인·타임아웃·서버오류(5xx)는 세션을 유지하고 재시도 가능한 오류로만 알린다.
+                if networkError.requiresForceLogout {
+                    await notifyForceLogout()
+                }
             }
         }
     }
@@ -105,13 +111,23 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
         // 서버 인증 필터가 이를 access token으로 검증하려다 401을 내어 강제 로그아웃되므로 붙이지 않는다.
         urlRequest.httpBody = try JSONEncoder().encode(ReissueRequestDTO(refreshToken: refreshToken))
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: urlRequest)
+        } catch {
+            // 오프라인·타임아웃 등 네트워크 레벨 실패. 확정적 인증 실패가 아니므로 세션은 유지한다.
+            throw NetworkError.from(error)
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.unknown(URLError(.badServerResponse))
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
             let body = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
-            Log.error("토큰 재발급 실패: status=\(status) body=\(body)", category: .auth)
-            throw NetworkError.unauthorized
+            Log.error("토큰 재발급 실패: status=\(httpResponse.statusCode) body=\(body)", category: .auth)
+            // 401/404는 확정적 인증 실패(강제 로그아웃), 5xx 등은 일시적 실패(세션 유지)로 분류한다.
+            throw ReissueFailureClassifier.classify(statusCode: httpResponse.statusCode, data: data)
         }
 
         let decoded = try JSONDecoder().decode(CommonResponse<ReissueResponseDTO>.self, from: data)
