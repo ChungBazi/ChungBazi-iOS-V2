@@ -15,14 +15,21 @@ public final class RefreshCoordinator: @unchecked Sendable {
 
     private let tokenStorage: any TokenStorage
     private let tokenReissuer: any TokenReissuer
+    private let notificationCenter: NotificationCenter
     private var isRefreshing = false
     private var pendingCompletion: [(Outcome) -> Void] = []
+    private var hasNotifiedForceLogout = false
     // withLock 클로저 형태로만 사용 — async context에서 lock()/unlock() 분리 호출 금지 (Swift 6)
     private let lock = NSLock()
 
-    public init(tokenStorage: any TokenStorage, tokenReissuer: any TokenReissuer) {
+    public init(
+        tokenStorage: any TokenStorage,
+        tokenReissuer: any TokenReissuer,
+        notificationCenter: NotificationCenter = .default
+    ) {
         self.tokenStorage = tokenStorage
         self.tokenReissuer = tokenReissuer
+        self.notificationCenter = notificationCenter
     }
 
     public func refresh(completion: @escaping (Outcome) -> Void) {
@@ -63,12 +70,26 @@ public final class RefreshCoordinator: @unchecked Sendable {
             pendingCompletion.forEach { $0(outcome) }
             pendingCompletion.removeAll()
             isRefreshing = false
+            if case .retry = outcome {
+                // 세션이 다시 살아났으니, 이후에 또 끊기면 강제 로그아웃을 다시 통지할 수 있어야 한다.
+                hasNotifiedForceLogout = false
+            }
         }
-        // 대기 중이던 completion 개수와 무관하게 이 배치당 정확히 1회만 알린다.
-        // NotificationCenter.post는 스레드 세이프해서 액터 격리 없이 바로 호출한다.
         if case .forceLogout = outcome {
-            NotificationCenter.default.post(name: .forceLogout, object: nil)
+            notifyForceLogout()
         }
+    }
+
+    /// retryCount 초과 등 single-flight 경로를 거치지 않는 확정적 실패도 같은 알림 채널을 쓰도록 노출한다.
+    /// 여러 경로에서 동시에 호출돼도(예: 재시도한 여러 요청이 동시에 또 401을 받는 경우) 세션당 1회만 통지한다.
+    public func notifyForceLogout() {
+        let shouldNotify = lock.withLock {
+            guard !hasNotifiedForceLogout else { return false }
+            hasNotifiedForceLogout = true
+            return true
+        }
+        guard shouldNotify else { return }
+        notificationCenter.post(name: .forceLogout, object: nil)
     }
 }
 

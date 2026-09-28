@@ -9,9 +9,17 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
     private let tokenStorage: any TokenStorage
     private let refreshCoordinator: RefreshCoordinator
 
-    public init(tokenStorage: any TokenStorage, tokenReissuer: any TokenReissuer = URLSessionTokenReissuer()) {
+    public init(
+        tokenStorage: any TokenStorage,
+        tokenReissuer: any TokenReissuer = URLSessionTokenReissuer(),
+        notificationCenter: NotificationCenter = .default
+    ) {
         self.tokenStorage = tokenStorage
-        self.refreshCoordinator = RefreshCoordinator(tokenStorage: tokenStorage, tokenReissuer: tokenReissuer)
+        self.refreshCoordinator = RefreshCoordinator(
+            tokenStorage: tokenStorage,
+            tokenReissuer: tokenReissuer,
+            notificationCenter: notificationCenter
+        )
     }
 
     // 로그인/재발급처럼 인증이 필요 없는 엔드포인트. accessToken이 남아있어도 붙이지 않는다.
@@ -47,10 +55,15 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
               response.statusCode == 401,
               // 로그인/재발급 요청의 401은 토큰 재발급 대상이 아니다.
               // (reissue는 무한루프 방지, 로그인은 세션이 없어 재발급이 무의미 + 불필요한 forceLogout 방지)
-              !isUnauthenticated,
-              // 재발급 후 재시도가 또 401이면 그만둔다 — 새 토큰도 거부당하는 경우의 무한 재발급 루프 방지.
-              request.retryCount == 0 else {
+              !isUnauthenticated else {
             return completion(.doNotRetry)
+        }
+
+        guard request.retryCount == 0 else {
+            // 새 access token은 항상 유효해야 하므로, 재시도 후에도 401이면 세션이 깨진 것으로 보고 강제 로그아웃한다.
+            completion(.doNotRetryWithError(NetworkError.unauthorized))
+            refreshCoordinator.notifyForceLogout()
+            return
         }
 
         // 동시 401 제어(single-flight)와 강제 로그아웃 판단·통지는 RefreshCoordinator가 전담한다.
