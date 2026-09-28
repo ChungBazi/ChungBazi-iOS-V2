@@ -90,6 +90,83 @@ struct RefreshCoordinatorTests {
 
         #expect(reissuer.callCount == 1)
     }
+
+    @Test("오프라인/타임아웃은 강제 로그아웃이 아니라 세션 유지로 완료된다")
+    func refresh_offlineAndTimeout_completeWithKeepSession() async {
+        for failure in [NetworkError.offline, NetworkError.timeout] {
+            let storage = MockTokenStorage(refreshToken: "old-refresh")
+            let reissuer = MockTokenReissuer(result: .failure(failure))
+            let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer)
+
+            let outcome = await withCheckedContinuation { continuation in
+                coordinator.refresh { continuation.resume(returning: $0) }
+            }
+
+            guard case .keepSession = outcome else {
+                Issue.record("Expected .keepSession for \(failure), got \(outcome)")
+                continue
+            }
+        }
+    }
+
+    @Test("동시에 여러 요청이 확정적 인증 실패로 끝나도 강제 로그아웃 알림은 1회만 발생한다")
+    func refresh_concurrentAuthFailure_notifiesForceLogoutOnce() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .failure(.unauthorized))
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer)
+
+        await confirmation(expectedCount: 1) { confirmForceLogout in
+            let observer = NotificationCenter.default.addObserver(
+                forName: .forceLogout, object: nil, queue: nil
+            ) { _ in confirmForceLogout() }
+            defer { NotificationCenter.default.removeObserver(observer) }
+
+            await withTaskGroup(of: RefreshCoordinator.Outcome.self) { group in
+                for _ in 0..<10 {
+                    group.addTask {
+                        await withCheckedContinuation { continuation in
+                            coordinator.refresh { continuation.resume(returning: $0) }
+                        }
+                    }
+                }
+                for await outcome in group {
+                    guard case .forceLogout = outcome else {
+                        Issue.record("Expected .forceLogout, got \(outcome)")
+                        continue
+                    }
+                }
+            }
+            // resolveAll의 notify는 completion 호출과 같은 동기 흐름 안에서 일어나지만,
+            // continuation 재개 스케줄링과의 미세한 순서 차이를 흡수하기 위한 최소 유예.
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+
+        #expect(reissuer.callCount == 1)
+    }
+
+    @Test("한 번 완료된 코디네이터는 이후 재발급 요청도 정상적으로 다시 처리한다")
+    func refresh_afterPreviousCompletion_canRefreshAgain() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .success(.init(accessToken: "first-access", refreshToken: "first-refresh")))
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer)
+
+        _ = await withCheckedContinuation { continuation in
+            coordinator.refresh { continuation.resume(returning: $0) }
+        }
+        #expect(reissuer.callCount == 1)
+
+        reissuer.setResult(.success(.init(accessToken: "second-access", refreshToken: "second-refresh")))
+        let secondOutcome = await withCheckedContinuation { continuation in
+            coordinator.refresh { continuation.resume(returning: $0) }
+        }
+
+        guard case .retry = secondOutcome else {
+            Issue.record("Expected second refresh to also complete with .retry, got \(secondOutcome)")
+            return
+        }
+        #expect(reissuer.callCount == 2)
+        #expect(storage.accessToken == "second-access")
+    }
 }
 
 // MARK: - Test Doubles
@@ -115,8 +192,8 @@ private final class MockTokenStorage: TokenStorage, @unchecked Sendable {
 }
 
 private final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
-    private let result: Result<ReissueResponseDTO, NetworkError>
     private let lock = NSLock()
+    private var result: Result<ReissueResponseDTO, NetworkError>
     private var _callCount = 0
 
     var callCount: Int { lock.withLock { _callCount } }
@@ -125,8 +202,15 @@ private final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
         self.result = result
     }
 
+    func setResult(_ result: Result<ReissueResponseDTO, NetworkError>) {
+        lock.withLock { self.result = result }
+    }
+
     func reissue(refreshToken: String) async throws -> ReissueResponseDTO {
-        lock.withLock { _callCount += 1 }
-        return try result.get()
+        let currentResult = lock.withLock {
+            _callCount += 1
+            return result
+        }
+        return try currentResult.get()
     }
 }
