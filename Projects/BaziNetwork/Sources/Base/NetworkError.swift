@@ -6,7 +6,9 @@ import Moya
 
 import BaziCore
 
-public enum NetworkError: Error {
+// @unchecked Sendable: .decodingError/.unknown이 순수 Error(비-Sendable)를 담아 자동 합성이 안 된다.
+// URLError/NSError/DecodingError 등 실제로 담기는 값은 전부 값 타입이라 동시성 경계를 넘어도 안전하다.
+public enum NetworkError: Error, @unchecked Sendable {
     case serverError(code: String, message: String)
     case decodingError(Error)
     case offline
