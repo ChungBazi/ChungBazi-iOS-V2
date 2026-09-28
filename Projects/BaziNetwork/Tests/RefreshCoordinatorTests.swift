@@ -113,13 +113,16 @@ struct RefreshCoordinatorTests {
     func refresh_concurrentAuthFailure_notifiesForceLogoutOnce() async {
         let storage = MockTokenStorage(refreshToken: "old-refresh")
         let reissuer = MockTokenReissuer(result: .failure(.unauthorized))
-        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer)
+        // .default는 프로세스 전역이라 병렬로 도는 다른 테스트의 forceLogout과 섞일 수 있어,
+        // 이 테스트 전용 NotificationCenter를 주입한다.
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
 
         await confirmation(expectedCount: 1) { confirmForceLogout in
-            let observer = NotificationCenter.default.addObserver(
+            let observer = notificationCenter.addObserver(
                 forName: .forceLogout, object: nil, queue: nil
             ) { _ in confirmForceLogout() }
-            defer { NotificationCenter.default.removeObserver(observer) }
+            defer { notificationCenter.removeObserver(observer) }
 
             await withTaskGroup(of: RefreshCoordinator.Outcome.self) { group in
                 for _ in 0..<10 {
@@ -142,6 +145,54 @@ struct RefreshCoordinatorTests {
         }
 
         #expect(reissuer.callCount == 1)
+    }
+
+    @Test("notifyForceLogout을 여러 번 호출해도 알림은 1회만 발생한다")
+    func notifyForceLogout_calledMultipleTimes_notifiesOnce() async {
+        // TokenRefreshInterceptor의 retryCount>0 분기는 요청마다 독립적으로 notifyForceLogout을 호출하므로,
+        // 동시에 여러 요청이 그 분기를 타면(실기기에서 실제로 확인됨) 이 메서드 자체가 멱등해야 한다.
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .success(.init(accessToken: "a", refreshToken: "b")))
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
+
+        await confirmation(expectedCount: 1) { confirmForceLogout in
+            let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
+                confirmForceLogout()
+            }
+            defer { notificationCenter.removeObserver(observer) }
+
+            coordinator.notifyForceLogout()
+            coordinator.notifyForceLogout()
+            coordinator.notifyForceLogout()
+
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    @Test("성공적인 재발급 이후에는 강제 로그아웃 알림이 다시 발생할 수 있다")
+    func notifyForceLogout_afterSuccessfulRetry_canNotifyAgain() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .success(.init(accessToken: "a", refreshToken: "b")))
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
+
+        coordinator.notifyForceLogout()
+
+        _ = await withCheckedContinuation { continuation in
+            coordinator.refresh { continuation.resume(returning: $0) }
+        }
+
+        await confirmation(expectedCount: 1) { confirmForceLogout in
+            let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
+                confirmForceLogout()
+            }
+            defer { notificationCenter.removeObserver(observer) }
+
+            coordinator.notifyForceLogout()
+
+            try? await Task.sleep(for: .milliseconds(50))
+        }
     }
 
     @Test("한 번 완료된 코디네이터는 이후 재발급 요청도 정상적으로 다시 처리한다")
