@@ -14,7 +14,12 @@ let project = Project.project(
             ]
         ),
         .tests(
-            name: BaziModule.BaziNetwork.name
+            name: BaziModule.BaziNetwork.name,
+            dependencies: [
+                .target(name: BaziModule.BaziNetwork.name),
+                .core(),
+                .external(.Moya),
+            ]
         ),
     ]
 )
