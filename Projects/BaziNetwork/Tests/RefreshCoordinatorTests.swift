@@ -243,6 +243,32 @@ struct RefreshCoordinatorTests {
         #expect(storage.refreshToken == "old-refresh")
     }
 
+    @Test("재발급이 실패로 끝나도 그 사이 세션이 전환됐으면 새 세션에 강제 로그아웃 알림을 보내지 않는다")
+    func refresh_failsAfterSessionDidStart_doesNotNotifyForNewSession() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .failure(.unauthorized), delay: .milliseconds(30))
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
+
+        await confirmation(expectedCount: 0) { confirmForceLogout in
+            let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
+                confirmForceLogout()
+            }
+            defer { notificationCenter.removeObserver(observer) }
+
+            let outcome = await withCheckedContinuation { continuation in
+                coordinator.refresh { continuation.resume(returning: $0) }
+                // 재발급이 끝나기 전에 새 로그인이 완료된 상황을 흉내낸다.
+                coordinator.sessionDidStart()
+            }
+
+            guard case .failed = outcome else {
+                Issue.record("Expected .failed, got \(outcome)")
+                return
+            }
+        }
+    }
+
     @Test("완료 핸들러에서 재진입한 refresh는 새 세대로 취급되어 정상적으로 성공한다")
     func resolveAll_reentrantRefreshDuringCompletion_treatedAsFreshGenerationAndSucceeds() async {
         let storage = MockTokenStorage(refreshToken: "old-refresh")

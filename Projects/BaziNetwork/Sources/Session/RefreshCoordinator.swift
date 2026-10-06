@@ -60,23 +60,43 @@ public final class RefreshCoordinator: @unchecked Sendable {
                     throw NetworkError.unauthorized
                 }
                 let newTokens = try await tokenReissuer.reissue(refreshToken: refreshToken)
-                let isStale = lock.withLock { generation != myGeneration }
-                guard !isStale else {
-                    // 이 사이클이 끝나기 전에 다른 경로(retryCount>0 등)가 이미 세션을 죽였다 — 되살리지 않는다.
-                    resolveAll(.failed(.unauthorized))
-                    return
+                // 세대 확인과 토큰 저장을 원자적으로 — 분리하면 그 사이 세션이 전환돼도 되돌릴 수 없다.
+                let didSave = lock.withLock { () -> Bool in
+                    guard generation == myGeneration else { return false }
+                    tokenStorage.saveTokens(
+                        accessToken: newTokens.accessToken,
+                        refreshToken: newTokens.refreshToken
+                    )
+                    return true
                 }
-                tokenStorage.saveTokens(
-                    accessToken: newTokens.accessToken,
-                    refreshToken: newTokens.refreshToken
-                )
-                resolveAll(.retry)
+                if didSave {
+                    resolveAll(.retry)
+                } else {
+                    // 그 사이 세션이 전환됐다 — 대기자만 정리하고 새 세션에는 알림을 보내지 않는다.
+                    resolveStale()
+                }
             } catch {
                 // TokenReissuer 구현체는 항상 NetworkError를 던지므로 이 캐스팅은 사실상 항상 성공한다.
                 let networkError = error as? NetworkError ?? .unknown(error)
-                resolveAll(.failed(networkError))
+                let isCurrent = lock.withLock { generation == myGeneration }
+                if isCurrent {
+                    resolveAll(.failed(networkError))
+                } else {
+                    resolveStale()
+                }
             }
         }
+    }
+
+    /// 세대가 바뀌어 이 결과가 더는 유효하지 않을 때 호출 — 대기자만 정리하고 알림은 보내지 않는다.
+    private func resolveStale() {
+        let completions = lock.withLock {
+            let completions = pendingCompletion
+            pendingCompletion.removeAll()
+            isRefreshing = false
+            return completions
+        }
+        completions.forEach { $0(.failed(.unauthorized)) }
     }
 
     private func resolveAll(_ outcome: Outcome) {
