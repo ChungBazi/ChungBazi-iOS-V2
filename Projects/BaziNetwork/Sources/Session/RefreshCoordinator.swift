@@ -74,15 +74,18 @@ public final class RefreshCoordinator: @unchecked Sendable {
     }
 
     private func resolveAll(_ outcome: Outcome) {
-        lock.withLock {
-            pendingCompletion.forEach { $0(outcome) }
+        // completion 재진입 시 데드락 방지 — 큐만 비우고 락 밖에서 실행한다.
+        let completions = lock.withLock {
+            let completions = pendingCompletion
             pendingCompletion.removeAll()
             isRefreshing = false
             if case .retry = outcome {
                 // 세션이 다시 살아났으니, 이후에 또 끊기면 강제 로그아웃을 다시 통지할 수 있어야 한다.
                 hasNotifiedForceLogout = false
             }
+            return completions
         }
+        completions.forEach { $0(outcome) }
         if case .forceLogout = outcome {
             notifyForceLogout(reason: .refreshFailed)
         }
