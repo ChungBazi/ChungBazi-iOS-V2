@@ -74,7 +74,7 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
             switch outcome {
             case .retry:
                 completion(.retry)
-            case .forceLogout(let networkError), .keepSession(let networkError):
+            case .failed(let networkError):
                 completion(.doNotRetryWithError(networkError))
             }
         }
