@@ -6,6 +6,7 @@ public enum AnalyticsEvent: Equatable, Sendable {
     case screenView(ScreenName)
     case login(method: String, isNewUser: Bool)
     case logout
+    case forceLogout(reason: String)
     case withdrawComplete(reasons: [String])
     // MARK: 탐색 퍼널
     case policyListView(listType: ListType, entryPoint: EntryPoint, category: String?)
@@ -37,6 +38,7 @@ public enum AnalyticsEvent: Equatable, Sendable {
         case .screenView: return "screen_view"
         case .login: return "login"
         case .logout: return "logout"
+        case .forceLogout: return "force_logout"
         case .withdrawComplete: return "withdraw_complete"
         case .policyListView: return "policy_list_view"
         case .policyDetailView: return "policy_detail_view"
@@ -68,6 +70,8 @@ public enum AnalyticsEvent: Equatable, Sendable {
             return ["method": method, "is_new_user": isNewUser]
         case .logout:
             return [:]
+        case let .forceLogout(reason):
+            return ["reason": reason]
         case let .withdrawComplete(reasons):
             return ["reasons": reasons]
         case let .policyListView(listType, entryPoint, category):

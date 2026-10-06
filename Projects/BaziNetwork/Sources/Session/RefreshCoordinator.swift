@@ -13,6 +13,14 @@ public final class RefreshCoordinator: @unchecked Sendable {
         case keepSession(NetworkError)
     }
 
+    /// 강제 로그아웃 원인 태그 — Amplitude `force_logout` 이벤트의 `reason`으로 전달된다.
+    public enum ForceLogoutReason: String, Sendable {
+        /// 재발급 자체가 401/404로 실패.
+        case refreshFailed = "refresh_failed"
+        /// 재발급 성공, 재시도도 또 401.
+        case retryFailed = "retry_failed"
+    }
+
     private let tokenStorage: any TokenStorage
     private let tokenReissuer: any TokenReissuer
     private let notificationCenter: NotificationCenter
@@ -76,20 +84,20 @@ public final class RefreshCoordinator: @unchecked Sendable {
             }
         }
         if case .forceLogout = outcome {
-            notifyForceLogout()
+            notifyForceLogout(reason: .refreshFailed)
         }
     }
 
     /// retryCount 초과 등 single-flight 경로를 거치지 않는 확정적 실패도 같은 알림 채널을 쓰도록 노출한다.
     /// 여러 경로에서 동시에 호출돼도(예: 재시도한 여러 요청이 동시에 또 401을 받는 경우) 세션당 1회만 통지한다.
-    public func notifyForceLogout() {
+    public func notifyForceLogout(reason: ForceLogoutReason) {
         let shouldNotify = lock.withLock {
             guard !hasNotifiedForceLogout else { return false }
             hasNotifiedForceLogout = true
             return true
         }
         guard shouldNotify else { return }
-        notificationCenter.post(name: .forceLogout, object: nil)
+        notificationCenter.post(name: .forceLogout, object: nil, userInfo: ["reason": reason.rawValue])
     }
 }
 
