@@ -60,9 +60,12 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
         }
 
         guard request.retryCount == 0 else {
-            // 새 access token은 항상 유효해야 하므로, 재시도 후에도 401이면 세션이 깨진 것으로 보고 강제 로그아웃한다.
-            completion(.doNotRetryWithError(NetworkError.unauthorized))
-            refreshCoordinator.notifyForceLogout(reason: .retryFailed)
+            // 재시도 후에도 401이면 세션이 깨진 것으로 본다.
+            let networkError = NetworkError.unauthorized
+            completion(.doNotRetryWithError(networkError))
+            if networkError.requiresForceLogout {
+                refreshCoordinator.notifyForceLogout(reason: .retryFailed)
+            }
             return
         }
 
