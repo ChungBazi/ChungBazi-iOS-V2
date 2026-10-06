@@ -63,7 +63,12 @@ struct RefreshCoordinatorTests {
     @Test("동시에 여러 요청이 들어와도 재발급은 1회만 실행되고 모든 completion이 .retry로 불린다")
     func refresh_concurrentCalls_singleFlight() async {
         let storage = MockTokenStorage(refreshToken: "old-refresh")
-        let reissuer = MockTokenReissuer(result: .success(.init(accessToken: "new-access", refreshToken: "new-refresh")))
+        // 디스패치된 10개가 모두 도착할 시간을 벌어준다 — 지연이 없으면 시스템이 바쁠 때 몇 개가
+        // single-flight 윈도우를 놓쳐 재발급이 2회로 늘어나는 타이밍 플레이키가 생긴다.
+        let reissuer = MockTokenReissuer(
+            result: .success(.init(accessToken: "new-access", refreshToken: "new-refresh")),
+            delay: .milliseconds(30)
+        )
         let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer)
 
         let requestCount = 10
@@ -112,7 +117,9 @@ struct RefreshCoordinatorTests {
     @Test("동시에 여러 요청이 확정적 인증 실패로 끝나도 강제 로그아웃 알림은 1회만 발생한다")
     func refresh_concurrentAuthFailure_notifiesForceLogoutOnce() async {
         let storage = MockTokenStorage(refreshToken: "old-refresh")
-        let reissuer = MockTokenReissuer(result: .failure(.unauthorized))
+        // 디스패치된 10개가 모두 도착할 시간을 벌어준다 — 지연이 없으면 시스템이 바쁠 때 몇 개가
+        // single-flight 윈도우를 놓쳐 재발급이 2회로 늘어나는 타이밍 플레이키가 생긴다.
+        let reissuer = MockTokenReissuer(result: .failure(.unauthorized), delay: .milliseconds(30))
         // .default는 프로세스 전역이라 병렬로 도는 다른 테스트의 forceLogout과 섞일 수 있어,
         // 이 테스트 전용 NotificationCenter를 주입한다.
         let notificationCenter = NotificationCenter()
