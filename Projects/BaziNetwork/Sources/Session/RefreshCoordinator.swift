@@ -9,8 +9,7 @@ public final class RefreshCoordinator: @unchecked Sendable {
 
     public enum Outcome: Sendable {
         case retry
-        case forceLogout(NetworkError)
-        case keepSession(NetworkError)
+        case failed(NetworkError)
     }
 
     /// 강제 로그아웃 원인 태그 — Amplitude `force_logout` 이벤트의 `reason`으로 전달된다.
@@ -66,9 +65,7 @@ public final class RefreshCoordinator: @unchecked Sendable {
             } catch {
                 // TokenReissuer 구현체는 항상 NetworkError를 던지므로 이 캐스팅은 사실상 항상 성공한다.
                 let networkError = error as? NetworkError ?? .unknown(error)
-                // 확정적 인증 실패(401/404)만 강제 로그아웃한다.
-                // 오프라인·타임아웃·서버오류(5xx)는 세션을 유지하고 재시도 가능한 오류로만 알린다.
-                resolveAll(networkError.requiresForceLogout ? .forceLogout(networkError) : .keepSession(networkError))
+                resolveAll(.failed(networkError))
             }
         }
     }
@@ -86,7 +83,9 @@ public final class RefreshCoordinator: @unchecked Sendable {
             return completions
         }
         completions.forEach { $0(outcome) }
-        if case .forceLogout = outcome {
+        // 확정적 인증 실패(401/404)만 강제 로그아웃한다.
+        // 오프라인·타임아웃·서버오류(5xx)는 세션을 유지하고 재시도 가능한 오류로만 알린다.
+        if case .failed(let networkError) = outcome, networkError.requiresForceLogout {
             notifyForceLogout(reason: .refreshFailed)
         }
     }

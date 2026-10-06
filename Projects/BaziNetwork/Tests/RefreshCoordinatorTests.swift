@@ -38,13 +38,13 @@ struct RefreshCoordinatorTests {
             coordinator.refresh { continuation.resume(returning: $0) }
         }
 
-        guard case .forceLogout = outcome else {
-            Issue.record("Expected .forceLogout, got \(outcome)")
+        guard case .failed(let networkError) = outcome, networkError.requiresForceLogout else {
+            Issue.record("Expected a force-logout-requiring failure, got \(outcome)")
             return
         }
     }
 
-    @Test("재발급이 일시적 실패(5xx 등)로 실패하면 세션을 유지한 채 .keepSession으로 완료된다")
+    @Test("재발급이 일시적 실패(5xx 등)로 실패하면 세션을 유지한 채 강제 로그아웃 대상이 아닌 .failed로 완료된다")
     func refresh_transientFailure_completesWithKeepSession() async {
         let storage = MockTokenStorage(refreshToken: "old-refresh")
         let reissuer = MockTokenReissuer(result: .failure(.serverError(code: "COMMON500", message: "일시적 오류")))
@@ -54,8 +54,8 @@ struct RefreshCoordinatorTests {
             coordinator.refresh { continuation.resume(returning: $0) }
         }
 
-        guard case .keepSession = outcome else {
-            Issue.record("Expected .keepSession, got \(outcome)")
+        guard case .failed(let networkError) = outcome, !networkError.requiresForceLogout else {
+            Issue.record("Expected a non-force-logout failure, got \(outcome)")
             return
         }
     }
@@ -102,8 +102,8 @@ struct RefreshCoordinatorTests {
                 coordinator.refresh { continuation.resume(returning: $0) }
             }
 
-            guard case .keepSession = outcome else {
-                Issue.record("Expected .keepSession for \(failure), got \(outcome)")
+            guard case .failed(let networkError) = outcome, !networkError.requiresForceLogout else {
+                Issue.record("Expected a non-force-logout failure for \(failure), got \(outcome)")
                 continue
             }
         }
@@ -133,8 +133,8 @@ struct RefreshCoordinatorTests {
                     }
                 }
                 for await outcome in group {
-                    guard case .forceLogout = outcome else {
-                        Issue.record("Expected .forceLogout, got \(outcome)")
+                    guard case .failed(let networkError) = outcome, networkError.requiresForceLogout else {
+                        Issue.record("Expected a force-logout-requiring failure, got \(outcome)")
                         continue
                     }
                 }
