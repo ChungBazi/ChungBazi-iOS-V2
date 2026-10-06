@@ -1,6 +1,12 @@
 import ProjectDescription
 import ProjectDescriptionHelpers
 
+/// 마케팅 버전. Xcode Cloud에서는 릴리즈 태그가 주입된다.
+let marketingVersion = Environment.marketingVersion.getString(default: "2.0.2")
+
+/// 빌드 번호. Xcode Cloud에서는 `CI_BUILD_NUMBER`가 주입된다.
+let buildNumber = Environment.buildNumber.getString(default: "1")
+
 let project = Project.project(
     name: BaziModule.ChungBazi.name,
     targets: [
@@ -18,8 +24,8 @@ let project = Project.project(
                 // 앱 표시 이름 / 마케팅 버전
                 "CFBundleDisplayName": .string("청바지"),
                 "CFBundleName": .string("청바지"),
-                "CFBundleShortVersionString": .string("2.0.2"),
-                "CFBundleVersion": .string("1"),
+                "CFBundleShortVersionString": .string(marketingVersion),
+                "CFBundleVersion": .string(buildNumber),
                 // 다크모드 미지원 — 시스템 설정과 무관하게 앱 전체를 라이트모드로 고정한다.
                 "UIUserInterfaceStyle": .string("Light"),
                 "UILaunchScreen": .dictionary([:]),
