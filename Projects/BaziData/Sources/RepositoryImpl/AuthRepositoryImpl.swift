@@ -21,6 +21,7 @@ public struct AuthRepositoryImpl: AuthRepository {
             AuthAPI.kakaoLogin(body: KakaoLoginRequestDTO(accessToken: accessToken, fcmToken: fcmToken))
         )
         tokenStorage.saveTokens(accessToken: dto.accessToken, refreshToken: dto.refreshToken)
+        networkProvider.sessionDidStart()
         return dto.toDomain()
     }
 
@@ -29,6 +30,7 @@ public struct AuthRepositoryImpl: AuthRepository {
             AuthAPI.appleLogin(body: AppleLoginRequestDTO(idToken: idToken, name: name, fcmToken: fcmToken))
         )
         tokenStorage.saveTokens(accessToken: dto.accessToken, refreshToken: dto.refreshToken)
+        networkProvider.sessionDidStart()
         return dto.toDomain()
     }
 

@@ -100,10 +100,27 @@ public final class RefreshCoordinator: @unchecked Sendable {
             return true
         }
         guard shouldNotify else { return }
-        notificationCenter.post(name: .forceLogout, object: nil, userInfo: ["reason": reason.rawValue])
+        // 알림 포스팅은 MainActor에서 수행한다.
+        Task { @MainActor in
+            notificationCenter.post(
+                name: .forceLogout,
+                object: nil,
+                userInfo: [ForceLogoutUserInfoKey.reason: reason.rawValue]
+            )
+        }
+    }
+
+    /// 새 로그인 완료 시 호출 — 이전 세션의 강제 로그아웃 통지 기록을 지운다.
+    public func sessionDidStart() {
+        lock.withLock { hasNotifiedForceLogout = false }
     }
 }
 
 public extension Notification.Name {
     static let forceLogout = Notification.Name("ChungBazi.forceLogout")
+}
+
+/// `.forceLogout` 알림의 `userInfo` 키.
+public enum ForceLogoutUserInfoKey {
+    public static let reason = "reason"
 }

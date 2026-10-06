@@ -37,7 +37,7 @@ extension SessionClient: @retroactive DependencyKey {
                         object: nil,
                         queue: nil
                     ) { notification in
-                        continuation.yield(notification.userInfo?["reason"] as? String ?? "unknown")
+                        continuation.yield(notification.userInfo?[ForceLogoutUserInfoKey.reason] as? String ?? "unknown")
                     }
                     continuation.onTermination = { _ in
                         NotificationCenter.default.removeObserver(observer)

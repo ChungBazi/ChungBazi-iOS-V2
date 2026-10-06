@@ -76,4 +76,9 @@ public final class TokenRefreshInterceptor: RequestInterceptor, @unchecked Senda
             }
         }
     }
+
+    /// 새 로그인 완료 시 호출한다.
+    public func sessionDidStart() {
+        refreshCoordinator.sessionDidStart()
+    }
 }

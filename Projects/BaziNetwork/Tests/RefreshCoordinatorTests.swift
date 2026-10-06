@@ -156,7 +156,7 @@ struct RefreshCoordinatorTests {
 
         let capturedReason = CapturedReason()
         let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { notification in
-            capturedReason.set(notification.userInfo?["reason"] as? String)
+            capturedReason.set(notification.userInfo?[ForceLogoutUserInfoKey.reason] as? String)
         }
         defer { notificationCenter.removeObserver(observer) }
 
@@ -203,6 +203,30 @@ struct RefreshCoordinatorTests {
         _ = await withCheckedContinuation { continuation in
             coordinator.refresh { continuation.resume(returning: $0) }
         }
+
+        await confirmation(expectedCount: 1) { confirmForceLogout in
+            let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
+                confirmForceLogout()
+            }
+            defer { notificationCenter.removeObserver(observer) }
+
+            coordinator.notifyForceLogout(reason: .retryFailed)
+
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    @Test("sessionDidStart 이후에는 강제 로그아웃 알림이 다시 발생할 수 있다")
+    func notifyForceLogout_afterSessionDidStart_canNotifyAgain() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .success(.init(accessToken: "a", refreshToken: "b")))
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
+
+        coordinator.notifyForceLogout(reason: .retryFailed)
+        try? await Task.sleep(for: .milliseconds(50))
+
+        coordinator.sessionDidStart()
 
         await confirmation(expectedCount: 1) { confirmForceLogout in
             let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
