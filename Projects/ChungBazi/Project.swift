@@ -26,6 +26,7 @@ let project = Project.project(
                 "CFBundleName": .string("청바지"),
                 "CFBundleShortVersionString": .string(marketingVersion),
                 "CFBundleVersion": .string(buildNumber),
+                "ITSAppUsesNonExemptEncryption": .boolean(false),
                 // 다크모드 미지원 — 시스템 설정과 무관하게 앱 전체를 라이트모드로 고정한다.
                 "UIUserInterfaceStyle": .string("Light"),
                 "UILaunchScreen": .dictionary([:]),
