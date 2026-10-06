@@ -193,8 +193,6 @@ struct RefreshCoordinatorTests {
             coordinator.notifyForceLogout(reason: .retryFailed)
             coordinator.notifyForceLogout(reason: .retryFailed)
             coordinator.notifyForceLogout(reason: .retryFailed)
-
-            try? await Task.sleep(for: .milliseconds(50))
         }
     }
 
@@ -218,8 +216,6 @@ struct RefreshCoordinatorTests {
             defer { notificationCenter.removeObserver(observer) }
 
             coordinator.notifyForceLogout(reason: .retryFailed)
-
-            try? await Task.sleep(for: .milliseconds(50))
         }
     }
 
@@ -289,7 +285,6 @@ struct RefreshCoordinatorTests {
         let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
 
         coordinator.notifyForceLogout(reason: .retryFailed)
-        try? await Task.sleep(for: .milliseconds(50))
 
         coordinator.sessionDidStart()
 
@@ -300,8 +295,6 @@ struct RefreshCoordinatorTests {
             defer { notificationCenter.removeObserver(observer) }
 
             coordinator.notifyForceLogout(reason: .retryFailed)
-
-            try? await Task.sleep(for: .milliseconds(50))
         }
     }
 
