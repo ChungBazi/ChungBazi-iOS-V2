@@ -49,6 +49,30 @@ git config gitflow.prefix.versiontag ""
 
 ---
 
+## 최초 1회 GitHub 설정
+
+저장소 관리자가 첫 릴리즈 전에 한 번 설정합니다.
+
+### Actions의 PR 생성 허용
+
+Settings → Actions → General → Workflow permissions에서 **Allow GitHub Actions to create and approve pull requests**를 켭니다. `release.yml`의 `pull-requests: write` 권한만으로는 `GITHUB_TOKEN`이 PR을 만들 수 없습니다.
+
+- 체크박스가 비활성화되어 있으면 조직 설정(Organization Settings → Actions → General)에서 같은 항목을 먼저 켭니다.
+- 꺼져 있으면 태그와 GitHub Release는 만들어지지만 백머지 PR 생성 단계만 실패합니다.
+
+### 룰셋
+
+Settings → Rules → Rulesets에서 설정합니다. `develop`은 Default Ruleset이 보호합니다.
+
+| 룰셋 | 대상 | 규칙 |
+|---|---|---|
+| branch ruleset | `main` | Restrict deletions, Block force pushes, Require a pull request before merging (approvals 0, merge method는 Merge만) |
+| tag ruleset | `[0-9]*` | Restrict deletions, Restrict updates |
+
+태그 룰셋에서 **Restrict creations는 켜지 않습니다.** 켜면 `Release` 액션이 태그를 만들지 못합니다.
+
+---
+
 ## 작업 흐름
 
 ### 일반 작업
