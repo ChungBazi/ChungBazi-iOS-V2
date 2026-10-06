@@ -159,7 +159,8 @@ git push -u origin hotfix/2.1.1
 |---|---|
 | 시작 조건 | Tag Changes (모든 태그) |
 | 동작 | Archive — 스킴 `ChungBazi`, 플랫폼 iOS |
-| 배포 | TestFlight (Internal Testing) |
+| Distribution Preparation | **App Store** (`None`이면 App Store Connect에 올라가지 않습니다) |
+| Post-Action (선택) | TestFlight Internal Testing |
 
 브랜치 변경이나 PR을 시작 조건으로 추가하지 않습니다. 컴퓨팅 시간 한도를 다른 프로젝트와 나눠 쓰기 때문입니다.
 
