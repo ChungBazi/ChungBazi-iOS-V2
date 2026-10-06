@@ -17,14 +17,17 @@ set -e
 
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 
-# 태그 빌드의 태그명이 곧 마케팅 버전이다. 태그 없이 수동 실행한 빌드는 Project.swift 기본값을 쓴다.
-if [ -n "${CI_TAG:-}" ]; then
-    if ! printf '%s\n' "$CI_TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-        echo "유효하지 않은 릴리즈 태그: $CI_TAG (예: 2.1.0)" >&2
-        exit 1
-    fi
-    export TUIST_MARKETING_VERSION="$CI_TAG"
+# 태그명이 곧 마케팅 버전이다. 태그 없이(브랜치에서) 실행하면 Project.swift 기본값으로
+# 아카이브되어 잘못된 버전이 업로드되므로, 도구 설치 전에 바로 막는다.
+if [ -z "${CI_TAG:-}" ]; then
+    echo "릴리즈 태그 없이 실행되었습니다. 브랜치가 아니라 릴리즈 태그를 선택해 실행하세요." >&2
+    exit 1
 fi
+if ! printf '%s\n' "$CI_TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+    echo "유효하지 않은 릴리즈 태그: $CI_TAG (예: 2.1.0)" >&2
+    exit 1
+fi
+export TUIST_MARKETING_VERSION="$CI_TAG"
 
 # 값이 비어 있으면 빈 키로 빌드된 앱이 그대로 업로드되므로 빌드 전에 막는다.
 for name in BASE_URL KAKAO_NATIVE_APP_KEY AMPLITUDE_API_KEY GOOGLE_SERVICE_INFO_PLIST_BASE64; do
@@ -77,7 +80,7 @@ echo "=== [ci_post_clone] GoogleService-Info.plist 생성 ==="
 printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > Projects/ChungBazi/Resources/GoogleService-Info.plist
 plutil -lint Projects/ChungBazi/Resources/GoogleService-Info.plist
 
-echo "=== [ci_post_clone] 워크스페이스 생성 (버전 ${TUIST_MARKETING_VERSION:-기본값} / 빌드 번호 ${CI_BUILD_NUMBER:-1}) ==="
+echo "=== [ci_post_clone] 워크스페이스 생성 (버전 $TUIST_MARKETING_VERSION / 빌드 번호 ${CI_BUILD_NUMBER:-1}) ==="
 TUIST_BUILD_NUMBER="${CI_BUILD_NUMBER:-1}" mise exec -- tuist generate --no-open
 
 echo "=== [ci_post_clone] 완료 ==="
