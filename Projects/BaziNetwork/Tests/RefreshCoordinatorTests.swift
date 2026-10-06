@@ -216,6 +216,64 @@ struct RefreshCoordinatorTests {
         }
     }
 
+    @Test("강제 로그아웃이 결정된 후에는, 그 전에 시작된 재발급이 늦게 성공해도 토큰을 저장하지 않는다")
+    func refresh_succeedsAfterForceLogoutDeclared_discardsStaleSuccess() async {
+        let storage = MockTokenStorage(accessToken: "old-access", refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(
+            result: .success(.init(accessToken: "new-access", refreshToken: "new-refresh")),
+            delay: .milliseconds(30)
+        )
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer)
+
+        let outcome = await withCheckedContinuation { continuation in
+            // retryCount>0 분기처럼 single-flight를 거치지 않고 독립적으로 세션을 죽이는 경로를 흉내낸다.
+            coordinator.refresh { continuation.resume(returning: $0) }
+            coordinator.notifyForceLogout(reason: .retryFailed)
+        }
+
+        guard case .failed = outcome else {
+            Issue.record("Expected .failed (stale success discarded), got \(outcome)")
+            return
+        }
+        // 늦게 도착한 성공 결과가 세션을 되살리면 안 된다.
+        #expect(storage.accessToken == "old-access")
+        #expect(storage.refreshToken == "old-refresh")
+    }
+
+    @Test("완료 핸들러에서 재진입한 refresh는 새 세대로 취급되어 정상적으로 성공한다")
+    func resolveAll_reentrantRefreshDuringCompletion_treatedAsFreshGenerationAndSucceeds() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .failure(.unauthorized))
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
+
+        let reentrantOutcome = Captured<RefreshCoordinator.Outcome>()
+
+        await confirmation(expectedCount: 1) { confirmForceLogout in
+            let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
+                confirmForceLogout()
+            }
+            defer { notificationCenter.removeObserver(observer) }
+
+            await withCheckedContinuation { continuation in
+                coordinator.refresh { outcome in
+                    // 완료 핸들러 안에서 재진입 — 이번엔 성공하는 새 사이클을 시작시킨다.
+                    reissuer.setResult(.success(.init(accessToken: "new-access", refreshToken: "new-refresh")))
+                    coordinator.refresh { reentrantOutcome.set($0) }
+                    continuation.resume()
+                }
+            }
+
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+
+        guard case .retry = reentrantOutcome.value else {
+            Issue.record("Expected reentrant refresh to succeed with .retry, got \(String(describing: reentrantOutcome.value))")
+            return
+        }
+        #expect(storage.accessToken == "new-access")
+    }
+
     @Test("sessionDidStart 이후에는 강제 로그아웃 알림이 다시 발생할 수 있다")
     func notifyForceLogout_afterSessionDidStart_canNotifyAgain() async {
         let storage = MockTokenStorage(refreshToken: "old-refresh")

@@ -30,11 +30,13 @@ final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
     private let lock = NSLock()
     private var result: Result<ReissueResponseDTO, NetworkError>
     private var _callCount = 0
+    private let delay: Duration?
 
     var callCount: Int { lock.withLock { _callCount } }
 
-    init(result: Result<ReissueResponseDTO, NetworkError> = .failure(.unauthorized)) {
+    init(result: Result<ReissueResponseDTO, NetworkError> = .failure(.unauthorized), delay: Duration? = nil) {
         self.result = result
+        self.delay = delay
     }
 
     func setResult(_ result: Result<ReissueResponseDTO, NetworkError>) {
@@ -45,6 +47,9 @@ final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
         let currentResult = lock.withLock {
             _callCount += 1
             return result
+        }
+        if let delay {
+            try? await Task.sleep(for: delay)
         }
         return try currentResult.get()
     }
@@ -57,6 +62,17 @@ final class CapturedReason: @unchecked Sendable {
     var value: String? { lock.withLock { _value } }
 
     func set(_ value: String?) {
+        lock.withLock { _value = value }
+    }
+}
+
+final class Captured<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value: Value?
+
+    var value: Value? { lock.withLock { _value } }
+
+    func set(_ value: Value) {
         lock.withLock { _value = value }
     }
 }
