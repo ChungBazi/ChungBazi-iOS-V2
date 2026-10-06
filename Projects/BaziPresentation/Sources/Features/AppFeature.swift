@@ -52,8 +52,9 @@ public struct AppFeature {
             case .task:
                 // 런타임 강제 로그아웃(.forceLogout) + 딥링크(카카오/푸시) 구독
                 return .merge(
-                    .run { [sessionClient] send in
-                        for await _ in sessionClient.forceLogoutEvents() {
+                    .run { [sessionClient, analytics] send in
+                        for await reason in sessionClient.forceLogoutEvents() {
+                            analytics.track(.forceLogout(reason: reason))
                             await send(.forceLoggedOut)
                         }
                     }

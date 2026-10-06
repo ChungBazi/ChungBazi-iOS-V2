@@ -147,6 +147,27 @@ struct RefreshCoordinatorTests {
         #expect(reissuer.callCount == 1)
     }
 
+    @Test("재발급 자체가 실패해 강제 로그아웃될 때, 알림에 reason=refresh_failed가 실린다")
+    func resolveAll_forceLogout_postsRefreshFailedReason() async {
+        let storage = MockTokenStorage(refreshToken: "old-refresh")
+        let reissuer = MockTokenReissuer(result: .failure(.unauthorized))
+        let notificationCenter = NotificationCenter()
+        let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
+
+        let capturedReason = CapturedReason()
+        let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { notification in
+            capturedReason.set(notification.userInfo?["reason"] as? String)
+        }
+        defer { notificationCenter.removeObserver(observer) }
+
+        _ = await withCheckedContinuation { continuation in
+            coordinator.refresh { continuation.resume(returning: $0) }
+        }
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(capturedReason.value == RefreshCoordinator.ForceLogoutReason.refreshFailed.rawValue)
+    }
+
     @Test("notifyForceLogout을 여러 번 호출해도 알림은 1회만 발생한다")
     func notifyForceLogout_calledMultipleTimes_notifiesOnce() async {
         // TokenRefreshInterceptor의 retryCount>0 분기는 요청마다 독립적으로 notifyForceLogout을 호출하므로,
@@ -162,9 +183,9 @@ struct RefreshCoordinatorTests {
             }
             defer { notificationCenter.removeObserver(observer) }
 
-            coordinator.notifyForceLogout()
-            coordinator.notifyForceLogout()
-            coordinator.notifyForceLogout()
+            coordinator.notifyForceLogout(reason: .retryFailed)
+            coordinator.notifyForceLogout(reason: .retryFailed)
+            coordinator.notifyForceLogout(reason: .retryFailed)
 
             try? await Task.sleep(for: .milliseconds(50))
         }
@@ -177,7 +198,7 @@ struct RefreshCoordinatorTests {
         let notificationCenter = NotificationCenter()
         let coordinator = RefreshCoordinator(tokenStorage: storage, tokenReissuer: reissuer, notificationCenter: notificationCenter)
 
-        coordinator.notifyForceLogout()
+        coordinator.notifyForceLogout(reason: .retryFailed)
 
         _ = await withCheckedContinuation { continuation in
             coordinator.refresh { continuation.resume(returning: $0) }
@@ -189,7 +210,7 @@ struct RefreshCoordinatorTests {
             }
             defer { notificationCenter.removeObserver(observer) }
 
-            coordinator.notifyForceLogout()
+            coordinator.notifyForceLogout(reason: .retryFailed)
 
             try? await Task.sleep(for: .milliseconds(50))
         }
@@ -263,5 +284,16 @@ private final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
             return result
         }
         return try currentResult.get()
+    }
+}
+
+private final class CapturedReason: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value: String?
+
+    var value: String? { lock.withLock { _value } }
+
+    func set(_ value: String?) {
+        lock.withLock { _value = value }
     }
 }

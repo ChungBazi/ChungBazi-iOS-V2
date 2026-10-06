@@ -95,13 +95,14 @@ struct TokenRefreshInterceptorTests {
         let session = Session(configuration: configuration, interceptor: interceptor)
 
         let forceLogoutCount = Counter()
-        let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { _ in
+        let capturedReason = CapturedReason()
+        let observer = notificationCenter.addObserver(forName: .forceLogout, object: nil, queue: nil) { notification in
             forceLogoutCount.increment()
+            capturedReason.set(notification.userInfo?["reason"] as? String)
         }
         defer { notificationCenter.removeObserver(observer) }
 
-        // Moya의 validationType(.successCodes)이 프로덕션에서 하는 걸 raw Alamofire에서는 .validate()로 직접 해줘야
-        // 401을 "실패"로 인식해서 retry()가 호출된다. 없으면 401도 그냥 성공 응답으로 흘러가 재발급 자체가 트리거되지 않는다.
+        // .validate()가 없으면 401도 성공으로 흘러가 retry()가 트리거 되지 않는다.
         let response = await session
             .request(URL(string: "https://mock.chungbazi.test/api/v1/notifications")!)
             .validate()
@@ -115,6 +116,8 @@ struct TokenRefreshInterceptorTests {
         // resolveAll과 달리 이 분기는 동기적으로 알림을 보내지만, 스케줄링 여유를 위해 짧게 대기한다.
         try? await Task.sleep(for: .milliseconds(50))
         #expect(forceLogoutCount.value == 1)
+        // retryCount>0 분기이므로 reason은 retryFailed여야 한다.
+        #expect(capturedReason.value == RefreshCoordinator.ForceLogoutReason.retryFailed.rawValue)
     }
 
     // MARK: - Helper
@@ -198,5 +201,16 @@ private final class Counter: @unchecked Sendable {
 
     func increment() {
         lock.withLock { _value += 1 }
+    }
+}
+
+private final class CapturedReason: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value: String?
+
+    var value: String? { lock.withLock { _value } }
+
+    func set(_ value: String?) {
+        lock.withLock { _value = value }
     }
 }
