@@ -1,0 +1,67 @@
+# release/X.Y.Z 또는 hotfix/X.Y.Z 브랜치의 PR이 main에 머지되면
+# 브랜치명의 버전으로 태그를 찍고, GitHub Release를 만들고, develop 백머지 PR을 연다.
+# TestFlight 빌드는 이 태그로 트리거되는 Xcode Cloud `Deploy` 워크플로우가 담당한다 (docs/GIT_FLOW_GUIDELINES.md 참고).
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (startsWith(github.event.pull_request.head.ref, 'release/') ||
+       startsWith(github.event.pull_request.head.ref, 'hotfix/'))
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+    steps:
+      - name: Resolve version from branch name
+        id: version
+        run: |
+          version="${HEAD_REF#*/}"
+          if ! printf '%s\n' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::브랜치명에서 버전을 읽을 수 없습니다: $HEAD_REF (예: release/2.1.0)"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # 태그를 API로 만든다. 같은 태그가 이미 있으면 여기서 실패한다 (태그는 옮기지 않는다).
+      - name: Create tag
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/${{ steps.version.outputs.version }}" \
+            -f sha="$MERGE_SHA"
+
+      # --generate-notes: 직전 릴리즈 이후 머지된 PR 목록으로 노트를 자동 작성한다
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "${{ steps.version.outputs.version }}" \
+            --verify-tag \
+            --generate-notes
+
+      # main에만 있는 커밋(릴리즈 중 수정, 핫픽스)을 develop으로 되돌린다. 차이가 없으면 건너뛴다.
+      - name: Open back-merge PR
+        run: |
+          ahead=$(gh api "repos/$GITHUB_REPOSITORY/compare/develop...main" --jq '.ahead_by')
+          if [ "$ahead" -eq 0 ]; then
+            echo "develop이 이미 main을 포함합니다. 백머지 PR을 건너뜁니다."
+            exit 0
+          fi
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base develop \
+            --head main \
+            --title "Release/${{ steps.version.outputs.version }} - main → develop 백머지" \
+            --body "${{ steps.version.outputs.version }} 릴리즈를 develop에 반영합니다. **Create a merge commit**으로 머지해주세요 (squash 금지)."
