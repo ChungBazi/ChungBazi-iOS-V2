@@ -99,7 +99,7 @@ extension NetworkError {
 }
 
 // 비-2xx 응답 바디에서 서버 code/message만 추출한다(result 형태와 무관하게 디코딩).
-private struct ErrorEnvelope: Decodable {
+struct ErrorEnvelope: Decodable {
     let code: String
     let message: String
 }
