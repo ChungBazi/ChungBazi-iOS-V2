@@ -26,6 +26,8 @@ public final class RefreshCoordinator: @unchecked Sendable {
     private var isRefreshing = false
     private var pendingCompletion: [(Outcome) -> Void] = []
     private var hasNotifiedForceLogout = false
+    // 강제 로그아웃/새 로그인마다 증가하는 세대. 늦게 성공한 재발급이 죽은 세션을 되살리지 못하게 막는다.
+    private var generation = 0
     // withLock 클로저 형태로만 사용 — async context에서 lock()/unlock() 분리 호출 금지 (Swift 6)
     private let lock = NSLock()
 
@@ -42,14 +44,15 @@ public final class RefreshCoordinator: @unchecked Sendable {
     public func refresh(completion: @escaping (Outcome) -> Void) {
         // 동시에 여러 요청이 들어와도 reissue는 1회만 실행
         // 나머지는 pendingCompletion 큐에서 대기 후 결과를 함께 받는다
-        let shouldRefresh = lock.withLock {
+        let result: (shouldRefresh: Bool, generation: Int) = lock.withLock {
             pendingCompletion.append(completion)
-            guard !isRefreshing else { return false }
+            guard !isRefreshing else { return (false, generation) }
             isRefreshing = true
-            return true
+            return (true, generation)
         }
 
-        guard shouldRefresh else { return }
+        guard result.shouldRefresh else { return }
+        let myGeneration = result.generation
 
         Task {
             do {
@@ -57,6 +60,12 @@ public final class RefreshCoordinator: @unchecked Sendable {
                     throw NetworkError.unauthorized
                 }
                 let newTokens = try await tokenReissuer.reissue(refreshToken: refreshToken)
+                let isStale = lock.withLock { generation != myGeneration }
+                guard !isStale else {
+                    // 이 사이클이 끝나기 전에 다른 경로(retryCount>0 등)가 이미 세션을 죽였다 — 되살리지 않는다.
+                    resolveAll(.failed(.unauthorized))
+                    return
+                }
                 tokenStorage.saveTokens(
                     accessToken: newTokens.accessToken,
                     refreshToken: newTokens.refreshToken
@@ -72,21 +81,31 @@ public final class RefreshCoordinator: @unchecked Sendable {
 
     private func resolveAll(_ outcome: Outcome) {
         // completion 재진입 시 데드락 방지 — 큐만 비우고 락 밖에서 실행한다.
-        let completions = lock.withLock {
+        // 세대 증가도 completion 실행 전에 확정 — 재진입한 refresh()가 새 세대를 보게 한다.
+        let (completions, shouldNotify) = lock.withLock {
             let completions = pendingCompletion
             pendingCompletion.removeAll()
             isRefreshing = false
-            if case .retry = outcome {
+
+            var shouldNotify = false
+            switch outcome {
+            case .retry:
                 // 세션이 다시 살아났으니, 이후에 또 끊기면 강제 로그아웃을 다시 통지할 수 있어야 한다.
                 hasNotifiedForceLogout = false
+            case .failed(let networkError) where networkError.requiresForceLogout:
+                if !hasNotifiedForceLogout {
+                    hasNotifiedForceLogout = true
+                    generation += 1
+                    shouldNotify = true
+                }
+            case .failed:
+                break
             }
-            return completions
+            return (completions, shouldNotify)
         }
         completions.forEach { $0(outcome) }
-        // 확정적 인증 실패(401/404)만 강제 로그아웃한다.
-        // 오프라인·타임아웃·서버오류(5xx)는 세션을 유지하고 재시도 가능한 오류로만 알린다.
-        if case .failed(let networkError) = outcome, networkError.requiresForceLogout {
-            notifyForceLogout(reason: .refreshFailed)
+        if shouldNotify {
+            postForceLogoutNotification(reason: .refreshFailed)
         }
     }
 
@@ -96,22 +115,28 @@ public final class RefreshCoordinator: @unchecked Sendable {
         let shouldNotify = lock.withLock {
             guard !hasNotifiedForceLogout else { return false }
             hasNotifiedForceLogout = true
+            generation += 1
             return true
         }
         guard shouldNotify else { return }
-        // 알림 포스팅은 MainActor에서 수행한다.
-        Task { @MainActor in
-            notificationCenter.post(
-                name: .forceLogout,
-                object: nil,
-                userInfo: [ForceLogoutUserInfoKey.reason: reason.rawValue]
-            )
-        }
+        postForceLogoutNotification(reason: reason)
     }
 
-    /// 새 로그인 완료 시 호출 — 이전 세션의 강제 로그아웃 통지 기록을 지운다.
+    private func postForceLogoutNotification(reason: ForceLogoutReason) {
+        // NotificationCenter.post는 스레드 세이프해서 액터 격리 없이 바로 호출한다.
+        notificationCenter.post(
+            name: .forceLogout,
+            object: nil,
+            userInfo: [ForceLogoutUserInfoKey.reason: reason.rawValue]
+        )
+    }
+
+    /// 새 로그인 완료 시 호출 — 이전 세션의 강제 로그아웃 통지 기록을 지우고 세대를 올린다.
     public func sessionDidStart() {
-        lock.withLock { hasNotifiedForceLogout = false }
+        lock.withLock {
+            hasNotifiedForceLogout = false
+            generation += 1
+        }
     }
 }
 
