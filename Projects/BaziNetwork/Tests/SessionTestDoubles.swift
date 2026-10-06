@@ -31,12 +31,18 @@ final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
     private var result: Result<ReissueResponseDTO, NetworkError>
     private var _callCount = 0
     private let delay: Duration?
+    private let gate: CountdownGate?
 
     var callCount: Int { lock.withLock { _callCount } }
 
-    init(result: Result<ReissueResponseDTO, NetworkError> = .failure(.unauthorized), delay: Duration? = nil) {
+    init(
+        result: Result<ReissueResponseDTO, NetworkError> = .failure(.unauthorized),
+        delay: Duration? = nil,
+        gate: CountdownGate? = nil
+    ) {
         self.result = result
         self.delay = delay
+        self.gate = gate
     }
 
     func setResult(_ result: Result<ReissueResponseDTO, NetworkError>) {
@@ -48,10 +54,50 @@ final class MockTokenReissuer: TokenReissuer, @unchecked Sendable {
             _callCount += 1
             return result
         }
-        if let delay {
+        if let gate {
+            await gate.wait()
+        } else if let delay {
             try? await Task.sleep(for: delay)
         }
         return try currentResult.get()
+    }
+}
+
+/// 고정 지연 대신 "N개 등록 완료"라는 실제 신호로 동시성 테스트를 동기화하는 게이트.
+final class CountdownGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private let target: Int
+    private var count = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(target: Int) {
+        self.target = target
+    }
+
+    func increment() {
+        let reached: [CheckedContinuation<Void, Never>] = lock.withLock {
+            count += 1
+            guard count >= target else { return [] }
+            let waiting = waiters
+            waiters.removeAll()
+            return waiting
+        }
+        reached.forEach { $0.resume() }
+    }
+
+    func wait() async {
+        let shouldWait: Bool = lock.withLock { count < target }
+        guard shouldWait else { return }
+        await withCheckedContinuation { continuation in
+            let alreadyReached: Bool = lock.withLock {
+                guard count < target else { return true }
+                waiters.append(continuation)
+                return false
+            }
+            if alreadyReached {
+                continuation.resume()
+            }
+        }
     }
 }
 
