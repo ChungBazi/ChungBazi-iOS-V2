@@ -9,9 +9,11 @@ import BaziCore
 // 토큰 재발급 동기화는 TokenRefreshInterceptor가 자체적으로 lock으로 보장한다.
 public final class NetworkProvider: @unchecked Sendable {
     private let provider: MoyaProvider<MultiTarget>
+    private let interceptor: TokenRefreshInterceptor
 
     public init(tokenStorage: TokenStorage) {
         let interceptor = TokenRefreshInterceptor(tokenStorage: tokenStorage)
+        self.interceptor = interceptor
         let session = Session(interceptor: interceptor)
 
         #if DEBUG
@@ -62,5 +64,10 @@ public final class NetworkProvider: @unchecked Sendable {
     // MARK: - 2. 결과값이 필요 없는 요청 (서버는 항상 String result를 반환)
     public func requestStatusCode(_ target: any APITargetType) async throws {
         let _: String = try await request(target)
+    }
+
+    /// 새 로그인 완료 시 호출한다.
+    public func sessionDidStart() {
+        interceptor.sessionDidStart()
     }
 }
