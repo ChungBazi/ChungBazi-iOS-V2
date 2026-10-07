@@ -2,6 +2,7 @@
 
 import BaziData
 import BaziPresentation
+import BaziStorage
 import ComposableArchitecture
 import KakaoSDKAuth
 import SwiftUI
@@ -12,6 +13,10 @@ struct ChungBaziApp: App {
 
     init() {
         DataConfiguration.configure(baseURL: Config.baseURL)
+        // 다른 서버에서 발급된 토큰이 남아 있으면 첫 요청 전에 폐기한다.
+        if let host = URL(string: Config.baseURL)?.host {
+            SessionHostGuard(tokenStorage: KeychainTokenStorage()).bind(to: host)
+        }
     }
 
     var body: some Scene {
@@ -27,7 +32,7 @@ struct ChungBaziApp: App {
                 } else if let policyId = KakaoLinkParser.policyId(from: url) {
                     DeeplinkPublisher.policyDetail(id: policyId)
                 } else if let policyId = PolicyDeeplink.policyId(from: url) {
-                    // 캘린더 이벤트 URL(chungbazi://policy/{id}) 탭 → 정책 상세.
+                    // 캘린더 이벤트 URL({앱 스킴}://policy/{id}) 탭 → 정책 상세.
                     DeeplinkPublisher.policyDetail(id: policyId)
                 }
             }

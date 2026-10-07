@@ -14,6 +14,7 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         case userName
         case socialType
         case customPolicyGuideSeen
+        case sessionHost
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -58,6 +59,14 @@ public final class UserDefaultsStorage: @unchecked Sendable {
         defaults.removeObject(forKey: Key.hasCompletedOnboarding.rawValue)
         defaults.removeObject(forKey: Key.userName.rawValue)
         defaults.removeObject(forKey: Key.socialType.rawValue)
+    }
+
+    // MARK: - Session Host
+
+    /// 현재 세션(토큰)이 발급된 API 서버 호스트. 서버가 바뀌면 SessionHostGuard가 세션을 폐기한다.
+    public var sessionHost: String? {
+        get { defaults.string(forKey: Key.sessionHost.rawValue) }
+        set { defaults.set(newValue, forKey: Key.sessionHost.rawValue) }
     }
 
     // MARK: - Session Marker
