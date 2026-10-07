@@ -13,21 +13,21 @@ platform :ios do
 
   desc "Sync development certificates and profiles"
   lane :match_development do
-    match(type: "development", api_key: api_key)
+    match(type: "development", app_identifier: "com.yeonho.chungbazi.dev", api_key: api_key)
   end
 
   desc "Sync App Store certificates and profiles"
   lane :match_appstore do
-    match(type: "appstore", api_key: api_key)
+    match(type: "appstore", app_identifier: "com.yeonho.chungbazi", api_key: api_key)
   end
 
   desc "Sync development certificates (readonly, 팀원용)"
   lane :match_development_readonly do
-    match(type: "development", readonly: true)
+    match(type: "development", app_identifier: "com.yeonho.chungbazi.dev", readonly: true)
   end
 
   desc "Sync App Store certificates (readonly, 팀원용)"
   lane :match_appstore_readonly do
-    match(type: "appstore", readonly: true)
+    match(type: "appstore", app_identifier: "com.yeonho.chungbazi", readonly: true)
   end
 end
