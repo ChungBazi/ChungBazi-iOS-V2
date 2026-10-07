@@ -31,6 +31,22 @@ Sync development certificates and profiles
 
 Sync App Store certificates and profiles
 
+### ios match_development_readonly
+
+```sh
+[bundle exec] fastlane ios match_development_readonly
+```
+
+Sync development certificates (readonly, 팀원용)
+
+### ios match_appstore_readonly
+
+```sh
+[bundle exec] fastlane ios match_appstore_readonly
+```
+
+Sync App Store certificates (readonly, 팀원용)
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

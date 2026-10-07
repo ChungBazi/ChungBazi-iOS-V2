@@ -1,5 +1,6 @@
 git_url("git@github.com:ChungBazi/ChungBazi-Certificates.git")
 storage_mode("git")
 
-app_identifier("com.yeonho.chungbazi")
+# 운영 앱(Release)과 Dev 앱(Debug)
+app_identifier(["com.yeonho.chungbazi", "com.yeonho.chungbazi.dev"])
 team_id("UKY6HK6U6Y")
