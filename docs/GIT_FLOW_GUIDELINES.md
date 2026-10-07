@@ -176,7 +176,7 @@ git push -u origin hotfix/2.1.1
 | `GOOGLE_SERVICE_INFO_PLIST_BASE64` | 운영용 `GoogleService-Info.plist`를 base64로 인코딩한 값 |
 
 ```sh
-base64 -i Projects/ChungBazi/Resources/GoogleService-Info.plist | pbcopy
+base64 -i Projects/ChungBazi/Configurations/Firebase/Release/GoogleService-Info.plist | pbcopy
 ```
 
 ### 빌드 번호
