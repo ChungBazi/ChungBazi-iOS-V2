@@ -24,6 +24,14 @@ enum Config {
       return appKey
     }()
 
+    /// 앱 커스텀 URL 스킴. 빌드 구성별로 다르다(Debug: chungbazi-dev, Release: chungbazi).
+    static let urlScheme: String = {
+      guard let scheme = infoDictionary["APP_URL_SCHEME"] as? String else {
+        fatalError()
+      }
+      return scheme
+    }()
+
     static let amplitudeAPIKey: String = {
       guard let key = infoDictionary["AMPLITUDE_API_KEY"] as? String else {
         fatalError()

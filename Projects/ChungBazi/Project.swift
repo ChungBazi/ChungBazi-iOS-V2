@@ -13,17 +13,19 @@ let project = Project.project(
         .target(
             name: BaziModule.ChungBazi.name,
             product: .app,
-            bundleId: Project.bundleID,
+            // Debug는 별도 앱(.dev)으로 설치되어 스토어 앱과 Keychain·UserDefaults가 격리된다.
+            bundleId: "\(Project.bundleID)$(BUNDLE_ID_SUFFIX)",
             infoPlist: .extendingDefault(with: [
                 "BASE_URL": .string("$(BASE_URL)"),
                 "KAKAO_NATIVE_APP_KEY": .string("$(KAKAO_NATIVE_APP_KEY)"),
                 "AMPLITUDE_API_KEY": .string("$(AMPLITUDE_API_KEY)"),
+                "APP_URL_SCHEME": .string("$(APP_URL_SCHEME)"),
                 // 앱 기본 언어(한국어) — VoiceOver가 한글 라벨/텍스트를 한국어 음성으로 읽도록 기본 지역을 명시한다.
                 "CFBundleDevelopmentRegion": .string("ko"),
                 "CFBundleLocalizations": .array([.string("ko")]),
                 // 앱 표시 이름 / 마케팅 버전
-                "CFBundleDisplayName": .string("청바지"),
-                "CFBundleName": .string("청바지"),
+                "CFBundleDisplayName": .string("$(APP_DISPLAY_NAME)"),
+                "CFBundleName": .string("$(APP_DISPLAY_NAME)"),
                 "CFBundleShortVersionString": .string(marketingVersion),
                 "CFBundleVersion": .string(buildNumber),
                 "ITSAppUsesNonExemptEncryption": .boolean(false),
@@ -40,10 +42,10 @@ let project = Project.project(
                     .dictionary([
                         "CFBundleURLSchemes": .array([.string("kakao$(KAKAO_NATIVE_APP_KEY)")]),
                     ]),
-                    // 캘린더 이벤트/앱 딥링크용 커스텀 스킴(chungbazi://policy/{id}).
+                    // 캘린더 이벤트/앱 딥링크용 커스텀 스킴({앱 스킴}://policy/{id}).
                     .dictionary([
-                        "CFBundleURLName": .string("\(Project.bundleID).deeplink"),
-                        "CFBundleURLSchemes": .array([.string("chungbazi")]),
+                        "CFBundleURLName": .string("$(PRODUCT_BUNDLE_IDENTIFIER).deeplink"),
+                        "CFBundleURLSchemes": .array([.string("$(APP_URL_SCHEME)")]),
                     ]),
                 ]),
                 "LSApplicationQueriesSchemes": .array([
@@ -55,6 +57,19 @@ let project = Project.project(
             resources: .default,
             entitlements: .file(path: "SupportingFiles/ChungBazi.entitlements"),
             scripts: [
+                // 빌드 구성에 맞는 GoogleService-Info.plist를 앱 번들에 복사한다(Debug: dev, Release: 운영).
+                // Crashlytics 스크립트가 번들의 plist를 읽으므로 그보다 먼저 실행한다.
+                .post(
+                    script: """
+                    SOURCE="${SRCROOT}/Configurations/Firebase/${CONFIGURATION}/GoogleService-Info.plist"
+                    if [ ! -f "$SOURCE" ]; then
+                      echo "error: $SOURCE 가 없습니다 (docs/ENVIRONMENT_GUIDELINES.md 참고)"; exit 1
+                    fi
+                    cp "$SOURCE" "${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist"
+                    """,
+                    name: "Copy GoogleService-Info.plist",
+                    basedOnDependencyAnalysis: false
+                ),
                 // Crashlytics 심볼리케이션: 빌드 후 dSYM 업로드. 후보 경로를 탐색하며,
                 // Debug는 실패해도 경고만, Release는 심볼리케이션 누락 방지를 위해 실패 시 빌드를 실패시킨다.
                 .post(
@@ -107,6 +122,9 @@ let project = Project.project(
                     .debug(
                         name: "Debug",
                         settings: [
+                            "BUNDLE_ID_SUFFIX": ".dev",
+                            "APP_DISPLAY_NAME": "청바지 Dev",
+                            "APP_URL_SCHEME": "chungbazi-dev",
                             "CODE_SIGN_IDENTITY": "$(CODE_SIGN_IDENTITY)",
                             // Firebase/GoogleUtilities가 카테고리(NSData+gul_dataByGzippingData 등)로 추가하는
                             // 메서드는 -ObjC 없이 정적 링크하면 런타임에 unrecognized selector로 죽는다.
@@ -117,6 +135,9 @@ let project = Project.project(
                     .release(
                         name: "Release",
                         settings: [
+                            "BUNDLE_ID_SUFFIX": "",
+                            "APP_DISPLAY_NAME": "청바지",
+                            "APP_URL_SCHEME": "chungbazi",
                             "CODE_SIGN_IDENTITY": "$(CODE_SIGN_IDENTITY)",
                             "OTHER_LDFLAGS": ["$(inherited)", "-ObjC"],
                         ],
