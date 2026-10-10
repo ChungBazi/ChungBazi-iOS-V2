@@ -36,16 +36,17 @@ enum KakaoLinkParser {
 
 /// 앱 커스텀 스킴 딥링크({앱 스킴}://policy/{id}) 빌드/파싱.
 /// 캘린더 이벤트의 URL 필드에 심고, 탭해서 앱이 열릴 때 다시 policyId로 되돌린다.
+/// 앱 스킴은 빌드 구성별로 다르다(Debug: chungbazi-dev, Release: chungbazi).
 enum PolicyDeeplink {
     static let scheme = Config.urlScheme
     static let host = "policy"
 
-    /// 정책 상세로 여는 딥링크 URL(예: chungbazi://policy/123).
+    /// 정책 상세로 여는 딥링크 URL(예: {앱 스킴}://policy/123).
     static func url(policyId: Int) -> URL? {
         URL(string: "\(scheme)://\(host)/\(policyId)")
     }
 
-    /// chungbazi://policy/{id} → policyId.
+    /// {앱 스킴}://policy/{id} → policyId.
     static func policyId(from url: URL) -> Int? {
         guard url.scheme == scheme, url.host == host else { return nil }
         return Int(url.lastPathComponent)
