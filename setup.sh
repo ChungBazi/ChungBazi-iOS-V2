@@ -75,10 +75,13 @@ fi
 for ENV in Debug Release; do
   FIREBASE_DIR="$CONFIG_DIR/Firebase/$ENV"
   mkdir -p "$FIREBASE_DIR"
-  if [ ! -f "$FIREBASE_DIR/GoogleService-Info.plist" ]; then
-    echo "[firebase] $FIREBASE_DIR/GoogleService-Info.plist 가 없습니다. Firebase 콘솔에서 받아 넣어주세요."
-  fi
 done
+if [ ! -f "$CONFIG_DIR/Firebase/Debug/GoogleService-Info.plist" ]; then
+  echo "[firebase] $CONFIG_DIR/Firebase/Debug/GoogleService-Info.plist 가 없습니다. dev용 plist를 받아 넣어주세요."
+fi
+if [ ! -f "$CONFIG_DIR/Firebase/Release/GoogleService-Info.plist" ]; then
+  echo "[firebase] Release용 plist는 Release 빌드가 필요할 때만 운영용으로 받아 넣습니다. (Debug용을 복사하지 마세요)"
+fi
 
 # 3. .mise.toml에 정의된 Tuist 버전 설치
 echo "[tuist] Installing pinned version from .mise.toml..."
