@@ -97,9 +97,18 @@ Dev 번들 ID(`com.yeonho.chungbazi.dev`)를 외부 서비스에 한 번 등록�
 | 대상 | 작업 |
 |---|---|
 | Apple Developer | App ID 등록 (Push Notifications, Sign in with Apple 활성화) → `fastlane match_development`로 프로파일 발급 |
-| 카카오 | dev용 앱을 만들거나 번들 ID를 추가하고, 그 네이티브 앱 키를 `Debug.xcconfig`에 넣습니다. 운영과 같은 키를 쓰면 `kakao{키}://` 스킴이 두 앱에서 겹쳐 로그인 복귀가 엉킵니다 |
+| 카카오 | 운영과 **같은 카카오 앱**에 네이티브 앱 키를 하나 더 추가하고(번들 ID는 dev), 그 키를 `Debug.xcconfig`에 넣습니다. 운영과 같은 키를 쓰면 `kakao{키}://` 스킴이 두 앱에서 겹쳐 로그인 복귀가 엉킵니다 |
 | Firebase | dev 번들 ID로 iOS 앱 추가 → plist를 `Firebase/Debug/`에 저장 → APNs 인증 키 등록 |
 | 백엔드 | dev 서버의 `apple.audience`를 dev 번들 ID로 설정 (Apple 로그인 토큰의 `aud`가 번들 ID입니다) |
+
+### 카카오를 같은 앱의 다른 키로 쓰는 이유와 한계
+
+백엔드가 카카오 계정의 이메일과 닉네임을 필수로 받는데, 이메일 동의항목은 비즈 앱에서만 켤 수 있습니다. dev용 카카오 앱을 따로 만들면 비즈 앱 전환과 동의항목 설정을 다시 해야 하므로, 같은 앱에 키만 추가했습니다.
+
+- **카카오 사용자 ID가 운영과 같습니다.** DB가 환경별로 분리되어 있어 문제되지 않습니다.
+- **카카오톡 공유 링크는 Dev 앱으로 돌아오지 않습니다.** 공유 메시지의 실행 URL은 카카오 서버가 앱의 기본 네이티브 키(운영)로 만들기 때문에, Dev 앱에서 보낸 공유도 탭하면 스토어 앱이 열립니다. 기본 키는 바꾸지 않습니다 (실사용자의 공유 링크가 깨집니다).
+- Dev 앱의 공유 진입은 Safari 주소창에서 `kakao{dev 키}://kakaolink?policyId={정책 ID}`로 확인합니다.
+- **Dev 앱에서 탈퇴하면 카카오 연결 해제(unlink)가 운영 앱과 공유됩니다.** 같은 카카오 계정으로 운영 앱에 다시 로그인할 때 동의 화면이 한 번 더 뜹니다.
 
 ---
 
@@ -137,6 +146,7 @@ Release 구성은 App Store 배포용으로 서명되어 실기기에 직접 설
 | 빌드가 "GoogleService-Info.plist 가 없습니다"로 실패 | `Configurations/Firebase/{구성}/`에 plist를 넣습니다 |
 | Dev 앱에서 Apple 로그인만 실패 | dev 서버의 `apple.audience`가 dev 번들 ID인지 확인합니다 |
 | Dev 앱에서 카카오 로그인 후 스토어 앱이 열림 | 두 앱이 같은 카카오 키를 쓰고 있습니다. `Debug.xcconfig`의 키를 dev용으로 바꿉니다 |
+| Dev 앱에서 보낸 카카오톡 공유를 탭하면 스토어 앱이 열림 | 정상입니다. 위 "카카오를 같은 앱의 다른 키로 쓰는 이유와 한계"를 참고합니다 |
 | 실기기 Debug 빌드가 서명 오류로 실패 | dev 번들 ID의 프로파일이 없습니다. `fastlane match_development_readonly`를 실행합니다 |
 | "doesn't include signing certificate" 오류 | 키체인에 개발 인증서가 여러 개라 Xcode가 프로파일에 없는 것을 골랐습니다. `Debug.xcconfig`의 `CODE_SIGN_IDENTITY`를 match 인증서의 전체 이름으로 지정합니다 (`security find-identity -p codesigning -v`로 확인) |
 | Dev 앱에 푸시가 오지 않음 | Firebase의 dev iOS 앱에 APNs 키가 등록됐는지 확인합니다 |
