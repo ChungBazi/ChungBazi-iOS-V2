@@ -47,25 +47,30 @@ extension AppDelegate: MessagingDelegate {
 
 // MARK: - UNUserNotificationCenterDelegate
 
+// async 변형으로 구현하면 완료 통지가 백그라운드 스레드에서 호출되어 UIKit의 메인 스레드 검사에 걸려 크래시한다.
+// 완료 핸들러 변형으로 구현해, 시스템이 호출한 스레드(메인)에서 그대로 완료를 알린다.
 extension AppDelegate: UNUserNotificationCenterDelegate {
 
     /// 포그라운드에서도 배너/사운드/뱃지를 그대로 보여주고, 알림센터에도 남긴다.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound, .badge]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound, .badge])
     }
 
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
         // 알림 탭 시 payload의 policyId로 정책 상세 딥링크를 발행한다.
         let userInfo = response.notification.request.content.userInfo
         if let policyId = Self.policyId(from: userInfo) {
             DeeplinkPublisher.policyDetail(id: policyId)
         }
+        completionHandler()
     }
 
     /// FCM payload는 값이 문자열로 오는 경우가 많아 Int/String 양쪽을 허용한다.
