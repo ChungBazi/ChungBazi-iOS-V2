@@ -84,7 +84,8 @@ mise exec -- tuist generate
 ```
 
 - 시뮬레이터는 인증서 없이 바로 실행됩니다. 실기기는 3번(기기 등록) 이후 가능합니다.
-- `Release.xcconfig`는 템플릿 그대로 두어도 Debug 개발에는 지장이 없습니다. `Firebase/Release/`에는 Debug용 plist를 복사해 두면 Release 구성 빌드가 필요할 때 막히지 않습니다.
+- `Release.xcconfig`는 템플릿 그대로 두어도 Debug 개발에는 지장이 없습니다.
+- `Firebase/Release/`는 비워둡니다. 운영용 plist가 없으면 Release 구성 빌드가 실패하는데, 의도된 동작입니다. Release 빌드가 필요하면 배포 담당자에게 운영용 plist를 받습니다. **Debug용 plist를 Release 경로에 복사하지 않습니다** (반대도 마찬가지).
 - 브랜치와 PR 규칙은 `GIT_FLOW_GUIDELINES.md`를 따릅니다. 릴리즈 브랜치와 태그는 배포 담당자가 만듭니다.
 
 ---
