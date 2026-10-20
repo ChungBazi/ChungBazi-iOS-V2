@@ -1,0 +1,281 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+/// 탭하면 앞/뒤로 뒤집히는 정책 카드. 앞면엔 썸네일/태그/제목/신청기간을,
+/// 뒷면엔 상세 설명을 보여준다.
+public struct BZFlipCard: View {
+
+    // MARK: - Constants
+
+    private static let cardAspectRatio: CGFloat = 302.0 / 456.0
+    private static let thumbnailAspectRatio: CGFloat = 270.0 / 139.0
+
+    // MARK: - Properties
+
+    @State private var isFlipped = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let image: Image?
+    private let category: String
+    private let dDay: String
+    private let title: String
+    private let subtitle: String
+    private let applyPeriod: String
+    private let description: String
+    private let isSummarizing: Bool
+    private let onFlip: ((Bool) -> Void)?
+    @Binding private var isLiked: Bool
+
+    // MARK: - Init
+
+    public init(
+        image: Image? = nil,
+        category: String,
+        dDay: String,
+        title: String,
+        subtitle: String,
+        applyPeriod: String,
+        description: String,
+        isSummarizing: Bool = false,
+        isLiked: Binding<Bool>,
+        onFlip: ((Bool) -> Void)? = nil
+    ) {
+        self.image = image
+        self.category = category
+        self.dDay = dDay
+        self.title = title
+        self.subtitle = subtitle
+        self.applyPeriod = applyPeriod
+        self.description = description
+        self.isSummarizing = isSummarizing
+        self._isLiked = isLiked
+        self.onFlip = onFlip
+    }
+
+    // MARK: - Body
+
+    public var body: some View {
+        ZStack {
+            front
+                .baziRadius(.medium)
+                .opacity(isFlipped ? 0 : 1)
+                .rotation3DEffect(.degrees(isFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+                .accessibilityHidden(isFlipped)
+            back
+                .baziRadius(.medium)
+                .opacity(isFlipped ? 1 : 0)
+                .rotation3DEffect(.degrees(isFlipped ? 0 : -180), axis: (x: 0, y: 1, z: 0))
+                .accessibilityHidden(!isFlipped)
+        }
+        .aspectRatio(Self.cardAspectRatio, contentMode: .fit)
+        .shadow(color: Color.grayBlack.opacity(0.11), radius: 5.67, x: 0, y: 1.89)
+        .onTapGesture { flip() }
+        .onChange(of: isSummarizing) { _, summarizing in
+            // 뒷면을 보는 중 요약 생성이 끝나면 VoiceOver로 알린다.
+            if !summarizing, isFlipped {
+                AccessibilityNotification.Announcement("정책 요약이 준비됐어요").post()
+            }
+        }
+    }
+}
+
+// MARK: - Actions & Accessibility
+
+extension BZFlipCard {
+
+    private func flip() {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
+            isFlipped.toggle()
+        }
+        onFlip?(isFlipped)
+    }
+
+    /// 앞면 정보(카테고리·D-day·제목·부제·신청기간)를 하나로 읽기 위한 합쳐진 라벨.
+    fileprivate var frontAccessibilityLabel: String {
+        var parts = [category, dDay, title, subtitle, "신청 기간 \(applyPeriod)"]
+        if isLiked { parts.append("찜함") }
+        return parts.joined(separator: ", ")
+    }
+}
+
+// MARK: - Front
+
+extension BZFlipCard {
+
+    private var front: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            thumbnailAndHeader
+            Spacer(minLength: 4)
+            applyPeriodSection
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .baziBackground(.bgWhite)
+    }
+
+    private var thumbnailAndHeader: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            thumbnail
+            VStack(alignment: .leading, spacing: 8) {
+                headerRow
+                titleAndSubtitle
+            }
+        }
+    }
+
+    private var headerRow: some View {
+        HStack(alignment: .top, spacing: 8) {
+            categoryAndDDay
+            Spacer(minLength: 8)
+            BZLikeButton(isLiked: $isLiked)
+        }
+    }
+
+    private var categoryAndDDay: some View {
+        HStack(spacing: 8) {
+            BZTag(category, type: .blue100)
+            Text(dDay)
+                .baziFont(.small12SB)
+                .foregroundStyle(Color.gray700)
+        }
+        // 태그·D-day는 앞면 요약 요소(titleAndSubtitle)로 대체해 읽는다.
+        .accessibilityHidden(true)
+    }
+
+    private var titleAndSubtitle: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.byCharWrapping)
+                .baziFont(.head20B)
+                .foregroundStyle(Color.grayBlack)
+            Text(subtitle.byCharWrapping)
+                .baziFont(.small14R)
+                .foregroundStyle(Color.gray500)
+        }
+        // 앞면 정보를 이 요소 하나로 읽고, 활성화하면 뒤집어 요약을 본다.
+        // 별(headerRow)과 다른 행이라 개별 포커스가 유지되고, 요약이 먼저 포커스되게 우선순위를 높인다.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(frontAccessibilityLabel)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("뒤집어 정책 요약 보기")
+        .accessibilityAction { flip() }
+        .accessibilitySortPriority(1)
+    }
+
+    private var applyPeriodSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            VStack(alignment: .leading, spacing: 2) {
+                Text("신청 기간")
+                    .baziFont(.small12R)
+                    .foregroundStyle(Color.gray400)
+                Text(applyPeriod)
+                    .baziFont(.small12M)
+                    .foregroundStyle(Color.gray600)
+            }
+        }
+        // 신청 기간은 앞면 요약 요소(titleAndSubtitle)에 포함해 읽는다.
+        .accessibilityHidden(true)
+    }
+
+    private var thumbnail: some View {
+        GeometryReader { geometry in
+            (image ?? Image.bazi(.imagePlaceholder))
+                .resizable()
+                .scaledToFill()
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .clipped()
+        }
+        .aspectRatio(Self.thumbnailAspectRatio, contentMode: .fit)
+        .baziRadius(.small)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Back
+
+extension BZFlipCard {
+
+    private var back: some View {
+        Group {
+            if isSummarizing {
+                summarizingView
+            } else {
+                ScrollView {
+                    Text(description.byCharWrapping)
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray800)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 36)
+                        .padding(.horizontal, 31.5)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color.grayWhite, location: 0),
+                    .init(color: Color.blue100, location: 0.44),
+                    .init(color: Color.grayWhite, location: 1),
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        // 뒷면(요약/로딩)을 하나로 읽고, 활성화하면 앞면으로 돌아간다.
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("뒤집어 앞면 보기")
+        .accessibilityAction { flip() }
+    }
+
+    private var summarizingView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 3) {
+                Image(systemName: "sparkle")
+                    .font(.system(size: 14))
+                    .accessibilityHidden(true)
+                Text("AI가 요약하고 있어요")
+                    .baziFont(.small14R)
+            }
+            .foregroundStyle(Color.bazi(.primary))
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(0..<5, id: \.self) { index in
+                    Capsule()
+                        .fill(Color.gray400.opacity(0.25))
+                        .frame(height: 12)
+                        .frame(maxWidth: index == 4 ? 140 : .infinity, alignment: .leading)
+                }
+            }
+            .baziShimmer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.vertical, 36)
+        .padding(.horizontal, 31.5)
+    }
+}
+
+// MARK: - Preview
+
+private struct BZFlipCardPreview: View {
+    @State private var isLiked = true
+
+    var body: some View {
+        BZFlipCard(
+            category: "월세·주거",
+            dDay: "D-11",
+            title: "청년 맞춤형 주거복지 확대를 위한 전·월세 금융지원 및 월세 지원 사업",
+            subtitle: "소속 근로자가 일·생활 균형을 위해 유연근무제를 활용하게 하는 중소, 중견기업에게 장려금을 지원",
+            applyPeriod: "2025.05.03 - 2025.06.30",
+            description: "서울 청년취업사관학교는 청년들의 실무 역량을 키우고 취업까지 이어질 수 있도록 돕는 교육 프로그램이에요. 디지털·IT 분야를 중심으로 현장에서 활용할 수 있는 실무 교육과 프로젝트 기반 수업을 제공해요.",
+            isLiked: $isLiked
+        )
+        .padding(.horizontal, 36)
+    }
+}
+
+#Preview {
+    BZFlipCardPreview()
+}

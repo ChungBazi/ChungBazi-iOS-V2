@@ -2,6 +2,7 @@
 청바지 PR 제목 컨벤션 (타입/#이슈 번호 - 작업 요약)
 예시: Design/#123 - Button 컴포넌트 구현
 ※ PR 생성 시 Assignees 및 Labels 설정도 잊지 마세요!
+※ main 타겟 PR(release/hotfix)과 백머지 PR은 반드시 "Create a merge commit"으로 머지합니다. (docs/GIT_FLOW_GUIDELINES.md)
 -->
 
 ## ✨ What’s this PR?

@@ -17,7 +17,7 @@ extension Target {
     ) -> Target {
         Target.target(
             name: name,
-            destinations: .iOS,
+            destinations: [.iPhone],
             product: product,
             bundleId: bundleId ?? Project.bundleID + "." + name.lowercased(),
             deploymentTargets: .iOS(Project.iOSVersion),
@@ -64,7 +64,13 @@ extension Target {
             ]),
             sources: ["SampleApp/Sources/**"],
             resources: ["SampleApp/Resources/**"],
-            dependencies: dependencies
+            dependencies: dependencies,
+            settings: .settings(
+                base: [
+                    "DEVELOPMENT_TEAM": "UKY6HK6U6Y",
+                    "CODE_SIGN_STYLE": "Automatic",
+                ]
+            )
         )
     }
 }

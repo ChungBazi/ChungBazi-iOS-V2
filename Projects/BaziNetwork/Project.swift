@@ -10,10 +10,16 @@ let project = Project.project(
             sources: .sources,
             dependencies: [
                 .core(),
+                .external(.Moya),
             ]
         ),
         .tests(
-            name: BaziModule.BaziNetwork.name
+            name: BaziModule.BaziNetwork.name,
+            dependencies: [
+                .target(name: BaziModule.BaziNetwork.name),
+                .core(),
+                .external(.Moya),
+            ]
         ),
     ]
 )

@@ -13,10 +13,21 @@ let project = Project.project(
                 .network(),
                 .storage(),
                 .core(),
+                .external(.KakaoSDKCommon),
+                .external(.KakaoSDKAuth),
+                .external(.KakaoSDKUser),
+                .external(.KakaoSDKShare),
+                .external(.KakaoSDKTemplate),
+                .external(.FirebaseMessaging),
+                .external(.FirebaseRemoteConfig),
             ]
         ),
         .tests(
-            name: BaziModule.BaziData.name
+            name: BaziModule.BaziData.name,
+            dependencies: [
+                .target(name: BaziModule.BaziData.name),
+                .domain(),
+            ]
         ),
     ]
 )

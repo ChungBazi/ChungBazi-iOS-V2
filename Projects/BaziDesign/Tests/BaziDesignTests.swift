@@ -1,3 +1,5 @@
-import XCTest
+// Copyright © 2026 ChungBazi. All rights reserved.
 
-final class BaziDesignTests: XCTestCase {}
+import Testing
+
+struct BaziDesignTests {}

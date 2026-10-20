@@ -1,0 +1,372 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+import BaziDesign
+import ComposableArchitecture
+
+public struct MyPolicyView: View {
+
+    // MARK: - Properties
+
+    @Bindable var store: StoreOf<MyPolicyFeature>
+
+    // MARK: - Init
+
+    public init(store: StoreOf<MyPolicyFeature>) {
+        self.store = store
+    }
+
+    // MARK: - Body
+
+    public var body: some View {
+        NavigationStack(
+            path: $store.scope(state: \.path, action: \.path)
+        ) {
+            VStack(spacing: 0) {
+                header
+                content
+            }
+            .task { store.send(.onAppear) }
+        } destination: { store in
+            switch store.case {
+            case .policyList(let store):
+                MyPolicyListView(store: store)
+            case .calendar(let store):
+                CalendarView(store: store)
+            case .memo(let store):
+                PolicyMemoView(store: store)
+            case .detail(let store):
+                PolicyDetailView(store: store)
+            case .categoryPolicyList(let store):
+                CategoryPolicyListView(store: store)
+            }
+        }
+    }
+}
+
+// MARK: - Content
+
+private extension MyPolicyView {
+
+    /// teaser는 스크롤되어 사라지고 `pinnedControls`(달력·탭·툴바)는 섹션 헤더로 고정된다.
+    /// (iOS 18 ScrollView pinned 진동 이슈로 `List` 사용)
+    var content: some View {
+        List {
+            teaser
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+            Section {
+                resultsRows
+            } header: {
+                pinnedControls
+                    .listRowInsets(EdgeInsets())
+            }
+        }
+        .listStyle(.plain)
+        .listSectionSeparator(.hidden)
+        .listSectionSpacing(0)
+        .environment(\.defaultMinListRowHeight, 0)
+        .scrollContentBackground(.hidden)
+        .baziBackground(.bgGray)
+        .refreshable { await store.send(.pullToRefresh).finish() }
+    }
+
+    /// "내 정책" 상단 헤더. 스크롤과 무관하게 항상 고정된다.
+    var header: some View {
+        BZNavigationRowHeader(title: "내 정책") {
+            store.send(.didTapHeaderMore)
+        }
+        .baziBackground(.bgWhite)
+    }
+
+    /// 스크롤 시 상단에 고정되는 컨트롤 묶음(달력·탭·결과 툴바). 리스트가 뒤로 비쳐 보이지 않도록 흰 배경으로 채운다.
+    var pinnedControls: some View {
+        VStack(spacing: 0) {
+            miniCalendar
+            tabBar
+            resultsToolbar
+        }
+        .baziBackground(.bgWhite)
+    }
+
+    @ViewBuilder
+    var teaser: some View {
+        if !visibleTeaser.isEmpty {
+            teaserBanner
+        } else if !store.teaserLoadFailed {
+            // 실제로 찜한 정책이 없을 때만 빈 배너 표시. 조회 실패 시엔 아무것도 그리지 않는다(오표시 방지).
+            emptyTeaserBanner
+        }
+    }
+
+    /// 섹션(고정 헤더 아래) 내용 행들. 상태에 따라 로딩/실패/빈/정책 목록 행을 낸다.
+    @ViewBuilder
+    var resultsRows: some View {
+        switch store.currentPolicies {
+        case .idle, .loading:
+            BZLoadingView()
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        case let .failed(message):
+            BZRetryView(message: message) { store.send(.didTapRetry) }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        case .loaded(let policies):
+            let visiblePolicies = visible(policies)
+            if visiblePolicies.isEmpty {
+                emptyPolicyList
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            } else {
+                ForEach(visiblePolicies) { policy in
+                    let topInset: CGFloat = policy.id == visiblePolicies.first?.id ? 8 : 6
+                    policyCard(policy, size: .medium)
+                        .listRowInsets(EdgeInsets(top: topInset, leading: 20, bottom: 6, trailing: 20))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+                // overlay 필터로 원본 마지막 항목이 빠져도 페이지네이션이 멈추지 않도록 하단 sentinel로 트리거.
+                Color.clear
+                    .frame(height: 1)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .onAppear { store.send(.didReachListEnd) }
+            }
+        }
+    }
+
+    /// 다른 화면에서 찜 해제된 정책(overlay == false)은 목록/티저에서 제외한다.
+    func visible(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> IdentifiedArrayOf<PolicySummaryVO> {
+        IdentifiedArray(uniqueElements: policies.filter { store.likeOverrides[$0.id] != false })
+    }
+
+    var visibleTeaser: IdentifiedArrayOf<PolicySummaryVO> {
+        visible(store.deadlineTeaser)
+    }
+
+    /// 찜한 정책이 하나라도 있는지(상시모집 포함). 빈 배너 문구를 가른다.
+    var hasAnyLikedPolicy: Bool {
+        !visibleTeaser.isEmpty
+            || !visible(store.datePolicies.value ?? []).isEmpty
+            || !visible(store.openEndedPolicies.value ?? []).isEmpty
+    }
+}
+
+// MARK: - Deadline Teaser
+
+private extension MyPolicyView {
+
+    var teaserBanner: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("찜한 정책들의 마감이 다가와요!")
+                .baziFont(.head18B)
+                .foregroundStyle(Color.gray900)
+                .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(visibleTeaser) { policy in
+                        policyCard(policy, size: .small)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.blue100)
+    }
+
+    var emptyTeaserBanner: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(hasAnyLikedPolicy ? "마감이 임박한 정책이 없어요!" : "아직 찜한 정책이 없어요!")
+                    .baziFont(.body16B)
+                    .foregroundStyle(Color.bazi(.primary))
+                Text("관심 있는 정책을 찜하고\n놓치지 않게 관리해보세요")
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray600)
+            }
+            Spacer(minLength: 12)
+            BZCircleButton(accessibilityLabel: "정책 둘러보러 가기") {
+                store.send(.didTapEmptyBannerCTA)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.grayWhite)
+        .baziRadius(.medium)
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(Color.blue100)
+    }
+}
+
+// MARK: - Mini Calendar
+
+private extension MyPolicyView {
+
+    var miniCalendar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            monthSelector
+            weekStrip
+        }
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .baziBackground(.bgWhite)
+    }
+
+    var monthSelector: some View {
+        Button {
+            store.send(.didTapCalendarIcon)
+        } label: {
+            HStack(spacing: 11) {
+                Text(BaziDateFormat.yearMonth.string(from: store.selectedDate))
+                    .baziFont(.body16SB)
+                    .foregroundStyle(Color.gray900)
+                Circle()
+                    .fill(Color.blue50)
+                    .frame(width: 29, height: 29)
+                    .overlay {
+                        Image.bazi(.calendarIcon)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 15.5)
+                    }
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, 12)
+        .accessibilityLabel("\(BaziDateFormat.yearMonth.string(from: store.selectedDate)), 정책 마감 캘린더 열기")
+    }
+
+    var weekStrip: some View {
+        HStack(spacing: 0) {
+            ForEach(store.weekDates, id: \.self) { date in
+                weekDayCell(date)
+            }
+        }
+        .padding(.vertical, 12)
+    }
+
+    func weekDayCell(_ date: Date) -> some View {
+        let calendar = Calendar.current
+        let isSelected = calendar.isDate(date, inSameDayAs: store.selectedDate)
+
+        return Button {
+            store.send(.didSelectWeekDate(date))
+        } label: {
+            VStack(spacing: 4) {
+                Text(BaziDateFormat.weekday.string(from: date))
+                    .baziFont(.small12R)
+                    .foregroundStyle(Color.gray500)
+                Text("\(calendar.component(.day, from: date))")
+                    .baziFont(.small14R)
+                    .foregroundStyle(isSelected ? Color.grayWhite : Color.gray700)
+                    .frame(width: 36, height: 36)
+                    .background(isSelected ? Color.bazi(.primary) : Color.clear)
+                    .clipShape(Circle())
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+// MARK: - Tab
+
+private extension MyPolicyView {
+
+    var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(MyPolicyFeature.Tab.allCases, id: \.self) { tab in
+                tabItem(tab)
+            }
+        }
+        .baziBackground(.bgWhite)
+    }
+
+    func tabItem(_ tab: MyPolicyFeature.Tab) -> some View {
+        let isSelected = store.selectedTab == tab
+        return Button {
+            store.send(.didSelectTab(tab))
+        } label: {
+            Text(tab.title)
+                .baziFont(isSelected ? .small14SB : .small14R)
+                .foregroundStyle(isSelected ? Color.bazi(.primary) : Color.gray500)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+                .overlay(alignment: .bottom) {
+                    if isSelected {
+                        Rectangle()
+                            .fill(Color.bazi(.primary))
+                            .frame(height: 1.67)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+// MARK: - Results
+
+private extension MyPolicyView {
+
+    var resultsToolbar: some View {
+        // 두 탭 모두 정렬 없이 갯수만 표시한다.
+        BZResultsToolbar(count: store.currentTotalCount)
+            .baziBackground(.bgGray)
+    }
+
+    var emptyPolicyList: some View {
+        BZEmptyView(message: store.selectedTab == .policy ? "이 날짜에는 저장된 정책이 없어요" : "저장된 정책 중 상시모집 정책이 없어요")
+    }
+
+    /// teaser(가로 스크롤)와 목록에서 공통으로 쓰는 정책 카드. 탭하면 상세로, 메모 액세서리로 메모 진입.
+    func policyCard(_ policy: PolicySummaryVO, size: BZCardSize) -> some View {
+        BZCard(
+            size: size,
+            category: policy.category.rawValue,
+            dDay: policy.dDay,
+            title: policy.title,
+            viewCount: policy.viewCount,
+            isLiked: .constant(policy.isLiked),
+            onOpen: { store.send(.didTapPolicy(id: policy.id)) },
+            accessory: .memo(action: { store.send(.didTapMemo(id: policy.id)) })
+        )
+    }
+}
+
+// MARK: - Preview
+
+#Preview("찜한 정책 있음") {
+    MyPolicyView(
+        store: Store(initialState: .init()) {
+            MyPolicyFeature()
+        }
+    )
+}
+
+#Preview("찜한 정책 없음") {
+    var state = MyPolicyFeature.State()
+    state.deadlineTeaser = []
+    state.datePolicies = .loaded([])
+
+    return MyPolicyView(
+        store: Store(initialState: state) {
+            EmptyReducer()
+        }
+    )
+}

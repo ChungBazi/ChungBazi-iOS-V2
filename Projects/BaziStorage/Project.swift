@@ -13,7 +13,11 @@ let project = Project.project(
             ]
         ),
         .tests(
-            name: BaziModule.BaziStorage.name
+            name: BaziModule.BaziStorage.name,
+            dependencies: [
+                .target(name: BaziModule.BaziStorage.name),
+                .core(),
+            ]
         ),
     ]
 )

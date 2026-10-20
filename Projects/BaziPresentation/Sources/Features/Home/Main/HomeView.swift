@@ -1,0 +1,385 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import SwiftUI
+
+import BaziDesign
+import ComposableArchitecture
+
+public struct HomeView: View {
+
+    // MARK: - Properties
+
+    @Bindable var store: StoreOf<HomeFeature>
+
+    // MARK: - Init
+
+    public init(store: StoreOf<HomeFeature>) {
+        self.store = store
+    }
+
+    // MARK: - Body
+
+    public var body: some View {
+        NavigationStack(
+            path: $store.scope(state: \.path, action: \.path)
+        ) {
+            content
+                .task { store.send(.onAppear) }
+                .baziNavigationBar_home(
+                    hasUnread: store.hasUnreadNotification
+                ) {
+                    store.send(.didTapBell)
+                }
+        } destination: { store in
+            switch store.case {
+            case .categoryPolicyList(let store):
+                CategoryPolicyListView(store: store)
+            case .rankedPolicyList(let store):
+                RankedPolicyListView(store: store)
+            case .customPolicyList(let store):
+                CustomPolicyListView(store: store)
+            case .notification(let store):
+                NotificationView(store: store)
+            case .policyDetail(let store):
+                PolicyDetailView(store: store)
+            case .policyProfileEdit(let store):
+                PolicyProfileEditView(store: store)
+            }
+        }
+    }
+}
+
+// MARK: - Content (LoadingState 분기)
+
+extension HomeView {
+
+    private var content: some View {
+        Group {
+            switch store.feed {
+            case .idle, .loading:
+                loadingView
+            case let .loaded(feed):
+                loadedContent(feed)
+            case let .failed(message):
+                retryView(message)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .baziBackground(.bgGray)
+    }
+
+    private var loadingView: some View {
+        BZLoadingView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func retryView(_ message: String) -> some View {
+        BZRetryView(message: message) {
+            store.send(.didTapRetry)
+        }
+    }
+
+    private func loadedContent(_ feed: HomeFeedVO) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                personalizedSection(feed)
+                categorySection
+                // 최근 본 정책이 없으면 섹션 자체를 숨긴다(emptyMessage 미지정).
+                cardRowSection(
+                    title: "최근 본 정책",
+                    subtitle: "내가 관심 있게 살펴본 정책이에요!",
+                    policies: feed.recentViewed,
+                    section: .recentViewed
+                )
+                cardRowSection(
+                    title: "인기 정책",
+                    subtitle: "가장 인기 있는 정책을 모아봤어요!",
+                    emptyMessage: "지금은 인기 정책이 없어요",
+                    policies: feed.popular,
+                    section: .popular,
+                    moreAction: { store.send(.didTapPopularMore) }
+                )
+                cardRowSection(
+                    title: "마감임박 정책",
+                    subtitle: "곧 마감되는 정책을 놓치지 마세요!",
+                    emptyMessage: "마감이 임박한 정책이 없어요",
+                    policies: feed.deadline,
+                    section: .deadline,
+                    moreAction: { store.send(.didTapDeadlineMore) }
+                )
+                cardRowSection(
+                    title: "새로 뜬 정책",
+                    subtitle: "따끈하게 새로 올라온 정책을 먼저 확인해봐요!",
+                    emptyMessage: "새로 올라온 정책이 없어요",
+                    policies: feed.newest,
+                    section: .newest,
+                    moreAction: { store.send(.didTapNewMore) }
+                )
+            }
+            .padding(.bottom, 20)
+        }
+        .refreshable { await store.send(.pullToRefresh).finish() }
+    }
+}
+
+// MARK: - Personalized Section
+
+extension HomeView {
+
+    private func personalizedSection(_ feed: HomeFeedVO) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if feed.personalized.isEmpty {
+                personalizedEmptyState
+            } else {
+                personalizedContent(feed.personalized)
+            }
+        }
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.blue100)
+    }
+
+    private func personalizedContent(_ policies: IdentifiedArrayOf<PolicySummaryVO>) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(store.displayName)님을 기다리는 정책")
+                        .baziFont(.head20B)
+                        .foregroundStyle(Color.gray900)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("\(store.displayName)님에게 딱 맞는 정책이에요!")
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray500)
+                }
+                Spacer()
+                Button("더 보기") {
+                    store.send(.didTapPersonalizedMore)
+                }
+                .baziFont(.small12R)
+                .foregroundStyle(Color.gray600)
+            }
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 10) {
+                    ForEach(policies) { policy in
+                        BZCard(
+                            size: .large,
+                            category: policy.category.rawValue,
+                            dDay: policy.dDay,
+                            title: policy.title,
+                            viewCount: policy.viewCount,
+                            image: policy.category.cardImage.image,
+                            isLiked: likeBinding(section: .personalized, id: policy.id),
+                            onOpen: { store.send(.didTapPolicy(section: .personalized, id: policy.id)) }
+                        )
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    private var personalizedEmptyState: some View {
+        VStack(spacing: 12) {
+            Text("\(store.displayName)님 조건에 딱 맞는 정책이\n아직 없어요")
+                .baziFont(.head20B)
+                .foregroundStyle(Color.gray900)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 75) // glassBaro 자리 확보
+
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("맞춤 조건 다시 설정하기")
+                        .baziFont(.body16B)
+                        .foregroundStyle(Color.bazi(.primary))
+                    Text("관심 분야를 추가하면\n더 많은 정책을 만날 수 있어요!")
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray600)
+                }
+                Spacer()
+                BZCircleButton(accessibilityLabel: "맞춤 조건 다시 설정하기") {
+                    store.send(.didTapPersonalizedEmptyCTA)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 15)
+            .frame(maxWidth: .infinity)
+            .baziBackground(.bgWhite)
+            .baziRadius(.medium)
+        }
+        .background(alignment: .topTrailing) {
+            Image.bazi(.glassBaro)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 75)
+                .padding(.trailing, 15)
+                .padding(.top, 5)
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Category Section
+
+extension HomeView {
+
+    private var categorySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("분야별 정책")
+                    .baziFont(.head18B)
+                    .foregroundStyle(Color.gray900)
+                Text("필요한 정책을 분야별로 빠르게 찾아보세요!")
+                    .baziFont(.small14R)
+                    .foregroundStyle(Color.gray500)
+            }
+
+            HStack {
+                ForEach(PolicyCategoryUI.allCases) { category in
+                    categoryButton(category)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 22)
+    }
+
+    private func categoryButton(_ category: PolicyCategoryUI) -> some View {
+        Button {
+            store.send(.didTapCategory(category))
+        } label: {
+            VStack(spacing: 4) {
+                category.icon.image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .frame(width: 56, height: 56)
+                    .baziBackground(.bgWhite)
+                    .baziRadius(.medium)
+                Text(category.rawValue)
+                    .baziFont(.small12R)
+                    .foregroundStyle(Color.gray700)
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Card Row Section
+
+extension HomeView {
+
+    @ViewBuilder
+    private func cardRowSection(
+        title: String,
+        subtitle: String,
+        emptyMessage: String? = nil,
+        policies: IdentifiedArrayOf<PolicySummaryVO>,
+        section: HomeFeature.PolicySection,
+        moreAction: (() -> Void)? = nil
+    ) -> some View {
+        // emptyMessage 없이 비어 있으면 섹션 자체를 숨긴다.
+        if !policies.isEmpty || emptyMessage != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .baziFont(.head18B)
+                            .foregroundStyle(Color.gray900)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(subtitle)
+                            .baziFont(.small14R)
+                            .foregroundStyle(Color.gray500)
+                    }
+                    Spacer()
+                    if let moreAction, !policies.isEmpty {
+                        Button("더보기", action: moreAction)
+                            .baziFont(.small12R)
+                            .foregroundStyle(Color.gray400)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                if policies.isEmpty {
+                    Text(emptyMessage ?? "")
+                        .baziFont(.small14R)
+                        .foregroundStyle(Color.gray400)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 24)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 12) {
+                            ForEach(policies) { policy in
+                                BZCard(
+                                    size: .small,
+                                    category: policy.category.rawValue,
+                                    dDay: policy.dDay,
+                                    title: policy.title,
+                                    viewCount: policy.viewCount,
+                                    isLiked: likeBinding(section: section, id: policy.id),
+                                    onOpen: { store.send(.didTapPolicy(section: section, id: policy.id)) }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+            }
+            .padding(.top, 44)
+        }
+    }
+}
+
+// MARK: - Bindings
+
+extension HomeView {
+
+    private func likeBinding(section: HomeFeature.PolicySection, id: Int) -> Binding<Bool> {
+        Binding(
+            get: {
+                guard let feed = store.feed.value else { return false }
+                let liked: Bool
+                switch section {
+                case .personalized: liked = feed.personalized[id: id]?.isLiked ?? false
+                case .recentViewed: liked = feed.recentViewed[id: id]?.isLiked ?? false
+                case .popular: liked = feed.popular[id: id]?.isLiked ?? false
+                case .deadline: liked = feed.deadline[id: id]?.isLiked ?? false
+                case .newest: liked = feed.newest[id: id]?.isLiked ?? false
+                }
+                // 다른 화면에서 바뀐 찜 상태를 오버레이로 덮어 반영한다.
+                return store.likeOverrides[id] ?? liked
+            },
+            set: { _ in store.send(.didToggleLike(section: section, id: id)) }
+        )
+    }
+}
+
+// MARK: - Preview
+
+#Preview("맞춤정책 있음") {
+    var state = HomeFeature.State()
+    state.displayName = "바지"
+    state.feed = .loaded(.mock)
+    return HomeView(
+        store: Store(initialState: state) {
+            HomeFeature()
+        }
+    )
+}
+
+#Preview("맞춤정책 없음") {
+    var emptyFeed = HomeFeedVO.mock
+    emptyFeed.personalized = []
+    var state = HomeFeature.State()
+    state.displayName = "바지"
+    state.feed = .loaded(emptyFeed)
+    return HomeView(
+        store: Store(initialState: state) {
+            HomeFeature()
+        }
+    )
+}

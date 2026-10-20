@@ -1,0 +1,14 @@
+// Copyright © 2026 ChungBazi. All rights reserved.
+
+import CoreText
+import Foundation
+
+public enum FontRegistrator {
+    public static func registerFonts() {
+        let extensions = ["otf", "ttf"]
+        let fontURLs = extensions.flatMap {
+            Bundle.module.urls(forResourcesWithExtension: $0, subdirectory: nil) ?? []
+        }
+        fontURLs.forEach { CTFontManagerRegisterFontsForURL($0 as CFURL, .process, nil) }
+    }
+}
