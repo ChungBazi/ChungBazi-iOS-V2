@@ -23,6 +23,13 @@
   <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ko-kr?size=400x133" alt="App Store에서 다운로드" width="180">
 </a>
 
+## 🗓️ 개발 기간
+
+| 버전 | 개발 기간 |
+| --- | --- |
+| V1 | 2025.01 – 2026.02 |
+| V2 | 2026.06 – 진행 중 |
+
 ## ✨ 주요 기능
 
 - **맞춤 정책 추천** — 나이와 지역, 학력·취업 상태, 소득과 관심 분야를 바탕으로 나에게 맞는 정책 추천
